@@ -281,12 +281,22 @@ async function translateExplanation(explanationText) {
 }
 
 function buildContextForAI(currentStart, currentEnd) {
-    // Récupérer les sous-titres avant et après (contexte de ±10 secondes)
-    const contextWindow = 10; // secondes
+    // Récupérer plus de contexte: ±20 secondes pour mieux comprendre
+    const contextWindow = 20;
 
-    return allSubtitles.filter(sub => {
+    const contextSubs = allSubtitles.filter(sub => {
         return sub.start >= (currentStart - contextWindow) && sub.end <= (currentEnd + contextWindow);
-    }).map(sub => sub.text).join(' ');
+    });
+
+    // Formater le contexte avec des marqueurs pour montrer où est la phrase ciblée
+    const contextText = contextSubs.map(sub => {
+        if (sub.start === currentStart && sub.end === currentEnd) {
+            return `>>> ${sub.text} <<<`; // Marquer la phrase ciblée
+        }
+        return sub.text;
+    }).join(' ');
+
+    return contextText || 'Pas de contexte disponible';
 }
 
 // ========================================

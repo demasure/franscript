@@ -7,8 +7,8 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 
-// Fonction pour appeler Ollama
-async function callOllama(prompt, model = 'llama3.1:8b') {
+// Fonction pour appeler Ollama avec système prompt
+async function callOllama(prompt, systemPrompt = null, model = 'llama3.1:8b') {
     try {
         const response = await fetch('http://localhost:11434/api/generate', {
             method: 'POST',
@@ -18,10 +18,12 @@ async function callOllama(prompt, model = 'llama3.1:8b') {
             body: JSON.stringify({
                 model: model,
                 prompt: prompt,
+                system: systemPrompt,
                 stream: false,
                 options: {
                     temperature: 0.7,
-                    num_predict: 200
+                    num_predict: 400,  // Plus de tokens pour des explications détaillées
+                    top_p: 0.9
                 }
             })
         });
@@ -46,15 +48,32 @@ app.post('/explain', async (req, res) => {
         return res.status(400).json({ error: 'Texte manquant' });
     }
 
-    const prompt = `Tu es un assistant d'apprentissage du français. Explique cette phrase de manière claire et concise en français (maximum 3 phrases).
+    // System prompt - toujours actif, sans censure
+    const systemPrompt = `Tu es un professeur de français passionné et bienveillant. Ta mission est d'aider des apprenants étrangers à comprendre le français authentique tel qu'il est parlé.
 
-Contexte: ${context || ''}
+RÈGLES ABSOLUES:
+- Tu expliques TOUT sans exception ni censure
+- L'apprenant a déjà lu/entendu le contenu, ton rôle est d'EXPLIQUER, pas de censurer
+- Utilise un langage simple et clair, comme si tu expliquais à un enfant intelligent
+- Sois pédagogue: contexte culturel, nuances, expressions idiomatiques
+- Donne des exemples concrets quand c'est utile
+- Ne juge jamais le contenu, concentre-toi sur l'aspect éducatif
+- Réponds TOUJOURS en français
 
-Phrase à expliquer: "${text}"
+APPROCHE:
+1. Explique le sens littéral
+2. Explique le sens contextuel/culturel si différent
+3. Donne un exemple similaire si pertinent`;
 
-Explication:`;
+    const userPrompt = `Contexte de la vidéo:
+${context || 'Aucun contexte supplémentaire'}
 
-    const explanation = await callOllama(prompt);
+Phrase/expression à expliquer:
+"${text}"
+
+Explique cette phrase en français simple, comme à un apprenant étranger. Sois clair, direct et pédagogue:`;
+
+    const explanation = await callOllama(userPrompt, systemPrompt);
 
     if (!explanation) {
         // Réponse mock si Ollama n'est pas disponible

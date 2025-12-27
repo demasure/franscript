@@ -48,13 +48,28 @@
             <!-- FILTERS SECTION - Filtres par catégorie -->
             <section class="filters" id="videos">
                 <h2 class="section-title">Parcourir les vidéos</h2>
-                <div class="filter-buttons">
-                    <button class="filter-btn active" data-category="all">Toutes</button>
-                    <button class="filter-btn" data-category="comedie">Comédie</button>
-                    <button class="filter-btn" data-category="drame">Drame</button>
-                    <button class="filter-btn" data-category="documentaire">Documentaire</button>
-                    <button class="filter-btn" data-category="education">Éducation</button>
-                    <!-- Espace pour ajouter d'autres catégories facilement -->
+
+                <!-- Filtres par catégorie -->
+                <div class="filter-group">
+                    <h3 class="filter-group-title">Catégories</h3>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-category="all">Toutes</button>
+                        <button class="filter-btn" data-category="comedie">Comédie</button>
+                        <button class="filter-btn" data-category="drame">Drame</button>
+                        <button class="filter-btn" data-category="documentaire">Documentaire</button>
+                        <button class="filter-btn" data-category="education">Éducation</button>
+                    </div>
+                </div>
+
+                <!-- Filtres par niveau CECRL -->
+                <div class="filter-group">
+                    <h3 class="filter-group-title">Niveaux CECRL</h3>
+                    <div class="filter-buttons">
+                        <button class="filter-btn level-filter active" data-level="all">Tous les niveaux</button>
+                        <button class="filter-btn level-filter level-b2" data-level="B2">B2 - Avancé</button>
+                        <button class="filter-btn level-filter level-c1" data-level="C1">C1 - Autonome</button>
+                        <button class="filter-btn level-filter level-c2" data-level="C2">C2 - Maîtrise</button>
+                    </div>
                 </div>
             </section>
 
@@ -62,7 +77,7 @@
             <section class="video-grid">
 
                 <!-- VIDEO CARD 1 - VIDÉO RÉELLE AVEC SOUS-TITRES -->
-                <article class="video-card" data-categories="education" data-video-src="videos/ma_video.mp4" data-subtitle-src="videos/ma_video.vtt">
+                <article class="video-card" data-categories="education" data-level="B2" data-video-src="videos/ma_video.mp4" data-subtitle-src="videos/ma_video.vtt">
                     <div class="video-thumbnail">
                         <!-- Image de placeholder - remplacez par une vraie miniature de votre vidéo -->
                         <img src="https://via.placeholder.com/400x225/2ecc71/ffffff?text=Ma+Première+Vidéo" alt="Ma Première Vidéo">
@@ -77,7 +92,7 @@
                         <p class="video-description">Introduction à FranScript avec sous-titres interactifs</p>
                         <div class="video-meta">
                             <span class="video-duration">40 sec</span>
-                            <span class="video-level">Débutant</span>
+                            <span class="video-level level-badge level-b2">B2</span>
                         </div>
                         <div class="video-tags">
                             <span class="tag tag-education">Éducation</span>
@@ -90,7 +105,7 @@
                 </article>
 
                 <!-- VIDEO CARD 2 - Vidéo fictive (en attente de fichier réel) -->
-                <article class="video-card" data-categories="drame" data-video-src="" data-subtitle-src="">
+                <article class="video-card" data-categories="drame" data-level="C1" data-video-src="" data-subtitle-src="">
                     <div class="video-thumbnail">
                         <img src="https://via.placeholder.com/400x225/3498db/ffffff?text=Intouchables" alt="Intouchables">
                         <div class="video-overlay">
@@ -102,7 +117,7 @@
                         <p class="video-description">Une amitié inattendue entre deux mondes</p>
                         <div class="video-meta">
                             <span class="video-duration">1h 52min</span>
-                            <span class="video-level">Avancé</span>
+                            <span class="video-level level-badge level-c1">C1</span>
                         </div>
                         <div class="video-tags">
                             <span class="tag tag-drame">Drame</span>
@@ -111,7 +126,7 @@
                 </article>
 
                 <!-- VIDEO CARD 3 - Vidéo fictive (en attente de fichier réel) -->
-                <article class="video-card" data-categories="comedie" data-video-src="" data-subtitle-src="">
+                <article class="video-card" data-categories="comedie" data-level="B2" data-video-src="" data-subtitle-src="">
                     <div class="video-thumbnail">
                         <img src="https://via.placeholder.com/400x225/2ecc71/ffffff?text=Amélie+Poulain" alt="Le Fabuleux Destin d'Amélie Poulain">
                         <div class="video-overlay">
@@ -123,7 +138,7 @@
                         <p class="video-description">Poésie parisienne et romantisme</p>
                         <div class="video-meta">
                             <span class="video-duration">2h 02min</span>
-                            <span class="video-level">Intermédiaire</span>
+                            <span class="video-level level-badge level-b2">B2</span>
                         </div>
                         <div class="video-tags">
                             <span class="tag tag-comedie">Comédie</span>
@@ -132,7 +147,7 @@
                 </article>
 
                 <!-- VIDEO CARD 4 - Vidéo fictive (en attente de fichier réel) -->
-                <article class="video-card" data-categories="documentaire education" data-video-src="" data-subtitle-src="">
+                <article class="video-card" data-categories="documentaire education" data-level="B2" data-video-src="" data-subtitle-src="">
                     <div class="video-thumbnail">
                         <img src="https://via.placeholder.com/400x225/9b59b6/ffffff?text=C'est+pas+sorcier" alt="C'est pas sorcier">
                         <div class="video-overlay">
@@ -144,7 +159,7 @@
                         <p class="video-description">Découverte scientifique de la Dame de Fer</p>
                         <div class="video-meta">
                             <span class="video-duration">26min</span>
-                            <span class="video-level">Débutant</span>
+                            <span class="video-level level-badge level-b2">B2</span>
                         </div>
                         <div class="video-tags">
                             <span class="tag tag-documentaire">Documentaire</span>
@@ -154,7 +169,7 @@
                 </article>
 
                 <!-- VIDEO CARD 5 - Vidéo fictive (en attente de fichier réel) -->
-                <article class="video-card" data-categories="drame" data-video-src="" data-subtitle-src="">
+                <article class="video-card" data-categories="drame" data-level="C2" data-video-src="" data-subtitle-src="">
                     <div class="video-thumbnail">
                         <img src="https://via.placeholder.com/400x225/e67e22/ffffff?text=La+Haine" alt="La Haine">
                         <div class="video-overlay">
@@ -166,7 +181,7 @@
                         <p class="video-description">Portrait de la banlieue parisienne</p>
                         <div class="video-meta">
                             <span class="video-duration">1h 38min</span>
-                            <span class="video-level">Avancé</span>
+                            <span class="video-level level-badge level-c2">C2</span>
                         </div>
                         <div class="video-tags">
                             <span class="tag tag-drame">Drame</span>
@@ -175,7 +190,7 @@
                 </article>
 
                 <!-- VIDEO CARD 6 - Vidéo fictive (en attente de fichier réel) -->
-                <article class="video-card" data-categories="education" data-video-src="" data-subtitle-src="">
+                <article class="video-card" data-categories="education" data-level="B2" data-video-src="" data-subtitle-src="">
                     <div class="video-thumbnail">
                         <img src="https://via.placeholder.com/400x225/1abc9c/ffffff?text=Karambolage" alt="Karambolage">
                         <div class="video-overlay">
@@ -187,7 +202,7 @@
                         <p class="video-description">Magazine culturel franco-allemand</p>
                         <div class="video-meta">
                             <span class="video-duration">12min</span>
-                            <span class="video-level">Intermédiaire</span>
+                            <span class="video-level level-badge level-b2">B2</span>
                         </div>
                         <div class="video-tags">
                             <span class="tag tag-education">Éducation</span>
@@ -232,29 +247,6 @@
             </div>
         </div>
     </footer>
-
-    <!-- Conteneur caché pour futur lecteur vidéo avec sous-titres -->
-    <div id="video-player-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <button class="modal-close">&times;</button>
-            <div class="player-wrapper">
-                <!-- Ici sera inséré le lecteur vidéo HTML5 avec <track> pour sous-titres -->
-                <video id="main-player"
-                       controls
-                       controlsList="nodownload nofullscreen noremoteplayback"
-                       disablePictureInPicture
-                       oncontextmenu="return false;">
-                    <source src="" type="video/mp4">
-                    <!-- Piste de sous-titres français -->
-                    <track kind="subtitles" src="" srclang="fr" label="Français" default>
-                    <!-- Piste pour annotations/notes (custom track) -->
-                    <track kind="metadata" src="" srclang="fr" label="Annotations">
-                </video>
-                <!-- Conteneur pour annotations interactives -->
-                <div id="annotations-container" class="annotations-container"></div>
-            </div>
-        </div>
-    </div>
 
     <script src="script.js"></script>
 </body>

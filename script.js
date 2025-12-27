@@ -2,9 +2,10 @@
  * FranScript - Script JavaScript pour interactions de base
  *
  * Fonctionnalités actuelles :
- * - Filtrage des vidéos par catégorie
- * - Gestion du modal lecteur vidéo (préparé pour futur)
+ * - Filtrage des vidéos par catégorie ET niveau CECRL (B2, C1, C2)
+ * - Redirection vers page player dédiée (player.html)
  * - Navigation fluide
+ * - Protection anti-téléchargement
  *
  * Structure évolutive pour ajouter :
  * - Authentification utilisateur
@@ -25,9 +26,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialiser les cartes vidéo (événements de clic)
     initializeVideoCards();
 
-    // Initialiser le modal (caché pour l'instant)
-    initializeModal();
-
     // Préparer les conteneurs pour futures fonctionnalités
     prepareFutureFeatures();
 
@@ -36,54 +34,94 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ========================================
-// SYSTÈME DE FILTRAGE PAR CATÉGORIE
+// SYSTÈME DE FILTRAGE PAR CATÉGORIE ET NIVEAU
 // ========================================
+
+// État global des filtres
+let currentFilters = {
+    category: 'all',
+    level: 'all'
+};
+
 function initializeFilters() {
-    const filterButtons = document.querySelectorAll('.filter-btn');
+    const categoryButtons = document.querySelectorAll('.filter-btn:not(.level-filter)');
+    const levelButtons = document.querySelectorAll('.filter-btn.level-filter');
     const videoCards = document.querySelectorAll('.video-card');
 
-    // Ajouter événement de clic sur chaque bouton de filtre
-    filterButtons.forEach(button => {
+    // Gestionnaire pour les filtres de catégorie
+    categoryButtons.forEach(button => {
         button.addEventListener('click', function() {
             const category = this.getAttribute('data-category');
+            currentFilters.category = category;
 
-            // Mettre à jour les boutons actifs
-            filterButtons.forEach(btn => btn.classList.remove('active'));
+            // Mettre à jour les boutons actifs (seulement les catégories)
+            categoryButtons.forEach(btn => btn.classList.remove('active'));
             this.classList.add('active');
 
-            // Filtrer les vidéos
-            filterVideos(category, videoCards);
+            // Appliquer les filtres combinés
+            applyFilters(videoCards);
+        });
+    });
+
+    // Gestionnaire pour les filtres de niveau
+    levelButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const level = this.getAttribute('data-level');
+            currentFilters.level = level;
+
+            // Mettre à jour les boutons actifs (seulement les niveaux)
+            levelButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+
+            // Appliquer les filtres combinés
+            applyFilters(videoCards);
         });
     });
 }
 
 /**
- * Filtre les vidéos en fonction de la catégorie sélectionnée
- * @param {string} category - Catégorie à filtrer ('all' pour tout afficher)
+ * Applique les filtres combinés (catégorie ET niveau)
  * @param {NodeList} videoCards - Liste des cartes vidéo
  */
-function filterVideos(category, videoCards) {
+function applyFilters(videoCards) {
     videoCards.forEach(card => {
         const categories = card.getAttribute('data-categories');
+        const level = card.getAttribute('data-level');
 
-        if (category === 'all') {
-            // Afficher toutes les vidéos
+        // Vérifier le filtre de catégorie
+        const matchesCategory = currentFilters.category === 'all' ||
+                                categories.includes(currentFilters.category);
+
+        // Vérifier le filtre de niveau
+        const matchesLevel = currentFilters.level === 'all' ||
+                            level === currentFilters.level;
+
+        // Afficher seulement si les deux filtres correspondent
+        if (matchesCategory && matchesLevel) {
             showCard(card);
         } else {
-            // Vérifier si la vidéo contient la catégorie recherchée
-            if (categories.includes(category)) {
-                showCard(card);
-            } else {
-                hideCard(card);
-            }
+            hideCard(card);
         }
     });
 
     // Animation de scroll fluide vers la grille
-    document.querySelector('.video-grid').scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest'
-    });
+    const videoGrid = document.querySelector('.video-grid');
+    if (videoGrid) {
+        videoGrid.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest'
+        });
+    }
+}
+
+/**
+ * DEPRECATED: Ancienne fonction de filtrage - conservée pour compatibilité
+ * Utiliser applyFilters() à la place
+ */
+function filterVideos(category, videoCards) {
+    console.warn('⚠️ filterVideos() est dépréciée. Utiliser applyFilters() à la place.');
+    currentFilters.category = category;
+    applyFilters(videoCards);
 }
 
 /**
@@ -133,11 +171,13 @@ function initializeVideoCards() {
             const videoSrc = this.getAttribute('data-video-src');
             const subtitleSrc = this.getAttribute('data-subtitle-src');
             const videoTitle = this.querySelector('.video-title').textContent;
+            const videoLevel = this.getAttribute('data-level') || 'B2';
 
             // Vérifier si la vidéo a un fichier source
             if (videoSrc && videoSrc.trim() !== '') {
-                console.log(`📹 Vidéo sélectionnée : ${videoTitle}`);
-                openVideoPlayer(videoSrc, subtitleSrc, videoTitle);
+                console.log(`📹 Redirection vers player : ${videoTitle}`);
+                // Rediriger vers la page player avec paramètres
+                window.location.href = `player.html?video=${encodeURIComponent(videoSrc)}&subtitle=${encodeURIComponent(subtitleSrc)}&title=${encodeURIComponent(videoTitle)}&level=${encodeURIComponent(videoLevel)}`;
             } else {
                 console.log(`⚠️ Pas de fichier vidéo pour : ${videoTitle}`);
                 alert('Cette vidéo n\'est pas encore disponible. Seule "Ma Première Vidéo" contient un fichier réel.');
@@ -154,152 +194,19 @@ function initializeVideoCards() {
             const videoSrc = card.getAttribute('data-video-src');
             const subtitleSrc = card.getAttribute('data-subtitle-src');
             const videoTitle = card.querySelector('.video-title').textContent;
+            const videoLevel = card.getAttribute('data-level') || 'B2';
 
             // Vérifier si la vidéo a un fichier source
             if (videoSrc && videoSrc.trim() !== '') {
-                console.log(`▶️ Lecture de : ${videoTitle}`);
-                openVideoPlayer(videoSrc, subtitleSrc, videoTitle);
+                console.log(`▶️ Redirection vers player : ${videoTitle}`);
+                // Rediriger vers la page player avec paramètres
+                window.location.href = `player.html?video=${encodeURIComponent(videoSrc)}&subtitle=${encodeURIComponent(subtitleSrc)}&title=${encodeURIComponent(videoTitle)}&level=${encodeURIComponent(videoLevel)}`;
             } else {
                 console.log(`⚠️ Pas de fichier vidéo pour : ${videoTitle}`);
                 alert('Cette vidéo n\'est pas encore disponible. Seule "Ma Première Vidéo" contient un fichier réel.');
             }
         });
     });
-}
-
-// ========================================
-// MODAL LECTEUR VIDÉO (Préparé pour futur)
-// ========================================
-function initializeModal() {
-    const modal = document.getElementById('video-player-modal');
-    const closeBtn = document.querySelector('.modal-close');
-
-    // Fermer le modal avec le bouton X
-    if (closeBtn) {
-        closeBtn.addEventListener('click', function() {
-            closeModal();
-        });
-    }
-
-    // Fermer le modal en cliquant à l'extérieur
-    if (modal) {
-        modal.addEventListener('click', function(event) {
-            if (event.target === modal) {
-                closeModal();
-            }
-        });
-    }
-
-    // Fermer le modal avec la touche Échap
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
-            closeModal();
-        }
-    });
-}
-
-/**
- * Détecte le type MIME d'une vidéo selon son extension
- * @param {string} videoSrc - Chemin vers le fichier vidéo
- * @returns {string} Type MIME de la vidéo
- */
-function getVideoMimeType(videoSrc) {
-    const extension = videoSrc.split('.').pop().toLowerCase();
-    const mimeTypes = {
-        'mp4': 'video/mp4',
-        'mkv': 'video/x-matroska',
-        'webm': 'video/webm',
-        'ogg': 'video/ogg',
-        'ogv': 'video/ogg',
-        'avi': 'video/x-msvideo',
-        'mov': 'video/quicktime'
-    };
-    return mimeTypes[extension] || 'video/mp4';
-}
-
-/**
- * Ouvre le modal du lecteur vidéo avec la source vidéo et les sous-titres
- * @param {string} videoSrc - Chemin vers le fichier vidéo (supporte: .mp4, .mkv, .webm, .ogg, etc.)
- * @param {string} subtitleSrc - Chemin vers le fichier de sous-titres (ex: "videos/ma_video.vtt")
- * @param {string} videoTitle - Titre de la vidéo pour affichage
- */
-function openVideoPlayer(videoSrc, subtitleSrc, videoTitle) {
-    const modal = document.getElementById('video-player-modal');
-    const player = document.getElementById('main-player');
-
-    if (!modal || !player) {
-        console.error('❌ Modal ou lecteur vidéo introuvable');
-        return;
-    }
-
-    // Déterminer automatiquement le type MIME selon l'extension
-    const mimeType = getVideoMimeType(videoSrc);
-
-    // Charger la source vidéo
-    const source = player.querySelector('source');
-    if (source) {
-        source.src = videoSrc;
-        source.type = mimeType;
-    } else {
-        // Si pas de source, en créer une
-        const newSource = document.createElement('source');
-        newSource.src = videoSrc;
-        newSource.type = mimeType;
-        player.appendChild(newSource);
-    }
-
-    console.log(`🎬 Type vidéo détecté : ${mimeType}`);
-
-    // Charger les sous-titres si disponibles
-    if (subtitleSrc && subtitleSrc.trim() !== '') {
-        // Chercher la track de sous-titres existante
-        let subtitleTrack = player.querySelector('track[kind="subtitles"]');
-
-        if (subtitleTrack) {
-            subtitleTrack.src = subtitleSrc;
-        } else {
-            // Si pas de track, en créer une
-            subtitleTrack = document.createElement('track');
-            subtitleTrack.kind = 'subtitles';
-            subtitleTrack.src = subtitleSrc;
-            subtitleTrack.srclang = 'fr';
-            subtitleTrack.label = 'Français';
-            subtitleTrack.default = true;
-            player.appendChild(subtitleTrack);
-        }
-
-        console.log(`📝 Sous-titres chargés : ${subtitleSrc}`);
-    }
-
-    // Recharger le lecteur pour prendre en compte les nouvelles sources
-    player.load();
-
-    // Afficher le modal
-    modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden'; // Empêcher le scroll de la page
-
-    console.log(`🎬 Lecteur ouvert pour : ${videoTitle}`);
-    console.log(`📹 Source vidéo : ${videoSrc}`);
-}
-
-/**
- * Ferme le modal du lecteur vidéo
- */
-function closeModal() {
-    const modal = document.getElementById('video-player-modal');
-    const player = document.getElementById('main-player');
-
-    if (!modal || !player) return;
-
-    // Pause et reset de la vidéo
-    player.pause();
-    player.currentTime = 0;
-
-    // Cacher le modal
-    modal.style.display = 'none';
-    document.body.style.overflow = 'auto'; // Réactiver le scroll
-
-    console.log('❌ Lecteur vidéo fermé');
 }
 
 // ========================================
@@ -529,9 +436,8 @@ function enableContentProtection() {
 // EXPORT POUR UTILISATION EXTERNE (optionnel)
 // ========================================
 window.FranScript = {
-    filterVideos,
-    openVideoPlayer,
-    closeModal,
+    applyFilters,
+    filterVideos,  // Deprecated - conservée pour compatibilité
     userSystem: window.userSystem,
     annotationSystem: window.annotationSystem,
     searchSystem: window.searchSystem,

@@ -11,12 +11,14 @@ franscript/
 ├── script.js           # Interactions JavaScript (lecteur vidéo activé)
 ├── README.md           # Documentation
 └── videos/             # Dossier pour les vidéos et sous-titres
-    ├── ma_video.mp4    # ⚠️ VOUS DEVEZ AJOUTER CE FICHIER
+    ├── ma_video.mkv    # ⚠️ VOUS DEVEZ AJOUTER CE FICHIER (.mkv, .mp4, .webm, etc.)
     ├── ma_video.vtt    # Sous-titres exemple (fourni)
     └── INSTRUCTIONS.md # Guide pour ajouter des vidéos
 ```
 
-**⚠️ IMPORTANT** : Le fichier `ma_video.mp4` n'est PAS inclus dans le repository. Vous devez placer votre propre vidéo MP4 dans le dossier `videos/` avec ce nom exact.
+**⚠️ IMPORTANT** : Le fichier vidéo n'est PAS inclus dans le repository. Vous devez placer votre propre vidéo dans le dossier `videos/`.
+
+**Formats supportés** : MP4, MKV, WebM, OGG, AVI, MOV - Le type est détecté automatiquement !
 
 ## 🚀 Lancement du Site
 
@@ -45,13 +47,15 @@ Puis ouvrez : `http://localhost:8000`
 
 ### Étape 1 : Placez votre fichier vidéo
 
-1. Obtenez un fichier vidéo MP4 (recommandé : 720p ou 1080p)
-2. Renommez-le **exactement** `ma_video.mp4`
+1. Obtenez un fichier vidéo (recommandé : 720p ou 1080p)
+2. Renommez-le **exactement** `ma_video.mkv` (ou `.mp4`, `.webm`, etc.)
 3. Placez-le dans le dossier `videos/`
+
+**Formats acceptés** : `.mkv`, `.mp4`, `.webm`, `.ogg`, `.avi`, `.mov`
 
 ```
 videos/
-├── ma_video.mp4    ← Votre fichier vidéo ici
+├── ma_video.mkv    ← Votre fichier vidéo ici (n'importe quel format)
 └── ma_video.vtt    ← Sous-titres (déjà fourni)
 ```
 

@@ -7,10 +7,12 @@
 ### Fichier requis :
 ```
 videos/
-└── ma_video.mp4    ← PLACEZ VOTRE VIDÉO ICI
+└── ma_video.mkv    ← PLACEZ VOTRE VIDÉO ICI (.mkv, .mp4, .webm, etc.)
 ```
 
-Le fichier **ma_video.mp4** n'est PAS inclus dans le repository (fichiers vidéo trop volumineux pour Git).
+Le fichier vidéo n'est PAS inclus dans le repository (fichiers vidéo trop volumineux pour Git).
+
+**Formats supportés** : MKV, MP4, WebM, OGG, AVI, MOV - Le système détecte automatiquement le type !
 
 ## 📝 Fichiers fournis
 

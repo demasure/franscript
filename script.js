@@ -196,8 +196,27 @@ function initializeModal() {
 }
 
 /**
+ * Détecte le type MIME d'une vidéo selon son extension
+ * @param {string} videoSrc - Chemin vers le fichier vidéo
+ * @returns {string} Type MIME de la vidéo
+ */
+function getVideoMimeType(videoSrc) {
+    const extension = videoSrc.split('.').pop().toLowerCase();
+    const mimeTypes = {
+        'mp4': 'video/mp4',
+        'mkv': 'video/x-matroska',
+        'webm': 'video/webm',
+        'ogg': 'video/ogg',
+        'ogv': 'video/ogg',
+        'avi': 'video/x-msvideo',
+        'mov': 'video/quicktime'
+    };
+    return mimeTypes[extension] || 'video/mp4';
+}
+
+/**
  * Ouvre le modal du lecteur vidéo avec la source vidéo et les sous-titres
- * @param {string} videoSrc - Chemin vers le fichier vidéo (ex: "videos/ma_video.mp4")
+ * @param {string} videoSrc - Chemin vers le fichier vidéo (supporte: .mp4, .mkv, .webm, .ogg, etc.)
  * @param {string} subtitleSrc - Chemin vers le fichier de sous-titres (ex: "videos/ma_video.vtt")
  * @param {string} videoTitle - Titre de la vidéo pour affichage
  */
@@ -210,17 +229,23 @@ function openVideoPlayer(videoSrc, subtitleSrc, videoTitle) {
         return;
     }
 
+    // Déterminer automatiquement le type MIME selon l'extension
+    const mimeType = getVideoMimeType(videoSrc);
+
     // Charger la source vidéo
     const source = player.querySelector('source');
     if (source) {
         source.src = videoSrc;
+        source.type = mimeType;
     } else {
         // Si pas de source, en créer une
         const newSource = document.createElement('source');
         newSource.src = videoSrc;
-        newSource.type = 'video/mp4';
+        newSource.type = mimeType;
         player.appendChild(newSource);
     }
+
+    console.log(`🎬 Type vidéo détecté : ${mimeType}`);
 
     // Charger les sous-titres si disponibles
     if (subtitleSrc && subtitleSrc.trim() !== '') {

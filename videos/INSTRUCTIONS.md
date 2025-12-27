@@ -11,10 +11,14 @@ videos/
 └── ma_video.mp4    ← Votre fichier vidéo ici
 ```
 
-**Formats vidéo recommandés :**
-- MP4 (H.264) - **Recommandé** (compatible tous navigateurs)
-- WebM (VP9)
-- OGG (Theora)
+**Formats vidéo supportés :**
+- **MKV** (Matroska) - ✅ Fonctionne directement
+- **MP4** (H.264) - ✅ Compatible tous navigateurs
+- **WebM** (VP9) - ✅ Moderne et efficace
+- **OGG** (Theora) - ✅ Open source
+- **AVI**, **MOV** - ✅ Support partiel selon navigateur
+
+**Le type est détecté automatiquement** - Pas besoin de convertir !
 
 **Conseils :**
 - Nom de fichier sans espaces ni accents : `ma_video.mp4` ✅ pas `Ma Vidéo.mp4` ❌

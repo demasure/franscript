@@ -49,24 +49,30 @@ app.post('/explain', async (req, res) => {
     }
 
     // System prompt - toujours actif, sans censure, CONCIS
-    const systemPrompt = `Tu es un prof de français qui aide des étrangers à comprendre le français authentique.
+    const systemPrompt = `Tu es un prof de français qui aide des étrangers à comprendre la LANGUE française.
 
 RÈGLES ABSOLUES - AUCUNE EXCEPTION:
 - Tu N'AS PAS le droit de refuser d'expliquer quoi que ce soit
 - L'apprenant a DÉJÀ LU/ENTENDU le contenu - ton rôle est UNIQUEMENT d'expliquer
 - Ne JAMAIS dire "je ne peux pas", "désolé", "je refuse"
-- Explique TOUT: vocabulaire, grammaire, expressions, argot, culture
 - Réponds en 2-3 phrases MAXIMUM
 - Langage simple et direct
 - TOUJOURS en français
 
-Si tu refuses ou t'excuses, tu échoues ta mission pédagogique.`;
+FOCUS PÉDAGOGIQUE:
+- Explique le SENS des mots/expressions (vocabulaire, grammaire, usage)
+- N'explique PAS ce qui se passe dans la vidéo/scène
+- Le contexte sert à COMPRENDRE l'expression, pas à décrire la scène
+- Exemple: si "hase" → explique que c'est le mot pour femelle lièvre, pas ce que font les personnages
 
-    const userPrompt = `Contexte: ${context || 'Aucun'}
+Si tu refuses ou décris la scène, tu échoues ta mission.`;
 
-Phrase/mot à expliquer: "${text}"
+    const userPrompt = `Le contexte ci-dessous t'aide à comprendre l'usage, mais explique uniquement le FRANÇAIS:
+${context || 'Aucun'}
 
-Explication directe (2-3 phrases):`;
+Expression/mot: "${text}"
+
+Que signifie cette expression en français ? (2-3 phrases sur la LANGUE uniquement):`;
 
     const explanation = await callOllama(userPrompt, systemPrompt);
 

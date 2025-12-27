@@ -152,7 +152,9 @@ function handleSubtitleSelection() {
 // AIDE IA CONTEXTUELLE
 // ========================================
 
-function requestAIHelp(text, startTime, endTime) {
+const AI_BACKEND_URL = 'http://localhost:3000';
+
+async function requestAIHelp(text, startTime, endTime) {
     const aiPanel = document.getElementById('ai-help-panel');
     const selectedTextSpan = document.getElementById('selected-subtitle-text');
     const aiResponse = document.getElementById('ai-response');
@@ -164,15 +166,100 @@ function requestAIHelp(text, startTime, endTime) {
     // Construire le contexte complet
     const context = buildContextForAI(startTime, endTime);
 
-    // Simuler une réponse IA (à remplacer par une vraie API)
+    // Afficher le chargement
     aiResponse.innerHTML = '<div class="loading">🤔 Analyse en cours...</div>';
 
-    setTimeout(() => {
-        const response = generateAIResponse(text, context);
-        aiResponse.innerHTML = response;
-    }, 1000);
+    try {
+        const response = await fetch(`${AI_BACKEND_URL}/explain`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                text: text,
+                context: context
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Backend non disponible');
+        }
+
+        const data = await response.json();
+        displayAIExplanation(text, data.explanation, data.isMock);
+
+    } catch (error) {
+        console.error('Erreur IA:', error);
+        aiResponse.innerHTML = `
+            <div class="ai-error">
+                ⚠️ IA non disponible. Assurez-vous que :
+                <ul>
+                    <li>Le backend est lancé (<code>cd backend && npm start</code>)</li>
+                    <li>Ollama est actif (<code>ollama serve</code>)</li>
+                    <li>Le modèle est téléchargé (<code>ollama pull llama3.1:8b</code>)</li>
+                </ul>
+            </div>
+        `;
+    }
 
     console.log(`🤖 Aide IA demandée pour : "${text}"`);
+}
+
+function displayAIExplanation(originalText, explanation, isMock) {
+    const aiResponse = document.getElementById('ai-response');
+
+    aiResponse.innerHTML = `
+        <div class="ai-explanation">
+            <h4>📖 Explication</h4>
+            <p><strong>"${escapeHTML(originalText)}"</strong></p>
+            <p class="explanation-text">${escapeHTML(explanation)}</p>
+            ${isMock ? '<p class="mock-warning">⚠️ Mode simulation (Ollama non connecté)</p>' : ''}
+
+            <div class="ai-actions">
+                <button class="ai-action-btn" onclick="translateExplanation('${escapeHTML(explanation).replace(/'/g, "\\'")}')">
+                    🌍 Traduire en anglais
+                </button>
+            </div>
+
+            <div id="translation-result"></div>
+        </div>
+    `;
+}
+
+async function translateExplanation(explanationText) {
+    const translationResult = document.getElementById('translation-result');
+
+    translationResult.innerHTML = '<div class="loading">🔄 Traduction en cours...</div>';
+
+    try {
+        const response = await fetch(`${AI_BACKEND_URL}/translate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                text: explanationText
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Traduction échouée');
+        }
+
+        const data = await response.json();
+
+        translationResult.innerHTML = `
+            <div class="translation-box">
+                <h4>🇬🇧 English Translation</h4>
+                <p class="translation-text">${escapeHTML(data.translation)}</p>
+                ${data.isMock ? '<p class="mock-warning">⚠️ Mode simulation</p>' : ''}
+            </div>
+        `;
+
+    } catch (error) {
+        console.error('Erreur traduction:', error);
+        translationResult.innerHTML = '<p class="ai-error">⚠️ Traduction non disponible</p>';
+    }
 }
 
 function buildContextForAI(currentStart, currentEnd) {
@@ -182,32 +269,6 @@ function buildContextForAI(currentStart, currentEnd) {
     return allSubtitles.filter(sub => {
         return sub.start >= (currentStart - contextWindow) && sub.end <= (currentEnd + contextWindow);
     }).map(sub => sub.text).join(' ');
-}
-
-function generateAIResponse(text, context) {
-    // Simulation de réponse IA
-    // TODO: Intégrer une vraie API (OpenAI, Anthropic, etc.)
-
-    return `
-        <div class="ai-explanation">
-            <h4>📖 Explication</h4>
-            <p><strong>"${text}"</strong></p>
-            <p class="explanation-text">
-                Cette expression est utilisée dans le contexte de la vidéo pour exprimer...
-                (Cette fonctionnalité sera connectée à une vraie IA dans la version complète)
-            </p>
-
-            <h4>🔍 Contexte de la vidéo</h4>
-            <p class="context-text">${context}</p>
-
-            <h4>💡 Suggestions</h4>
-            <ul class="suggestions-list">
-                <li>Expressions similaires : ...</li>
-                <li>Niveau de langue : Courant</li>
-                <li>Usage : Formel/Informel</li>
-            </ul>
-        </div>
-    `;
 }
 
 // ========================================

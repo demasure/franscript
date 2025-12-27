@@ -891,6 +891,7 @@ img {
     box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     display: flex;
     align-items: center;
+    justify-content: center;
     overflow: hidden;
 }
 
@@ -901,6 +902,8 @@ img {
     padding: var(--spacing-sm);
     border-radius: 8px;
     transition: all var(--transition-speed);
+    min-width: 50%;
+    text-align: center;
 }
 
 .subtitle-item.clickable {

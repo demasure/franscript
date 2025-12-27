@@ -811,6 +811,16 @@ img {
     width: 100%;
     display: block;
     max-height: 70vh;
+    pointer-events: auto !important;
+    user-select: auto;
+}
+
+#video-player::-webkit-media-controls-panel {
+    pointer-events: auto !important;
+}
+
+#video-player::-webkit-media-controls-timeline {
+    pointer-events: auto !important;
 }
 
 /* ========================================

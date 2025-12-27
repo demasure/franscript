@@ -100,9 +100,16 @@ function initializePlayer() {
         console.log('✅ SEEKED terminé à:', video.currentTime);
     });
 
-    // Capturer TOUS les événements de clic (avec capture phase)
+    // TEST: Seek programmatique quand on clique sur la vidéo (pas les contrôles)
     video.addEventListener('click', function(e) {
         console.log('🖱️ CLICK sur vidéo à:', e.clientX, e.clientY, 'target:', e.target);
+
+        // Si clic sur la vidéo elle-même (pas les contrôles), faire un seek de test
+        if (e.target === video) {
+            const testTime = 30; // Aller à 30 secondes
+            console.log('🧪 TEST: Tentative de seek vers', testTime, 'secondes');
+            video.currentTime = testTime;
+        }
     }, true);
 
     video.addEventListener('mousedown', function(e) {

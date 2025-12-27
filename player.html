@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecteur Vidéo - FranScript</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- HEADER - Navigation principale -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <!-- Logo avec dégradé tricolore -->
+                <a href="index.html" class="logo">
+                    <span class="logo-icon">🎬</span>
+                    <span class="logo-text">FranScript</span>
+                </a>
+
+                <!-- Navigation -->
+                <nav class="nav">
+                    <ul class="nav-list">
+                        <li><a href="index.html" class="nav-link">← Retour aux vidéos</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN PLAYER SECTION -->
+    <main class="player-page">
+        <div class="container-wide">
+
+            <!-- Titre de la vidéo -->
+            <div class="video-header">
+                <h1 id="video-title" class="video-page-title">Ma Première Vidéo</h1>
+                <div class="video-meta-info">
+                    <span class="video-level-badge level-b2">B2</span>
+                    <span class="video-duration-info">⏱️ 40 sec</span>
+                    <span class="video-category-info">📚 Éducation</span>
+                </div>
+            </div>
+
+            <div class="player-layout">
+
+                <!-- COLONNE GAUCHE : Lecteur vidéo + Sous-titres interactifs -->
+                <div class="player-main-col">
+
+                    <!-- Lecteur vidéo intégré (pas de modal) -->
+                    <div class="video-player-container">
+                        <video id="video-player"
+                               controls
+                               controlsList="nodownload"
+                               disablePictureInPicture
+                               oncontextmenu="return false;">
+                            <source id="video-source" src="" type="video/mp4">
+                            <track id="subtitle-track" kind="subtitles" src="" srclang="fr" label="Français" default>
+                        </video>
+                    </div>
+
+                    <!-- Zone de sous-titres interactifs -->
+                    <div class="interactive-subtitles-panel">
+                        <h3 class="panel-title">
+                            📝 Sous-titres Interactifs
+                            <span class="help-icon" title="Cliquez sur un sous-titre pour obtenir de l'aide IA">❓</span>
+                        </h3>
+                        <div id="subtitles-display" class="subtitles-interactive">
+                            <p class="subtitle-hint">Les sous-titres apparaîtront ici. Cliquez dessus pour obtenir de l'aide contextuelle.</p>
+                        </div>
+                    </div>
+
+                    <!-- Section Description -->
+                    <div class="video-description-panel">
+                        <h3 class="panel-title">📖 Description</h3>
+                        <p id="video-description">Introduction à FranScript avec sous-titres interactifs pour apprendre le français.</p>
+                    </div>
+
+                    <!-- Section Commentaires -->
+                    <div class="comments-section">
+                        <h3 class="panel-title">💬 Commentaires (<span id="comments-count">0</span>)</h3>
+
+                        <!-- Formulaire d'ajout de commentaire -->
+                        <div class="comment-form">
+                            <textarea
+                                id="comment-input"
+                                class="comment-textarea"
+                                placeholder="Partagez votre avis sur cette vidéo..."
+                                rows="3"></textarea>
+                            <button class="btn-primary" onclick="addComment()">
+                                💬 Publier
+                            </button>
+                        </div>
+
+                        <!-- Liste des commentaires -->
+                        <div id="comments-list" class="comments-list">
+                            <!-- Les commentaires seront ajoutés ici dynamiquement -->
+                            <p class="no-comments">Aucun commentaire pour le moment. Soyez le premier à commenter !</p>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- COLONNE DROITE : Actions et Suggestions -->
+                <div class="player-sidebar">
+
+                    <!-- Actions rapides -->
+                    <div class="actions-panel">
+                        <h3 class="panel-title">⚡ Actions</h3>
+                        <button class="action-btn" onclick="reportIssue()">
+                            <span class="icon">⚠️</span>
+                            Signaler un problème
+                        </button>
+                        <button class="action-btn" onclick="downloadSubtitles()">
+                            <span class="icon">📥</span>
+                            Télécharger les sous-titres
+                        </button>
+                        <button class="action-btn" onclick="shareVideo()">
+                            <span class="icon">🔗</span>
+                            Partager
+                        </button>
+                    </div>
+
+                    <!-- Aide IA -->
+                    <div class="ai-help-panel" id="ai-help-panel" style="display: none;">
+                        <h3 class="panel-title">🤖 Aide IA</h3>
+                        <div class="ai-help-content">
+                            <p class="selected-text"><strong>Texte sélectionné :</strong> <span id="selected-subtitle-text"></span></p>
+                            <div class="ai-response" id="ai-response">
+                                <p>Cliquez sur un sous-titre pour obtenir une explication contextuelle avec l'IA.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Vidéos suggérées -->
+                    <div class="suggestions-panel">
+                        <h3 class="panel-title">📺 Vidéos Suggérées</h3>
+                        <div class="suggestions-list">
+                            <!-- Vidéos suggérées du même niveau -->
+                            <div class="suggestion-card">
+                                <img src="https://via.placeholder.com/150x85/3498db/ffffff?text=Intouchables" alt="Intouchables">
+                                <div class="suggestion-info">
+                                    <h4>Intouchables</h4>
+                                    <span class="level-badge level-c1">C1</span>
+                                </div>
+                            </div>
+                            <div class="suggestion-card">
+                                <img src="https://via.placeholder.com/150x85/2ecc71/ffffff?text=Amélie" alt="Amélie">
+                                <div class="suggestion-info">
+                                    <h4>Amélie Poulain</h4>
+                                    <span class="level-badge level-b2">B2</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; 2024 FranScript - Tous droits réservés</p>
+                <div class="footer-links">
+                    <a href="#privacy">Confidentialité</a>
+                    <a href="#terms">Conditions d'utilisation</a>
+                    <a href="#contact">Contact</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modal pour signaler un problème -->
+    <div id="report-modal" class="modal" style="display: none;">
+        <div class="modal-content-small">
+            <button class="modal-close" onclick="closeReportModal()">&times;</button>
+            <h2>⚠️ Signaler un problème</h2>
+            <form id="report-form">
+                <label for="report-type">Type de problème :</label>
+                <select id="report-type" class="form-input">
+                    <option>Sous-titres incorrects</option>
+                    <option>Vidéo ne charge pas</option>
+                    <option>Qualité vidéo/son</option>
+                    <option>Contenu inapproprié</option>
+                    <option>Autre</option>
+                </select>
+
+                <label for="report-description">Description :</label>
+                <textarea id="report-description" class="form-input" rows="4" placeholder="Décrivez le problème..."></textarea>
+
+                <button type="submit" class="btn-primary">Envoyer le signalement</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="player.js"></script>
+</body>
+</html>

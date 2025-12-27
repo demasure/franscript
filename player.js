@@ -91,6 +91,19 @@ function initializePlayer() {
         console.log(`📝 ${allSubtitles.length} sous-titres chargés`);
     });
 
+    // DEBUG: Détecter les tentatives de seek
+    video.addEventListener('seeking', function() {
+        console.log('🎯 SEEKING vers:', video.currentTime);
+    });
+
+    video.addEventListener('seeked', function() {
+        console.log('✅ SEEKED terminé à:', video.currentTime);
+    });
+
+    video.addEventListener('click', function(e) {
+        console.log('🖱️ CLICK sur vidéo à:', e.clientX, e.clientY);
+    });
+
     // Afficher les sous-titres dans la zone interactive
     video.addEventListener('timeupdate', function() {
         const textTrack = video.textTracks[0];

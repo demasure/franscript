@@ -127,11 +127,18 @@ function initializeVideoCards() {
                 return;
             }
 
+            const videoSrc = this.getAttribute('data-video-src');
+            const subtitleSrc = this.getAttribute('data-subtitle-src');
             const videoTitle = this.querySelector('.video-title').textContent;
-            console.log(`📹 Vidéo sélectionnée : ${videoTitle}`);
 
-            // TODO: Ouvrir le modal avec la vidéo
-            // openVideoPlayer(videoTitle);
+            // Vérifier si la vidéo a un fichier source
+            if (videoSrc && videoSrc.trim() !== '') {
+                console.log(`📹 Vidéo sélectionnée : ${videoTitle}`);
+                openVideoPlayer(videoSrc, subtitleSrc, videoTitle);
+            } else {
+                console.log(`⚠️ Pas de fichier vidéo pour : ${videoTitle}`);
+                alert('Cette vidéo n\'est pas encore disponible. Seule "Ma Première Vidéo" contient un fichier réel.');
+            }
         });
     });
 
@@ -141,12 +148,18 @@ function initializeVideoCards() {
             event.stopPropagation(); // Empêcher la propagation au parent
 
             const card = this.closest('.video-card');
+            const videoSrc = card.getAttribute('data-video-src');
+            const subtitleSrc = card.getAttribute('data-subtitle-src');
             const videoTitle = card.querySelector('.video-title').textContent;
 
-            console.log(`▶️ Lecture de : ${videoTitle}`);
-
-            // TODO: Ouvrir le lecteur vidéo
-            // openVideoPlayer(videoTitle);
+            // Vérifier si la vidéo a un fichier source
+            if (videoSrc && videoSrc.trim() !== '') {
+                console.log(`▶️ Lecture de : ${videoTitle}`);
+                openVideoPlayer(videoSrc, subtitleSrc, videoTitle);
+            } else {
+                console.log(`⚠️ Pas de fichier vidéo pour : ${videoTitle}`);
+                alert('Cette vidéo n\'est pas encore disponible. Seule "Ma Première Vidéo" contient un fichier réel.');
+            }
         });
     });
 }
@@ -183,24 +196,62 @@ function initializeModal() {
 }
 
 /**
- * Ouvre le modal du lecteur vidéo (à implémenter)
- * @param {string} videoTitle - Titre de la vidéo à lire
+ * Ouvre le modal du lecteur vidéo avec la source vidéo et les sous-titres
+ * @param {string} videoSrc - Chemin vers le fichier vidéo (ex: "videos/ma_video.mp4")
+ * @param {string} subtitleSrc - Chemin vers le fichier de sous-titres (ex: "videos/ma_video.vtt")
+ * @param {string} videoTitle - Titre de la vidéo pour affichage
  */
-function openVideoPlayer(videoTitle) {
+function openVideoPlayer(videoSrc, subtitleSrc, videoTitle) {
     const modal = document.getElementById('video-player-modal');
     const player = document.getElementById('main-player');
 
-    if (!modal || !player) return;
+    if (!modal || !player) {
+        console.error('❌ Modal ou lecteur vidéo introuvable');
+        return;
+    }
 
-    // TODO: Charger la source vidéo et les sous-titres
-    // player.src = getVideoSource(videoTitle);
-    // loadSubtitles(videoTitle);
+    // Charger la source vidéo
+    const source = player.querySelector('source');
+    if (source) {
+        source.src = videoSrc;
+    } else {
+        // Si pas de source, en créer une
+        const newSource = document.createElement('source');
+        newSource.src = videoSrc;
+        newSource.type = 'video/mp4';
+        player.appendChild(newSource);
+    }
+
+    // Charger les sous-titres si disponibles
+    if (subtitleSrc && subtitleSrc.trim() !== '') {
+        // Chercher la track de sous-titres existante
+        let subtitleTrack = player.querySelector('track[kind="subtitles"]');
+
+        if (subtitleTrack) {
+            subtitleTrack.src = subtitleSrc;
+        } else {
+            // Si pas de track, en créer une
+            subtitleTrack = document.createElement('track');
+            subtitleTrack.kind = 'subtitles';
+            subtitleTrack.src = subtitleSrc;
+            subtitleTrack.srclang = 'fr';
+            subtitleTrack.label = 'Français';
+            subtitleTrack.default = true;
+            player.appendChild(subtitleTrack);
+        }
+
+        console.log(`📝 Sous-titres chargés : ${subtitleSrc}`);
+    }
+
+    // Recharger le lecteur pour prendre en compte les nouvelles sources
+    player.load();
 
     // Afficher le modal
     modal.style.display = 'flex';
-    document.body.style.overflow = 'hidden'; // Empêcher le scroll
+    document.body.style.overflow = 'hidden'; // Empêcher le scroll de la page
 
-    console.log(`🎬 Ouverture du lecteur pour : ${videoTitle}`);
+    console.log(`🎬 Lecteur ouvert pour : ${videoTitle}`);
+    console.log(`📹 Source vidéo : ${videoSrc}`);
 }
 
 /**

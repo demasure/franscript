@@ -8,9 +8,15 @@ Site web minimaliste pour apprendre le français à travers des vidéos avec sou
 franscript/
 ├── index.html          # Page d'accueil principale
 ├── style.css           # Styles CSS (design moderne type Netflix/Plex)
-├── script.js           # Interactions JavaScript
-└── README.md           # Documentation
+├── script.js           # Interactions JavaScript (lecteur vidéo activé)
+├── README.md           # Documentation
+└── videos/             # Dossier pour les vidéos et sous-titres
+    ├── ma_video.mp4    # ⚠️ VOUS DEVEZ AJOUTER CE FICHIER
+    ├── ma_video.vtt    # Sous-titres exemple (fourni)
+    └── INSTRUCTIONS.md # Guide pour ajouter des vidéos
 ```
+
+**⚠️ IMPORTANT** : Le fichier `ma_video.mp4` n'est PAS inclus dans le repository. Vous devez placer votre propre vidéo MP4 dans le dossier `videos/` avec ce nom exact.
 
 ## 🚀 Lancement du Site
 
@@ -35,6 +41,53 @@ npx http-server
 
 Puis ouvrez : `http://localhost:8000`
 
+## 🎥 Ajouter Votre Première Vidéo
+
+### Étape 1 : Placez votre fichier vidéo
+
+1. Obtenez un fichier vidéo MP4 (recommandé : 720p ou 1080p)
+2. Renommez-le **exactement** `ma_video.mp4`
+3. Placez-le dans le dossier `videos/`
+
+```
+videos/
+├── ma_video.mp4    ← Votre fichier vidéo ici
+└── ma_video.vtt    ← Sous-titres (déjà fourni)
+```
+
+### Étape 2 : Testez le site
+
+1. Lancez le site avec un serveur local (voir ci-dessus)
+2. Cliquez sur la première vidéo "Ma Première Vidéo" (badge vert "Vidéo Réelle")
+3. Le lecteur s'ouvre avec votre vidéo et les sous-titres synchronisés
+
+### Étape 3 : Personnalisez les sous-titres (optionnel)
+
+Le fichier `ma_video.vtt` contient des sous-titres exemple. Pour le personnaliser :
+
+1. Ouvrez `videos/ma_video.vtt` dans un éditeur de texte
+2. Modifiez les timestamps et le texte selon votre vidéo
+3. Format WebVTT :
+
+```vtt
+WEBVTT
+
+00:00:00.000 --> 00:00:03.500
+Premier sous-titre ici.
+
+00:00:03.500 --> 00:00:07.000
+Deuxième sous-titre ici.
+```
+
+**Outils recommandés pour créer des sous-titres :**
+- Subtitle Edit (Windows) - Gratuit
+- Aegisub (Mac/Linux/Windows) - Open source
+- YouTube Studio - Auto-génération puis export en .vtt
+
+### 📌 Ajouter d'autres vidéos
+
+Consultez le fichier `videos/INSTRUCTIONS.md` pour apprendre à ajouter plusieurs vidéos.
+
 ## ✨ Fonctionnalités Actuelles
 
 ### 1. Navigation
@@ -48,7 +101,7 @@ Puis ouvrez : `http://localhost:8000`
 - Clic sur une catégorie affiche uniquement les vidéos correspondantes
 
 ### 3. Grille de Vidéos
-- 6 vidéos fictives de démonstration
+- 1 vidéo réelle avec lecteur activé + 5 vidéos fictives
 - Chaque carte contient :
   - Image de couverture (placeholder)
   - Titre et description
@@ -56,7 +109,15 @@ Puis ouvrez : `http://localhost:8000`
   - Tags/catégories avec code couleur
   - Bouton "Lire" au survol
 
-### 4. Design Responsive
+### 4. Lecteur Vidéo HTML5 avec Sous-titres ✨ NOUVEAU
+- **Modal plein écran** pour une expérience immersive
+- **Sous-titres WebVTT** synchronisés automatiquement
+- **Contrôles natifs** : play/pause, volume, plein écran
+- **Bouton CC** pour activer/désactiver les sous-titres
+- **Fermeture** : bouton X, touche Échap, ou clic extérieur
+- Structure prête pour annotations futures
+
+### 5. Design Responsive
 - S'adapte aux écrans mobile, tablette et desktop
 - Grid layout flexible (CSS Grid)
 - Hover effects élégants
@@ -75,11 +136,22 @@ Modifiez facilement les couleurs et espacements en changeant les variables CSS :
 }
 ```
 
-### Ajouter une Vidéo
-Copiez-collez une carte vidéo existante dans `index.html` et modifiez :
+### Ajouter une Vidéo Réelle au Site
+
+1. **Placez vos fichiers** dans `videos/` :
+   ```
+   videos/
+   ├── ma_nouvelle_video.mp4
+   └── ma_nouvelle_video.vtt
+   ```
+
+2. **Copiez-collez une carte vidéo** existante dans `index.html` et modifiez :
 
 ```html
-<article class="video-card" data-categories="comedie">
+<article class="video-card"
+         data-categories="comedie"
+         data-video-src="videos/ma_nouvelle_video.mp4"
+         data-subtitle-src="videos/ma_nouvelle_video.vtt">
     <div class="video-thumbnail">
         <img src="URL_IMAGE" alt="Titre">
         <div class="video-overlay">
@@ -99,6 +171,11 @@ Copiez-collez une carte vidéo existante dans `index.html` et modifiez :
     </div>
 </article>
 ```
+
+**Attributs importants :**
+- `data-video-src` : Chemin vers le fichier MP4
+- `data-subtitle-src` : Chemin vers le fichier VTT
+- Si ces attributs sont vides, un message d'erreur s'affiche au clic
 
 ### Ajouter une Catégorie
 1. Ajoutez un bouton de filtre dans la section `.filters` :

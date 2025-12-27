@@ -154,6 +154,9 @@ img {
 
 .logo-icon {
     font-size: 2rem;
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
 }
 
 .logo-text {
@@ -838,6 +841,12 @@ img {
     display: flex;
     align-items: center;
     gap: var(--spacing-xs);
+}
+
+.aide-ia-logo {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
 }
 
 .help-icon {

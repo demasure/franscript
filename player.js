@@ -100,9 +100,24 @@ function initializePlayer() {
         console.log('✅ SEEKED terminé à:', video.currentTime);
     });
 
+    // Capturer TOUS les événements de clic (avec capture phase)
     video.addEventListener('click', function(e) {
-        console.log('🖱️ CLICK sur vidéo à:', e.clientX, e.clientY);
-    });
+        console.log('🖱️ CLICK sur vidéo à:', e.clientX, e.clientY, 'target:', e.target);
+    }, true);
+
+    video.addEventListener('mousedown', function(e) {
+        console.log('🖱️ MOUSEDOWN sur vidéo à:', e.clientX, e.clientY);
+    }, true);
+
+    video.addEventListener('mouseup', function(e) {
+        console.log('🖱️ MOUSEUP sur vidéo à:', e.clientX, e.clientY);
+    }, true);
+
+    // Debug sur le container aussi
+    const container = document.querySelector('.video-player-container');
+    container.addEventListener('click', function(e) {
+        console.log('📦 CLICK sur container à:', e.clientX, e.clientY, 'target:', e.target.tagName);
+    }, true);
 
     // Afficher les sous-titres dans la zone interactive
     video.addEventListener('timeupdate', function() {

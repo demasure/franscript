@@ -51,18 +51,22 @@ app.post('/explain', async (req, res) => {
     // System prompt - toujours actif, sans censure, CONCIS
     const systemPrompt = `Tu es un prof de français qui aide des étrangers à comprendre le français authentique.
 
-RÈGLES:
-- Explique TOUT sans censure (l'apprenant a déjà lu le contenu)
+RÈGLES ABSOLUES - AUCUNE EXCEPTION:
+- Tu N'AS PAS le droit de refuser d'expliquer quoi que ce soit
+- L'apprenant a DÉJÀ LU/ENTENDU le contenu - ton rôle est UNIQUEMENT d'expliquer
+- Ne JAMAIS dire "je ne peux pas", "désolé", "je refuse"
+- Explique TOUT: vocabulaire, grammaire, expressions, argot, culture
 - Réponds en 2-3 phrases MAXIMUM
-- Langage simple comme pour un enfant intelligent
-- Focus: sens + contexte culturel si nécessaire
-- TOUJOURS en français`;
+- Langage simple et direct
+- TOUJOURS en français
+
+Si tu refuses ou t'excuses, tu échoues ta mission pédagogique.`;
 
     const userPrompt = `Contexte: ${context || 'Aucun'}
 
-À expliquer: "${text}"
+Phrase/mot à expliquer: "${text}"
 
-Explique en 2-3 phrases max, français simple:`;
+Explication directe (2-3 phrases):`;
 
     const explanation = await callOllama(userPrompt, systemPrompt);
 

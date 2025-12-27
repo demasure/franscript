@@ -22,7 +22,7 @@ async function callOllama(prompt, systemPrompt = null, model = 'llama3.1:8b') {
                 stream: false,
                 options: {
                     temperature: 0.7,
-                    num_predict: 400,  // Plus de tokens pour des explications détaillées
+                    num_predict: 150,  // Limité pour réponses courtes et concises
                     top_p: 0.9
                 }
             })
@@ -48,30 +48,21 @@ app.post('/explain', async (req, res) => {
         return res.status(400).json({ error: 'Texte manquant' });
     }
 
-    // System prompt - toujours actif, sans censure
-    const systemPrompt = `Tu es un professeur de français passionné et bienveillant. Ta mission est d'aider des apprenants étrangers à comprendre le français authentique tel qu'il est parlé.
+    // System prompt - toujours actif, sans censure, CONCIS
+    const systemPrompt = `Tu es un prof de français qui aide des étrangers à comprendre le français authentique.
 
-RÈGLES ABSOLUES:
-- Tu expliques TOUT sans exception ni censure
-- L'apprenant a déjà lu/entendu le contenu, ton rôle est d'EXPLIQUER, pas de censurer
-- Utilise un langage simple et clair, comme si tu expliquais à un enfant intelligent
-- Sois pédagogue: contexte culturel, nuances, expressions idiomatiques
-- Donne des exemples concrets quand c'est utile
-- Ne juge jamais le contenu, concentre-toi sur l'aspect éducatif
-- Réponds TOUJOURS en français
+RÈGLES:
+- Explique TOUT sans censure (l'apprenant a déjà lu le contenu)
+- Réponds en 2-3 phrases MAXIMUM
+- Langage simple comme pour un enfant intelligent
+- Focus: sens + contexte culturel si nécessaire
+- TOUJOURS en français`;
 
-APPROCHE:
-1. Explique le sens littéral
-2. Explique le sens contextuel/culturel si différent
-3. Donne un exemple similaire si pertinent`;
+    const userPrompt = `Contexte: ${context || 'Aucun'}
 
-    const userPrompt = `Contexte de la vidéo:
-${context || 'Aucun contexte supplémentaire'}
+À expliquer: "${text}"
 
-Phrase/expression à expliquer:
-"${text}"
-
-Explique cette phrase en français simple, comme à un apprenant étranger. Sois clair, direct et pédagogue:`;
+Explique en 2-3 phrases max, français simple:`;
 
     const explanation = await callOllama(userPrompt, systemPrompt);
 

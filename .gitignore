@@ -1,0 +1,40 @@
+# Fichiers vidéo (trop volumineux pour Git)
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+*.flv
+
+# Fichiers audio
+*.mp3
+*.wav
+*.flac
+
+# Fichiers temporaires
+*.tmp
+*.temp
+*~
+
+# OS spécifiques
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Éditeurs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node modules (si vous ajoutez Node.js plus tard)
+node_modules/
+package-lock.json
+
+# Fichiers de log
+*.log
+npm-debug.log*
+
+# Environnement
+.env
+.env.local

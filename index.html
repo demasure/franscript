@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FranScript - Vidéos avec Sous-titres Interactifs</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- HEADER - Navigation principale -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <!-- Logo / Nom du site -->
+                <a href="index.html" class="logo">
+                    <span class="logo-icon">🎬</span>
+                    <span class="logo-text">FranScript</span>
+                </a>
+
+                <!-- Navigation -->
+                <nav class="nav">
+                    <ul class="nav-list">
+                        <li><a href="index.html" class="nav-link active">Accueil</a></li>
+                        <li><a href="#videos" class="nav-link">Vidéos</a></li>
+                        <li><a href="#about" class="nav-link">À propos</a></li>
+                        <!-- Espace réservé pour futur lien "Mon Compte" -->
+                        <li class="nav-account-placeholder" style="display: none;">
+                            <a href="#account" class="nav-link">Mon Compte</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- HERO SECTION - Bannière d'accueil -->
+    <section class="hero">
+        <div class="container">
+            <h1 class="hero-title">Apprenez le français avec des vidéos interactives</h1>
+            <p class="hero-subtitle">Découvrez notre collection de vidéos avec sous-titres interactifs et annotations intelligentes</p>
+        </div>
+    </section>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+        <div class="container">
+
+            <!-- FILTERS SECTION - Filtres par catégorie -->
+            <section class="filters" id="videos">
+                <h2 class="section-title">Parcourir les vidéos</h2>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-category="all">Toutes</button>
+                    <button class="filter-btn" data-category="comedie">Comédie</button>
+                    <button class="filter-btn" data-category="drame">Drame</button>
+                    <button class="filter-btn" data-category="documentaire">Documentaire</button>
+                    <button class="filter-btn" data-category="education">Éducation</button>
+                    <!-- Espace pour ajouter d'autres catégories facilement -->
+                </div>
+            </section>
+
+            <!-- VIDEO GRID - Grille de vidéos -->
+            <section class="video-grid">
+
+                <!-- VIDEO CARD 1 -->
+                <article class="video-card" data-categories="comedie">
+                    <div class="video-thumbnail">
+                        <!-- Image de placeholder - à remplacer par vraies images -->
+                        <img src="https://via.placeholder.com/400x225/e74c3c/ffffff?text=Le+Dîner+de+Cons" alt="Le Dîner de Cons">
+                        <div class="video-overlay">
+                            <button class="play-btn">▶ Lire</button>
+                        </div>
+                        <!-- Badge premium (pour futur système premium) -->
+                        <span class="badge badge-premium" style="display: none;">Premium</span>
+                    </div>
+                    <div class="video-info">
+                        <h3 class="video-title">Le Dîner de Cons</h3>
+                        <p class="video-description">Comédie française culte avec François Pignon</p>
+                        <div class="video-meta">
+                            <span class="video-duration">1h 20min</span>
+                            <span class="video-level">Intermédiaire</span>
+                        </div>
+                        <div class="video-tags">
+                            <span class="tag tag-comedie">Comédie</span>
+                        </div>
+                        <!-- Conteneur pour futures annotations/stats -->
+                        <div class="video-stats" style="display: none;">
+                            <span class="stat">250 annotations</span>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- VIDEO CARD 2 -->
+                <article class="video-card" data-categories="drame">
+                    <div class="video-thumbnail">
+                        <img src="https://via.placeholder.com/400x225/3498db/ffffff?text=Intouchables" alt="Intouchables">
+                        <div class="video-overlay">
+                            <button class="play-btn">▶ Lire</button>
+                        </div>
+                    </div>
+                    <div class="video-info">
+                        <h3 class="video-title">Intouchables</h3>
+                        <p class="video-description">Une amitié inattendue entre deux mondes</p>
+                        <div class="video-meta">
+                            <span class="video-duration">1h 52min</span>
+                            <span class="video-level">Avancé</span>
+                        </div>
+                        <div class="video-tags">
+                            <span class="tag tag-drame">Drame</span>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- VIDEO CARD 3 -->
+                <article class="video-card" data-categories="comedie">
+                    <div class="video-thumbnail">
+                        <img src="https://via.placeholder.com/400x225/2ecc71/ffffff?text=Amélie+Poulain" alt="Le Fabuleux Destin d'Amélie Poulain">
+                        <div class="video-overlay">
+                            <button class="play-btn">▶ Lire</button>
+                        </div>
+                    </div>
+                    <div class="video-info">
+                        <h3 class="video-title">Le Fabuleux Destin d'Amélie Poulain</h3>
+                        <p class="video-description">Poésie parisienne et romantisme</p>
+                        <div class="video-meta">
+                            <span class="video-duration">2h 02min</span>
+                            <span class="video-level">Intermédiaire</span>
+                        </div>
+                        <div class="video-tags">
+                            <span class="tag tag-comedie">Comédie</span>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- VIDEO CARD 4 -->
+                <article class="video-card" data-categories="documentaire education">
+                    <div class="video-thumbnail">
+                        <img src="https://via.placeholder.com/400x225/9b59b6/ffffff?text=C'est+pas+sorcier" alt="C'est pas sorcier">
+                        <div class="video-overlay">
+                            <button class="play-btn">▶ Lire</button>
+                        </div>
+                    </div>
+                    <div class="video-info">
+                        <h3 class="video-title">C'est pas sorcier - La Tour Eiffel</h3>
+                        <p class="video-description">Découverte scientifique de la Dame de Fer</p>
+                        <div class="video-meta">
+                            <span class="video-duration">26min</span>
+                            <span class="video-level">Débutant</span>
+                        </div>
+                        <div class="video-tags">
+                            <span class="tag tag-documentaire">Documentaire</span>
+                            <span class="tag tag-education">Éducation</span>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- VIDEO CARD 5 -->
+                <article class="video-card" data-categories="drame">
+                    <div class="video-thumbnail">
+                        <img src="https://via.placeholder.com/400x225/e67e22/ffffff?text=La+Haine" alt="La Haine">
+                        <div class="video-overlay">
+                            <button class="play-btn">▶ Lire</button>
+                        </div>
+                    </div>
+                    <div class="video-info">
+                        <h3 class="video-title">La Haine</h3>
+                        <p class="video-description">Portrait de la banlieue parisienne</p>
+                        <div class="video-meta">
+                            <span class="video-duration">1h 38min</span>
+                            <span class="video-level">Avancé</span>
+                        </div>
+                        <div class="video-tags">
+                            <span class="tag tag-drame">Drame</span>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- VIDEO CARD 6 -->
+                <article class="video-card" data-categories="education">
+                    <div class="video-thumbnail">
+                        <img src="https://via.placeholder.com/400x225/1abc9c/ffffff?text=Karambolage" alt="Karambolage">
+                        <div class="video-overlay">
+                            <button class="play-btn">▶ Lire</button>
+                        </div>
+                    </div>
+                    <div class="video-info">
+                        <h3 class="video-title">Karambolage - Les Bises</h3>
+                        <p class="video-description">Magazine culturel franco-allemand</p>
+                        <div class="video-meta">
+                            <span class="video-duration">12min</span>
+                            <span class="video-level">Intermédiaire</span>
+                        </div>
+                        <div class="video-tags">
+                            <span class="tag tag-education">Éducation</span>
+                        </div>
+                    </div>
+                </article>
+
+            </section>
+
+            <!-- ABOUT SECTION -->
+            <section class="about" id="about">
+                <h2 class="section-title">À propos de FranScript</h2>
+                <div class="about-content">
+                    <p>FranScript est une plateforme dédiée à l'apprentissage du français à travers des vidéos authentiques avec sous-titres interactifs.</p>
+                    <p>Notre mission : rendre l'apprentissage du français accessible, engageant et efficace grâce à du contenu culturel de qualité.</p>
+
+                    <!-- Conteneur pour futures fonctionnalités premium -->
+                    <div class="premium-features" style="display: none;">
+                        <h3>Fonctionnalités Premium</h3>
+                        <ul>
+                            <li>Annotations intelligentes avec IA</li>
+                            <li>Exercices interactifs personnalisés</li>
+                            <li>Suivi de progression détaillé</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; 2024 FranScript - Tous droits réservés</p>
+                <div class="footer-links">
+                    <a href="#privacy">Confidentialité</a>
+                    <a href="#terms">Conditions d'utilisation</a>
+                    <a href="#contact">Contact</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Conteneur caché pour futur lecteur vidéo avec sous-titres -->
+    <div id="video-player-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <button class="modal-close">&times;</button>
+            <div class="player-wrapper">
+                <!-- Ici sera inséré le lecteur vidéo HTML5 avec <track> pour sous-titres -->
+                <video id="main-player" controls>
+                    <source src="" type="video/mp4">
+                    <!-- Piste de sous-titres français -->
+                    <track kind="subtitles" src="" srclang="fr" label="Français" default>
+                    <!-- Piste pour annotations/notes (custom track) -->
+                    <track kind="metadata" src="" srclang="fr" label="Annotations">
+                </video>
+                <!-- Conteneur pour annotations interactives -->
+                <div id="annotations-container" class="annotations-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

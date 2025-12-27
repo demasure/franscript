@@ -107,8 +107,15 @@ function initializePlayer() {
         // Si clic sur la vidéo elle-même (pas les contrôles), faire un seek de test
         if (e.target === video) {
             const testTime = 30; // Aller à 30 secondes
-            console.log('🧪 TEST: Tentative de seek vers', testTime, 'secondes');
+            console.log('🧪 TEST: currentTime AVANT =', video.currentTime);
+            console.log('🧪 TEST: Setting currentTime à', testTime);
             video.currentTime = testTime;
+            console.log('🧪 TEST: currentTime APRES =', video.currentTime);
+
+            // Vérifier après un délai
+            setTimeout(() => {
+                console.log('🧪 TEST: currentTime après 100ms =', video.currentTime);
+            }, 100);
         }
     }, true);
 

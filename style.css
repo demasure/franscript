@@ -454,6 +454,12 @@ img {
     border: 1px solid rgba(46, 204, 113, 0.4);
 }
 
+.tag-culte {
+    background-color: rgba(255, 215, 0, 0.2);
+    color: #FFD700;
+    border: 1px solid rgba(255, 215, 0, 0.4);
+}
+
 /* Stats vidéo (caché pour l'instant, pour futures annotations) */
 .video-stats {
     margin-top: var(--spacing-sm);
@@ -940,6 +946,25 @@ img {
     gap: var(--spacing-sm);
     margin-bottom: var(--spacing-md);
     flex-wrap: wrap;
+}
+
+.video-duration-info,
+.video-category-info,
+.video-culte-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--color-text-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.video-culte-badge {
+    background-color: rgba(255, 215, 0, 0.2);
+    color: #FFD700;
+    border: 1px solid rgba(255, 215, 0, 0.4);
+    font-weight: 600;
 }
 
 .btn-report {

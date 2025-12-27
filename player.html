@@ -17,6 +17,9 @@
                     <span class="logo-text">FranScript</span>
                 </a>
 
+                <!-- Titre de la vidéo dans le header -->
+                <h1 id="video-title" class="video-header-title">Ma Première Vidéo</h1>
+
                 <!-- Navigation -->
                 <nav class="nav">
                     <ul class="nav-list">
@@ -30,16 +33,6 @@
     <!-- MAIN PLAYER SECTION -->
     <main class="player-page">
         <div class="container-wide">
-
-            <!-- Titre de la vidéo -->
-            <div class="video-header">
-                <h1 id="video-title" class="video-page-title">Ma Première Vidéo</h1>
-                <div class="video-meta-info">
-                    <span class="video-level-badge level-b2">B2</span>
-                    <span class="video-duration-info">⏱️ 40 sec</span>
-                    <span class="video-category-info">📚 Éducation</span>
-                </div>
-            </div>
 
             <div class="player-layout">
 
@@ -66,7 +59,20 @@
                     <!-- Section Description -->
                     <div class="video-description-panel">
                         <h3 class="panel-title">📖 Description</h3>
+
+                        <!-- Tags vidéo -->
+                        <div class="video-meta-tags">
+                            <span class="video-level-badge level-b2">B2</span>
+                            <span class="video-duration-info">⏱️ 40 sec</span>
+                            <span class="video-category-info">📚 Éducation</span>
+                        </div>
+
                         <p id="video-description">Introduction à FranScript avec sous-titres interactifs pour apprendre le français.</p>
+
+                        <!-- Bouton signaler -->
+                        <button class="btn-report" onclick="reportIssue()">
+                            ⚠️ Signaler un problème
+                        </button>
                     </div>
 
                     <!-- Section Commentaires -->
@@ -94,25 +100,8 @@
 
                 </div>
 
-                <!-- COLONNE DROITE : Actions et Suggestions -->
+                <!-- COLONNE DROITE : Aide IA et Suggestions -->
                 <div class="player-sidebar">
-
-                    <!-- Actions rapides -->
-                    <div class="actions-panel">
-                        <h3 class="panel-title">⚡ Actions</h3>
-                        <button class="action-btn" onclick="reportIssue()">
-                            <span class="icon">⚠️</span>
-                            Signaler un problème
-                        </button>
-                        <button class="action-btn" onclick="downloadSubtitles()">
-                            <span class="icon">📥</span>
-                            Télécharger les sous-titres
-                        </button>
-                        <button class="action-btn" onclick="shareVideo()">
-                            <span class="icon">🔗</span>
-                            Partager
-                        </button>
-                    </div>
 
                     <!-- Aide IA -->
                     <div class="ai-help-panel" id="ai-help-panel">

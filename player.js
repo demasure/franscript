@@ -91,48 +91,6 @@ function initializePlayer() {
         console.log(`📝 ${allSubtitles.length} sous-titres chargés`);
     });
 
-    // DEBUG: Détecter les tentatives de seek
-    video.addEventListener('seeking', function() {
-        console.log('🎯 SEEKING vers:', video.currentTime);
-    });
-
-    video.addEventListener('seeked', function() {
-        console.log('✅ SEEKED terminé à:', video.currentTime);
-    });
-
-    // TEST: Seek programmatique quand on clique sur la vidéo (pas les contrôles)
-    video.addEventListener('click', function(e) {
-        console.log('🖱️ CLICK sur vidéo à:', e.clientX, e.clientY, 'target:', e.target);
-
-        // Si clic sur la vidéo elle-même (pas les contrôles), faire un seek de test
-        if (e.target === video) {
-            console.log('📊 État vidéo:');
-            console.log('  - readyState:', video.readyState, ['HAVE_NOTHING', 'HAVE_METADATA', 'HAVE_CURRENT_DATA', 'HAVE_FUTURE_DATA', 'HAVE_ENOUGH_DATA'][video.readyState]);
-            console.log('  - duration:', video.duration);
-            console.log('  - paused:', video.paused);
-            console.log('  - seekable:', video.seekable.length > 0 ? `0-${video.seekable.end(0)}` : 'none');
-
-            const testTime = 30;
-            console.log('🧪 TEST: currentTime AVANT =', video.currentTime);
-            video.currentTime = testTime;
-            console.log('🧪 TEST: currentTime APRES =', video.currentTime);
-        }
-    }, true);
-
-    video.addEventListener('mousedown', function(e) {
-        console.log('🖱️ MOUSEDOWN sur vidéo à:', e.clientX, e.clientY);
-    }, true);
-
-    video.addEventListener('mouseup', function(e) {
-        console.log('🖱️ MOUSEUP sur vidéo à:', e.clientX, e.clientY);
-    }, true);
-
-    // Debug sur le container aussi
-    const container = document.querySelector('.video-player-container');
-    container.addEventListener('click', function(e) {
-        console.log('📦 CLICK sur container à:', e.clientX, e.clientY, 'target:', e.target.tagName);
-    }, true);
-
     // Afficher les sous-titres dans la zone interactive
     video.addEventListener('timeupdate', function() {
         const textTrack = video.textTracks[0];

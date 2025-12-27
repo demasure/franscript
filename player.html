@@ -58,7 +58,12 @@
 
                     <!-- Section Description -->
                     <div class="video-description-panel">
-                        <h3 class="panel-title">📖 Description</h3>
+                        <div class="description-header">
+                            <button class="btn-report" onclick="reportIssue()">
+                                ⚠️ Signaler
+                            </button>
+                            <h3 class="panel-title">📖 Description</h3>
+                        </div>
 
                         <!-- Tags vidéo -->
                         <div class="video-meta-tags">
@@ -68,11 +73,6 @@
                         </div>
 
                         <p id="video-description">Introduction à FranScript avec sous-titres interactifs pour apprendre le français.</p>
-
-                        <!-- Bouton signaler -->
-                        <button class="btn-report" onclick="reportIssue()">
-                            ⚠️ Signaler un problème
-                        </button>
                     </div>
 
                     <!-- Section Commentaires -->

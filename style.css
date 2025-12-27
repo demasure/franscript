@@ -926,6 +926,7 @@ img {
 .description-header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: var(--spacing-sm);
     margin-bottom: var(--spacing-md);
 }

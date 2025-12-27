@@ -30,6 +30,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Préparer les conteneurs pour futures fonctionnalités
     prepareFutureFeatures();
+
+    // PROTECTION ANTI-TÉLÉCHARGEMENT
+    enableContentProtection();
 });
 
 // ========================================
@@ -414,6 +417,112 @@ function scrollToSection(sectionId) {
     if (section) {
         section.scrollIntoView({ behavior: 'smooth' });
     }
+}
+
+// ========================================
+// PROTECTION ANTI-TÉLÉCHARGEMENT
+// ========================================
+
+/**
+ * Active les protections contre le téléchargement de contenu
+ * AVERTISSEMENT : Ces protections NE sont PAS absolues !
+ * Les utilisateurs techniques peuvent toujours contourner ces mesures.
+ */
+function enableContentProtection() {
+    // 1. Bloquer le clic droit sur tout le site
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        return false;
+    }, false);
+
+    // 2. Bloquer les raccourcis clavier de développement
+    document.addEventListener('keydown', function(e) {
+        // F12 - Outils de développement
+        if (e.key === 'F12' || e.keyCode === 123) {
+            e.preventDefault();
+            return false;
+        }
+
+        // Ctrl+Shift+I - Inspecter
+        if (e.ctrlKey && e.shiftKey && e.key === 'I') {
+            e.preventDefault();
+            return false;
+        }
+
+        // Ctrl+Shift+J - Console
+        if (e.ctrlKey && e.shiftKey && e.key === 'J') {
+            e.preventDefault();
+            return false;
+        }
+
+        // Ctrl+U - Voir le code source
+        if (e.ctrlKey && e.key === 'u') {
+            e.preventDefault();
+            return false;
+        }
+
+        // Ctrl+S - Sauvegarder la page
+        if (e.ctrlKey && e.key === 's') {
+            e.preventDefault();
+            return false;
+        }
+
+        // Ctrl+Shift+C - Sélecteur d'élément
+        if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    // 3. Empêcher la sélection de texte et d'images
+    document.addEventListener('selectstart', function(e) {
+        e.preventDefault();
+        return false;
+    });
+
+    // 4. Bloquer le drag & drop
+    document.addEventListener('dragstart', function(e) {
+        e.preventDefault();
+        return false;
+    });
+
+    // 5. Protection supplémentaire sur les vidéos
+    const videos = document.querySelectorAll('video');
+    videos.forEach(function(video) {
+        // Bloquer le clic droit spécifiquement sur la vidéo
+        video.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        // Empêcher le téléchargement via les attributs
+        video.setAttribute('controlsList', 'nodownload nofullscreen noremoteplayback');
+        video.setAttribute('disablePictureInPicture', 'true');
+        video.setAttribute('oncontextmenu', 'return false;');
+    });
+
+    // 6. Détection des DevTools (méthode basique - peut être contournée)
+    let devToolsOpen = false;
+    const element = new Image();
+    Object.defineProperty(element, 'id', {
+        get: function() {
+            devToolsOpen = true;
+            console.clear();
+            console.log('⚠️ Les outils de développement sont désactivés pour protéger le contenu.');
+        }
+    });
+
+    setInterval(function() {
+        devToolsOpen = false;
+        console.log(element);
+        if (devToolsOpen) {
+            // Les DevTools sont ouverts - on peut afficher un avertissement
+            // Mais on ne peut pas vraiment les fermer
+        }
+    }, 1000);
+
+    console.log('🔒 Protections anti-téléchargement activées');
+    console.log('⚠️ Note : Ces protections ne sont pas absolues. Les utilisateurs techniques peuvent les contourner.');
 }
 
 // ========================================

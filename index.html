@@ -239,7 +239,11 @@
             <button class="modal-close">&times;</button>
             <div class="player-wrapper">
                 <!-- Ici sera inséré le lecteur vidéo HTML5 avec <track> pour sous-titres -->
-                <video id="main-player" controls>
+                <video id="main-player"
+                       controls
+                       controlsList="nodownload nofullscreen noremoteplayback"
+                       disablePictureInPicture
+                       oncontextmenu="return false;">
                     <source src="" type="video/mp4">
                     <!-- Piste de sous-titres français -->
                     <track kind="subtitles" src="" srclang="fr" label="Français" default>

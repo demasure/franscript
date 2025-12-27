@@ -75,7 +75,7 @@ function initializePlayer() {
     // Écouter les changements de sous-titres
     track.addEventListener('load', function() {
         const textTrack = video.textTracks[0];
-        textTrack.mode = 'hidden';  // Ne pas afficher sur la vidéo, seulement dans le panneau interactif
+        textTrack.mode = 'showing';  // Activer les sous-titres
 
         // Extraire tous les sous-titres pour le contexte IA
         allSubtitles = [];

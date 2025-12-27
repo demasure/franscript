@@ -76,13 +76,6 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-
-    /* Protection anti-copie */
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    -webkit-touch-callout: none;
 }
 
 a {

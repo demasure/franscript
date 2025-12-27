@@ -801,10 +801,13 @@ img {
 .video-player-container {
     background-color: #000;
     border-radius: var(--border-radius);
-    overflow: hidden;
+    overflow: visible;  /* Changé de 'hidden' pour ne pas bloquer les contrôles */
     box-shadow: var(--box-shadow-lg);
     margin-bottom: var(--spacing-lg);
     position: relative;
+    user-select: auto !important;
+    -webkit-user-select: auto !important;
+    pointer-events: auto !important;
 }
 
 #video-player {
@@ -812,15 +815,23 @@ img {
     display: block;
     max-height: 70vh;
     pointer-events: auto !important;
-    user-select: auto;
+    user-select: auto !important;
+    -webkit-user-select: auto !important;
 }
 
-#video-player::-webkit-media-controls-panel {
+/* Forcer TOUS les contrôles à être interactifs */
+#video-player::-webkit-media-controls-panel,
+#video-player::-webkit-media-controls-timeline,
+#video-player::-webkit-media-controls-timeline-container,
+#video-player::-webkit-media-controls-current-time-display,
+#video-player::-webkit-media-controls-time-remaining-display,
+#video-player::-webkit-media-controls-seek-back-button,
+#video-player::-webkit-media-controls-seek-forward-button,
+#video-player::-webkit-media-controls-play-button,
+#video-player::-webkit-media-controls-volume-slider {
     pointer-events: auto !important;
-}
-
-#video-player::-webkit-media-controls-timeline {
-    pointer-events: auto !important;
+    user-select: auto !important;
+    -webkit-user-select: auto !important;
 }
 
 /* ========================================

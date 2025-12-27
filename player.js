@@ -15,6 +15,7 @@
 
 let currentSubtitles = [];
 let allSubtitles = [];  // Contexte complet pour l'IA
+let lastDisplayedCueText = '';  // Éviter de recréer le même sous-titre
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🎬 Player initialisé');
@@ -95,7 +96,17 @@ function initializePlayer() {
         const textTrack = video.textTracks[0];
         if (textTrack && textTrack.activeCues && textTrack.activeCues.length > 0) {
             const currentCue = textTrack.activeCues[0];
-            displayInteractiveSubtitle(currentCue.text, currentCue.startTime, currentCue.endTime);
+            // Ne mettre à jour que si le sous-titre a changé
+            if (currentCue.text !== lastDisplayedCueText) {
+                lastDisplayedCueText = currentCue.text;
+                displayInteractiveSubtitle(currentCue.text, currentCue.startTime, currentCue.endTime);
+            }
+        } else {
+            // Effacer si plus de sous-titre actif
+            if (lastDisplayedCueText !== '') {
+                lastDisplayedCueText = '';
+                document.getElementById('subtitles-display').innerHTML = '';
+            }
         }
     });
 }
@@ -126,9 +137,13 @@ function displayInteractiveSubtitle(text, startTime, endTime) {
     subtitlesDisplay.appendChild(subtitleElement);
 
     // Ajouter l'écouteur de clic
-    subtitleElement.addEventListener('click', function() {
+    subtitleElement.addEventListener('click', function(e) {
+        console.log('🖱️ Clic sur sous-titre:', text);
+        e.preventDefault();
         requestAIHelp(text, startTime, endTime);
     });
+
+    console.log('✅ Sous-titre affiché:', text.substring(0, 30) + '...');
 }
 
 function handleSubtitleSelection() {
@@ -136,6 +151,7 @@ function handleSubtitleSelection() {
     const selectedText = selection.toString().trim();
 
     if (selectedText.length > 0) {
+        console.log('📝 Texte sélectionné:', selectedText);
         // Trouver le contexte temporel du texte sélectionné
         const range = selection.getRangeAt(0);
         const container = range.commonAncestorContainer.parentElement;
@@ -155,6 +171,8 @@ function handleSubtitleSelection() {
 const AI_BACKEND_URL = 'http://localhost:3000';
 
 async function requestAIHelp(text, startTime, endTime) {
+    console.log('🤖 Demande aide IA pour:', text);
+
     const aiPanel = document.getElementById('ai-help-panel');
     const selectedTextSpan = document.getElementById('selected-subtitle-text');
     const aiResponse = document.getElementById('ai-response');

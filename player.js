@@ -234,7 +234,7 @@ function displayAIExplanation(originalText, explanation, isMock) {
             ${isMock ? '<p class="mock-warning">⚠️ Mode simulation (Ollama non connecté)</p>' : ''}
 
             <div class="ai-actions">
-                <button class="ai-action-btn" onclick="translateExplanation('${escapeHTML(explanation).replace(/'/g, "\\'")}')">
+                <button class="ai-action-btn" id="translate-btn">
                     🌍 Traduire en anglais
                 </button>
             </div>
@@ -242,6 +242,16 @@ function displayAIExplanation(originalText, explanation, isMock) {
             <div id="translation-result"></div>
         </div>
     `;
+
+    // Ajouter l'event listener après avoir créé le bouton
+    setTimeout(() => {
+        const translateBtn = document.getElementById('translate-btn');
+        if (translateBtn) {
+            translateBtn.addEventListener('click', () => {
+                translateExplanation(explanation);
+            });
+        }
+    }, 0);
 }
 
 async function translateExplanation(explanationText) {

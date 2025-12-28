@@ -44,6 +44,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialiser le mode édition
     initializeEditMode();
+
+    // Charger les vidéos suggérées
+    loadSuggestedVideos();
 });
 
 // ========================================
@@ -757,6 +760,84 @@ async function saveSubtitles() {
         saveBtn.disabled = false;
         saveBtn.textContent = '💾 Sauvegarder les modifications';
     }
+}
+
+// ========================================
+// VIDÉOS SUGGÉRÉES
+// ========================================
+
+/**
+ * Charge les vidéos suggérées (même niveau ou tags similaires)
+ */
+async function loadSuggestedVideos() {
+    try {
+        const response = await fetch('http://localhost:3000/videos');
+        const videos = await response.json();
+
+        // Obtenir le niveau de la vidéo courante
+        const params = new URLSearchParams(window.location.search);
+        const currentLevel = params.get('level') || 'B2';
+        const currentId = parseInt(params.get('id')) || null;
+
+        // Filtrer : même niveau, exclure vidéo courante
+        let suggestedVideos = videos.filter(v =>
+            v.level === currentLevel && v.id !== currentId
+        );
+
+        // Si pas assez de suggestions, prendre toutes les vidéos sauf la courante
+        if (suggestedVideos.length < 3) {
+            suggestedVideos = videos.filter(v => v.id !== currentId);
+        }
+
+        // Limiter à 5 suggestions
+        suggestedVideos = suggestedVideos.slice(0, 5);
+
+        // Afficher les suggestions
+        const suggestionsList = document.getElementById('suggestions-list');
+        suggestionsList.innerHTML = '';
+
+        if (suggestedVideos.length === 0) {
+            suggestionsList.innerHTML = '<p style="color: #666; text-align: center; padding: 20px;">Aucune vidéo suggérée</p>';
+            return;
+        }
+
+        suggestedVideos.forEach(video => {
+            const card = document.createElement('div');
+            card.className = 'suggestion-card';
+            card.style.cursor = 'pointer';
+            card.onclick = () => {
+                window.location.href = `player.html?id=${video.id}&video=${encodeURIComponent(video.video_url)}&subtitle=${encodeURIComponent(video.subtitle_url || '')}&title=${encodeURIComponent(video.title)}&level=${video.level}`;
+            };
+
+            const thumbnailSrc = video.thumbnail_url ||
+                `https://via.placeholder.com/150x85/${getLevelColor(video.level)}/ffffff?text=${encodeURIComponent(video.title.substring(0, 20))}`;
+
+            card.innerHTML = `
+                <img src="${thumbnailSrc}" alt="${video.title}">
+                <div class="suggestion-info">
+                    <h4>${video.title}</h4>
+                    <span class="level-badge level-${video.level.toLowerCase()}">${video.level}</span>
+                </div>
+            `;
+
+            suggestionsList.appendChild(card);
+        });
+
+    } catch (error) {
+        console.error('Erreur chargement suggestions:', error);
+    }
+}
+
+/**
+ * Obtient une couleur en fonction du niveau CECRL
+ */
+function getLevelColor(level) {
+    const colors = {
+        'B2': '2ecc71',
+        'C1': 'f39c12',
+        'C2': 'e74c3c'
+    };
+    return colors[level] || '3498db';
 }
 
 console.log('🎥 Player ready!');

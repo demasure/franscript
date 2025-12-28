@@ -58,10 +58,14 @@ async function updateNavbar() {
     navAccountPlaceholder.innerHTML = '';
 
     if (user) {
-        // Utilisateur connecté - Afficher photo de profil
+        // Utilisateur connecté - Afficher photo de profil avec menu déroulant
+        const profileWrapper = document.createElement('div');
+        profileWrapper.className = 'nav-profile-wrapper';
+
         const profileContainer = document.createElement('div');
         profileContainer.className = 'nav-profile-container';
         profileContainer.title = `${user.username || user.email}`;
+        profileContainer.onclick = () => toggleProfileMenu();
 
         const profilePic = document.createElement('img');
         profilePic.className = 'nav-profile-pic';
@@ -72,23 +76,57 @@ async function updateNavbar() {
         };
 
         profileContainer.appendChild(profilePic);
-        navAccountPlaceholder.appendChild(profileContainer);
 
-        // Bouton déconnexion
-        const logoutBtn = document.createElement('button');
-        logoutBtn.className = 'nav-btn nav-btn-secondary';
-        logoutBtn.textContent = 'Déconnexion';
-        logoutBtn.onclick = handleLogout;
-        navAccountPlaceholder.appendChild(logoutBtn);
+        // Menu déroulant
+        const dropdown = document.createElement('div');
+        dropdown.className = 'profile-dropdown';
+        dropdown.id = 'profile-dropdown';
+
+        // Header du menu avec info utilisateur
+        const dropdownHeader = document.createElement('div');
+        dropdownHeader.className = 'dropdown-header';
+        dropdownHeader.innerHTML = `
+            <strong>${user.username || 'Utilisateur'}</strong>
+            <small>${user.email}</small>
+        `;
+        dropdown.appendChild(dropdownHeader);
+
+        // Divider
+        const divider = document.createElement('div');
+        divider.className = 'dropdown-divider';
+        dropdown.appendChild(divider);
+
+        // Option: Modifier profil (future feature)
+        const editProfileBtn = document.createElement('button');
+        editProfileBtn.className = 'dropdown-item';
+        editProfileBtn.innerHTML = '👤 Modifier mon profil';
+        editProfileBtn.onclick = () => {
+            alert('Cette fonctionnalité sera bientôt disponible !');
+            toggleProfileMenu();
+        };
+        dropdown.appendChild(editProfileBtn);
 
         // Si admin : bouton espace admin
         if (user.role === 'admin') {
             const adminBtn = document.createElement('a');
             adminBtn.href = '/admin.html';
-            adminBtn.className = 'nav-btn nav-btn-admin';
-            adminBtn.textContent = '👑 Espace Admin';
-            navAccountPlaceholder.appendChild(adminBtn);
+            adminBtn.className = 'dropdown-item';
+            adminBtn.innerHTML = '👑 Espace Admin';
+            dropdown.appendChild(adminBtn);
         }
+
+        // Option: Déconnexion
+        const logoutBtn = document.createElement('button');
+        logoutBtn.className = 'dropdown-item dropdown-item-danger';
+        logoutBtn.innerHTML = '🚪 Se déconnecter';
+        logoutBtn.onclick = () => {
+            handleLogout();
+        };
+        dropdown.appendChild(logoutBtn);
+
+        profileWrapper.appendChild(profileContainer);
+        profileWrapper.appendChild(dropdown);
+        navAccountPlaceholder.appendChild(profileWrapper);
     } else {
         // Utilisateur non connecté
         const loginBtn = document.createElement('a');
@@ -104,6 +142,31 @@ async function updateNavbar() {
         navAccountPlaceholder.appendChild(registerBtn);
     }
 }
+
+/**
+ * Toggle le menu déroulant du profil
+ */
+function toggleProfileMenu() {
+    const dropdown = document.getElementById('profile-dropdown');
+    if (dropdown) {
+        dropdown.classList.toggle('show');
+    }
+}
+
+/**
+ * Ferme le menu si on clique en dehors
+ */
+document.addEventListener('click', (event) => {
+    const profileWrapper = document.querySelector('.nav-profile-wrapper');
+    const dropdown = document.getElementById('profile-dropdown');
+
+    if (dropdown && profileWrapper) {
+        // Si le clic n'est pas dans le wrapper du profil
+        if (!profileWrapper.contains(event.target)) {
+            dropdown.classList.remove('show');
+        }
+    }
+});
 
 // Initialiser la navbar au chargement de la page
 if (document.readyState === 'loading') {

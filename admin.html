@@ -283,6 +283,7 @@
 <body>
     <div class="container">
         <header>
+            <a href="/index.html" style="color: #1e3c72; text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 10px;">← Retour à l'accueil</a>
             <button class="logout-btn" onclick="logout()">Se déconnecter</button>
             <h1>👑 Panel Admin FranScript</h1>
             <p><span class="admin-badge">Admin</span> <span id="admin-email"></span></p>
@@ -435,7 +436,8 @@
                 });
 
                 if (!response.ok) {
-                    window.location.href = 'auth-demo.html';
+                    alert('Vous devez être connecté pour accéder à cette page');
+                    window.location.href = '/auth-demo.html';
                     return;
                 }
 
@@ -444,7 +446,7 @@
                 // Vérifier le rôle admin
                 if (data.user.role !== 'admin') {
                     alert('Accès réservé aux administrateurs');
-                    window.location.href = 'auth-demo.html';
+                    window.location.href = '/index.html';
                     return;
                 }
 
@@ -452,7 +454,7 @@
                 document.getElementById('admin-email').textContent = data.user.email;
             } catch (error) {
                 console.error('Erreur d\'authentification:', error);
-                window.location.href = 'auth-demo.html';
+                window.location.href = '/auth-demo.html';
             }
         }
 
@@ -464,7 +466,7 @@
                 method: 'POST',
                 credentials: 'include'
             });
-            window.location.href = 'auth-demo.html';
+            window.location.href = '/index.html';
         }
 
         // ============================================

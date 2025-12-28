@@ -206,6 +206,9 @@
     <div class="container">
         <h1>🔐 FranScript Auth</h1>
         <p class="subtitle">Démo du système d'authentification</p>
+        <p style="text-align: center; margin-bottom: 20px;">
+            <a href="/index.html" style="color: #1e3c72; text-decoration: none;">← Retour à l'accueil</a>
+        </p>
 
         <!-- Messages -->
         <div id="message" class="message"></div>
@@ -314,8 +317,10 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    showMessage('Connexion réussie !', 'success');
-                    checkAuth();
+                    showMessage('Connexion réussie ! Redirection...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/index.html';
+                    }, 1000);
                 } else {
                     showMessage(data.error || 'Erreur de connexion', 'error');
                 }
@@ -341,8 +346,10 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    showMessage('Inscription réussie ! Vous êtes maintenant connecté.', 'success');
-                    checkAuth();
+                    showMessage('Inscription réussie ! Redirection...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/index.html';
+                    }, 1000);
                 } else {
                     showMessage(data.error || 'Erreur d\'inscription', 'error');
                 }

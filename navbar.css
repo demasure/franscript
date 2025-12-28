@@ -1,0 +1,81 @@
+/**
+ * Styles pour la navbar dynamique FranScript
+ */
+
+/* Container de la zone compte/auth */
+.nav-account-placeholder {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+}
+
+/* Info utilisateur connecté */
+.nav-user-info {
+    color: #333;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 0 12px;
+}
+
+/* Boutons navbar */
+.nav-btn {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+/* Bouton primaire (Connexion) */
+.nav-btn-primary {
+    background: #1e3c72;
+    color: white;
+}
+
+.nav-btn-primary:hover {
+    background: #2a5298;
+}
+
+/* Bouton secondaire (Inscription, Déconnexion) */
+.nav-btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.nav-btn-secondary:hover {
+    background: #5a6268;
+}
+
+/* Bouton admin */
+.nav-btn-admin {
+    background: #ffc107;
+    color: #000;
+}
+
+.nav-btn-admin:hover {
+    background: #e0a800;
+}
+
+/* Responsive : empiler les éléments sur mobile */
+@media (max-width: 768px) {
+    .nav-account-placeholder {
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .nav-btn {
+        width: 100%;
+        text-align: center;
+    }
+
+    .nav-user-info {
+        font-size: 12px;
+        padding: 4px 0;
+    }
+}

@@ -48,10 +48,20 @@ async function loadVideos() {
 function createVideoCard(video) {
     const article = document.createElement('article');
     article.className = 'video-card';
-    article.setAttribute('data-categories', 'education'); // TODO: utiliser les vrais tags
-    article.setAttribute('data-level', 'B2'); // TODO: utiliser le vrai niveau
+
+    // Utiliser les vrais tags de la vidéo
+    const tagNames = video.tags ? video.tags.map(t => t.name.toLowerCase()).join(' ') : '';
+    article.setAttribute('data-categories', tagNames);
+    article.setAttribute('data-tag-ids', video.tags ? video.tags.map(t => t.id).join(',') : '');
+    article.setAttribute('data-level', 'B2'); // TODO: ajouter niveau dans la base de données
     article.setAttribute('data-video-src', video.video_url);
     article.setAttribute('data-subtitle-src', video.subtitle_url || '');
+    article.setAttribute('data-video-id', video.id);
+
+    // Générer les tags HTML
+    const tagsHTML = video.tags && video.tags.length > 0
+        ? video.tags.map(tag => `<span class="tag tag-${tag.name.toLowerCase()}">${tag.name.toUpperCase()}</span>`).join('')
+        : '';
 
     article.innerHTML = `
         <div class="video-thumbnail">
@@ -69,7 +79,7 @@ function createVideoCard(video) {
                 <span class="video-level level-badge level-b2">B2</span>
             </div>
             <div class="video-tags">
-                <span class="tag tag-education">EDUCATION</span>
+                ${tagsHTML}
                 ${video.is_paid ? '<span class="tag tag-culte">⭐ CULTE</span>' : ''}
             </div>
         </div>
@@ -103,31 +113,52 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // État global des filtres
 let currentFilters = {
-    category: 'all',
+    tags: [], // Tableau de tags sélectionnés (multi-sélection)
     level: 'all'
 };
 
 function initializeFilters() {
     const categoryButtons = document.querySelectorAll('.filter-btn:not(.level-filter)');
     const levelButtons = document.querySelectorAll('.filter-btn.level-filter');
-    const videoCards = document.querySelectorAll('.video-card');
 
-    // Gestionnaire pour les filtres de catégorie
+    // Gestionnaire pour les filtres de tags (multi-sélection)
     categoryButtons.forEach(button => {
         button.addEventListener('click', function() {
             const category = this.getAttribute('data-category');
-            currentFilters.category = category;
 
-            // Mettre à jour les boutons actifs (seulement les catégories)
-            categoryButtons.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
+            if (category === 'all') {
+                // "Toutes" : réinitialiser tous les tags
+                currentFilters.tags = [];
+                categoryButtons.forEach(btn => btn.classList.remove('active'));
+                this.classList.add('active');
+            } else {
+                // Toggle le tag (activer/désactiver)
+                const index = currentFilters.tags.indexOf(category);
+                if (index > -1) {
+                    // Déjà sélectionné → désélectionner
+                    currentFilters.tags.splice(index, 1);
+                    this.classList.remove('active');
+                } else {
+                    // Pas sélectionné → sélectionner
+                    currentFilters.tags.push(category);
+                    this.classList.add('active');
+                }
+
+                // Désactiver "Toutes" si des tags sont sélectionnés
+                const allButton = document.querySelector('.filter-btn[data-category="all"]');
+                if (currentFilters.tags.length > 0) {
+                    allButton.classList.remove('active');
+                } else {
+                    allButton.classList.add('active');
+                }
+            }
 
             // Appliquer les filtres combinés
-            applyFilters(videoCards);
+            applyFilters();
         });
     });
 
-    // Gestionnaire pour les filtres de niveau
+    // Gestionnaire pour les filtres de niveau (exclusifs)
     levelButtons.forEach(button => {
         button.addEventListener('click', function() {
             const level = this.getAttribute('data-level');
@@ -138,30 +169,33 @@ function initializeFilters() {
             this.classList.add('active');
 
             // Appliquer les filtres combinés
-            applyFilters(videoCards);
+            applyFilters();
         });
     });
 }
 
 /**
- * Applique les filtres combinés (catégorie ET niveau)
- * @param {NodeList} videoCards - Liste des cartes vidéo
+ * Applique les filtres combinés (tags multiples ET niveau exclusif)
  */
-function applyFilters(videoCards) {
+function applyFilters() {
+    const videoCards = document.querySelectorAll('.video-card');
+
     videoCards.forEach(card => {
         const categories = card.getAttribute('data-categories');
         const level = card.getAttribute('data-level');
 
-        // Vérifier le filtre de catégorie
-        const matchesCategory = currentFilters.category === 'all' ||
-                                categories.includes(currentFilters.category);
+        // Vérifier le filtre de tags (au moins un tag doit correspondre)
+        let matchesTags = true;
+        if (currentFilters.tags.length > 0) {
+            matchesTags = currentFilters.tags.some(tag => categories.includes(tag));
+        }
 
         // Vérifier le filtre de niveau
         const matchesLevel = currentFilters.level === 'all' ||
                             level === currentFilters.level;
 
         // Afficher seulement si les deux filtres correspondent
-        if (matchesCategory && matchesLevel) {
+        if (matchesTags && matchesLevel) {
             showCard(card);
         } else {
             hideCard(card);

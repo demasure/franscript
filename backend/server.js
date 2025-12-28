@@ -185,6 +185,18 @@ app.get('/videos', (req, res) => {
     }
 });
 
+// Route publique pour récupérer tous les tags (pour filtres et admin)
+app.get('/tags', (req, res) => {
+    try {
+        const { getAllTags } = require('./database');
+        const tags = getAllTags();
+        res.json({ tags });
+    } catch (error) {
+        console.error('Erreur récupération tags:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des tags' });
+    }
+});
+
 // Endpoint health check
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', port: PORT });

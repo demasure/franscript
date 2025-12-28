@@ -624,9 +624,8 @@
          */
         async function loadTags() {
             try {
-                const response = await fetch(`${API_URL}/admin/tags`, {
-                    credentials: 'include'
-                });
+                // Utiliser la route publique pour les tags
+                const response = await fetch(`${API_URL}/tags`);
 
                 const data = await response.json();
                 allTags = data.tags || [];

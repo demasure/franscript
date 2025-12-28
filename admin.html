@@ -6,7 +6,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>FranScript - Panel Admin v2.0</title>
+    <title>FranScript - Panel Admin</title>
     <style>
         * {
             margin: 0;
@@ -278,42 +278,10 @@
         .logout-btn:hover {
             background: #c82333;
         }
-
-        .debug-panel {
-            background: #fff3cd;
-            border: 2px solid #ffc107;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-family: monospace;
-            font-size: 13px;
-        }
-
-        .debug-panel h3 {
-            margin-bottom: 10px;
-            color: #856404;
-        }
-
-        .debug-status {
-            margin: 5px 0;
-        }
-
-        .status-ok { color: #28a745; font-weight: bold; }
-        .status-error { color: #dc3545; font-weight: bold; }
-        .status-pending { color: #6c757d; }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- DEBUG PANEL - VERSION 2.0 -->
-        <div class="debug-panel">
-            <h3>🔍 DEBUG MODE - VERSION 2.0 (28/12/2025)</h3>
-            <div class="debug-status" id="debug-version">✅ Page chargée: v2.0 avec cache-busting</div>
-            <div class="debug-status" id="debug-cookies">⏳ Cookies: Vérification...</div>
-            <div class="debug-status" id="debug-auth">⏳ Auth: Vérification...</div>
-            <div class="debug-status" id="debug-role">⏳ Rôle: Vérification...</div>
-        </div>
-
         <header>
             <button class="logout-btn" onclick="logout()">Se déconnecter</button>
             <h1>👑 Panel Admin FranScript</h1>
@@ -409,10 +377,15 @@
     </div>
 
     <script>
+        // ============================================
+        // CONFIGURATION
+        // ============================================
         const API_URL = 'http://localhost:3000';
         let allTags = [];
 
-        // Initialisation
+        // ============================================
+        // INITIALISATION
+        // ============================================
         document.addEventListener('DOMContentLoaded', () => {
             checkAuth();
             loadVideos();
@@ -422,7 +395,13 @@
             document.getElementById('tag-form').addEventListener('submit', handleTagSubmit);
         });
 
-        // Basculer entre les onglets
+        // ============================================
+        // UTILITAIRES
+        // ============================================
+
+        /**
+         * Bascule entre les onglets Vidéos et Tags
+         */
         function switchTab(tab) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -431,7 +410,9 @@
             document.getElementById(`tab-${tab}`).classList.add('active');
         }
 
-        // Afficher un message
+        /**
+         * Affiche un message de succès ou d'erreur
+         */
         function showMessage(text, type = 'success') {
             const msg = document.getElementById('message');
             msg.textContent = text;
@@ -439,97 +420,45 @@
             setTimeout(() => msg.classList.remove('show'), 5000);
         }
 
-        // Vérifier l'authentification admin
+        // ============================================
+        // AUTHENTIFICATION
+        // ============================================
+
+        /**
+         * Vérifie l'authentification et le rôle admin
+         * Redirige vers auth-demo.html si non authentifié ou non admin
+         */
         async function checkAuth() {
-            const debugCookies = document.getElementById('debug-cookies');
-            const debugAuth = document.getElementById('debug-auth');
-            const debugRole = document.getElementById('debug-role');
-
             try {
-                // Étape 1: Vérifier les cookies
-                console.log('[v2.0] Étape 1: Vérification des cookies');
-                const cookies = document.cookie;
-                console.log('[v2.0] Cookies présents:', cookies ? 'OUI' : 'NON');
-                console.log('[v2.0] Cookies:', cookies);
-
-                if (cookies) {
-                    debugCookies.innerHTML = `✅ Cookies détectés: ${cookies.substring(0, 50)}...`;
-                    debugCookies.className = 'debug-status status-ok';
-                } else {
-                    debugCookies.innerHTML = '❌ Aucun cookie détecté';
-                    debugCookies.className = 'debug-status status-error';
-                }
-
-                // Étape 2: Appeler /auth/me
-                console.log('[v2.0] Étape 2: Appel à /auth/me');
-                debugAuth.innerHTML = '⏳ Appel à /auth/me...';
-
                 const response = await fetch(`${API_URL}/auth/me`, {
                     credentials: 'include'
                 });
 
-                console.log('[v2.0] Status:', response.status);
-                console.log('[v2.0] Headers:', [...response.headers.entries()]);
-
                 if (!response.ok) {
-                    console.error('[v2.0] Réponse non-OK:', response.status);
-                    debugAuth.innerHTML = `❌ Auth échouée: HTTP ${response.status}`;
-                    debugAuth.className = 'debug-status status-error';
-                    debugRole.innerHTML = '❌ Non vérifié (auth failed)';
-                    debugRole.className = 'debug-status status-error';
-
-                    setTimeout(() => {
-                        alert(`Auth échouée (${response.status}). Redirection vers login...`);
-                        window.location.href = 'auth-demo.html';
-                    }, 3000);
-                    return;
-                }
-
-                // Étape 3: Parser la réponse
-                console.log('[v2.0] Étape 3: Parsing de la réponse');
-                const data = await response.json();
-                console.log('[v2.0] User data:', data);
-
-                debugAuth.innerHTML = `✅ Authentifié: ${data.user.email}`;
-                debugAuth.className = 'debug-status status-ok';
-
-                // Étape 4: Vérifier le rôle
-                console.log('[v2.0] Étape 4: Vérification du rôle');
-                console.log('[v2.0] Rôle:', data.user.role);
-
-                if (data.user.role !== 'admin') {
-                    console.error('[v2.0] Rôle insuffisant:', data.user.role);
-                    debugRole.innerHTML = `❌ Rôle insuffisant: ${data.user.role} (admin requis)`;
-                    debugRole.className = 'debug-status status-error';
-
-                    setTimeout(() => {
-                        alert(`Accès refusé: rôle "${data.user.role}" au lieu de "admin"`);
-                        window.location.href = 'auth-demo.html';
-                    }, 3000);
-                    return;
-                }
-
-                // Succès !
-                console.log('[v2.0] ✅ SUCCÈS - Accès admin autorisé');
-                debugRole.innerHTML = `✅ Rôle: ${data.user.role}`;
-                debugRole.className = 'debug-status status-ok';
-                document.getElementById('admin-email').textContent = data.user.email;
-
-            } catch (error) {
-                console.error('[v2.0] Exception:', error);
-                debugAuth.innerHTML = `❌ Exception: ${error.message}`;
-                debugAuth.className = 'debug-status status-error';
-                debugRole.innerHTML = '❌ Non vérifié (exception)';
-                debugRole.className = 'debug-status status-error';
-
-                setTimeout(() => {
-                    alert(`Erreur: ${error.message}`);
                     window.location.href = 'auth-demo.html';
-                }, 3000);
+                    return;
+                }
+
+                const data = await response.json();
+
+                // Vérifier le rôle admin
+                if (data.user.role !== 'admin') {
+                    alert('Accès réservé aux administrateurs');
+                    window.location.href = 'auth-demo.html';
+                    return;
+                }
+
+                // Afficher l'email de l'admin
+                document.getElementById('admin-email').textContent = data.user.email;
+            } catch (error) {
+                console.error('Erreur d\'authentification:', error);
+                window.location.href = 'auth-demo.html';
             }
         }
 
-        // Déconnexion
+        /**
+         * Déconnexion de l'utilisateur
+         */
         async function logout() {
             await fetch(`${API_URL}/auth/logout`, {
                 method: 'POST',
@@ -542,6 +471,9 @@
         // GESTION DES VIDÉOS
         // ============================================
 
+        /**
+         * Charge la liste de toutes les vidéos avec leurs tags
+         */
         async function loadVideos() {
             try {
                 const response = await fetch(`${API_URL}/admin/videos`, {
@@ -555,6 +487,9 @@
             }
         }
 
+        /**
+         * Affiche la liste des vidéos dans le tableau
+         */
         function displayVideos(videos) {
             const tbody = document.querySelector('#videos-table tbody');
             tbody.innerHTML = videos.map(v => `
@@ -570,6 +505,9 @@
             `).join('');
         }
 
+        /**
+         * Gère la création ou mise à jour d'une vidéo
+         */
         async function handleVideoSubmit(e) {
             e.preventDefault();
 
@@ -608,6 +546,9 @@
             }
         }
 
+        /**
+         * Charge une vidéo pour modification
+         */
         async function editVideo(id) {
             try {
                 const response = await fetch(`${API_URL}/admin/videos/${id}`, {
@@ -637,6 +578,9 @@
             }
         }
 
+        /**
+         * Supprime une vidéo après confirmation
+         */
         async function deleteVideo(id) {
             if (!confirm('Êtes-vous sûr de vouloir supprimer cette vidéo ?')) return;
 
@@ -659,6 +603,9 @@
             }
         }
 
+        /**
+         * Réinitialise le formulaire de vidéo
+         */
         function resetVideoForm() {
             document.getElementById('video-form').reset();
             document.getElementById('video-id').value = '';
@@ -670,6 +617,9 @@
         // GESTION DES TAGS
         // ============================================
 
+        /**
+         * Charge la liste de tous les tags
+         */
         async function loadTags() {
             try {
                 const response = await fetch(`${API_URL}/admin/tags`, {
@@ -685,6 +635,9 @@
             }
         }
 
+        /**
+         * Affiche la liste des tags dans le tableau
+         */
         function displayTags(tags) {
             const tbody = document.querySelector('#tags-table tbody');
             tbody.innerHTML = tags.map(t => `
@@ -697,6 +650,9 @@
             `).join('');
         }
 
+        /**
+         * Affiche les tags dans le sélecteur du formulaire vidéo
+         */
         function renderTagSelector(tags) {
             const selector = document.getElementById('tag-selector');
             selector.innerHTML = tags.map(t => `
@@ -707,6 +663,9 @@
             `).join('');
         }
 
+        /**
+         * Gère la création d'un nouveau tag
+         */
         async function handleTagSubmit(e) {
             e.preventDefault();
 
@@ -734,6 +693,9 @@
             }
         }
 
+        /**
+         * Supprime un tag après confirmation
+         */
         async function deleteTag(id) {
             if (!confirm('Êtes-vous sûr de vouloir supprimer ce tag ?')) return;
 

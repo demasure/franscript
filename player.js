@@ -20,6 +20,8 @@ let isEditMode = false;  // Mode édition activé ou non
 let editedSubtitles = {};  // Sous-titres modifiés {index: newText}
 let currentVideoId = null;  // ID de la vidéo courante
 let isAdmin = false;  // Utilisateur admin ou non
+let userNotes = [];  // Notes personnelles de l'utilisateur pour cette vidéo
+let notesDisplayMode = 'inline';  // 'inline' ou 'panel' - mode d'affichage des notes
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🎬 Player initialisé');

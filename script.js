@@ -15,6 +15,21 @@
  */
 
 // ========================================
+// UTILITAIRE - Conversion hex vers RGB
+// ========================================
+function hexToRgb(hex) {
+    // Supprimer le # si présent
+    hex = hex.replace('#', '');
+
+    // Convertir en RGB
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+
+    return `${r}, ${g}, ${b}`;
+}
+
+// ========================================
 // CHARGEMENT DYNAMIQUE DES TAGS ET VIDÉOS
 // ========================================
 async function loadTags() {
@@ -34,13 +49,15 @@ async function loadTags() {
             categoryFilters.appendChild(allButton);
         }
 
-        // Créer les boutons de filtre pour chaque tag
+        // Créer les boutons de filtre pour chaque tag avec effet semi-transparent
         tags.forEach(tag => {
             const button = document.createElement('button');
             button.className = 'filter-btn';
             button.setAttribute('data-category', tag.name.toLowerCase());
-            button.style.backgroundColor = tag.color;
-            button.style.color = 'white';
+            // Appliquer l'effet CECRL: fond semi-transparent, bordure et texte solides
+            button.style.backgroundColor = `rgba(${hexToRgb(tag.color)}, 0.2)`;
+            button.style.color = tag.color;
+            button.style.border = `2px solid ${tag.color}`;
             button.textContent = tag.name;
             categoryFilters.appendChild(button);
         });
@@ -92,9 +109,9 @@ function createVideoCard(video) {
     article.setAttribute('data-subtitle-src', video.subtitle_url || '');
     article.setAttribute('data-video-id', video.id);
 
-    // Générer les tags HTML avec couleurs
+    // Générer les tags HTML avec effet semi-transparent (comme CECRL)
     const tagsHTML = video.tags && video.tags.length > 0
-        ? video.tags.map(tag => `<span class="tag" style="background-color: ${tag.color}; color: white;">${tag.name.toUpperCase()}</span>`).join('')
+        ? video.tags.map(tag => `<span class="tag" style="background-color: rgba(${hexToRgb(tag.color)}, 0.2); color: ${tag.color}; border: 2px solid ${tag.color};">${tag.name.toUpperCase()}</span>`).join('')
         : '';
 
     article.innerHTML = `

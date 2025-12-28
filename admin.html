@@ -261,15 +261,14 @@
 
         .tag-button {
             padding: 8px 20px;
-            border: 2px solid transparent;
             border-radius: 25px;
-            color: white;
             font-weight: 600;
             font-size: 13px;
             cursor: pointer;
             transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            background-color: transparent;
         }
 
         .tag-button:hover {
@@ -278,7 +277,7 @@
         }
 
         .tag-button.selected {
-            border-color: #fff;
+            /* Renforcer l'effet sélectionné avec une bordure blanche en plus */
             box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3), 0 4px 12px rgba(0, 0, 0, 0.3);
             transform: scale(1.05);
         }
@@ -416,6 +415,17 @@
         // ============================================
         // UTILITAIRES
         // ============================================
+
+        /**
+         * Convertit une couleur hex en RGB
+         */
+        function hexToRgb(hex) {
+            hex = hex.replace('#', '');
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            return `${r}, ${g}, ${b}`;
+        }
 
         /**
          * Bascule entre les onglets Vidéos et Tags
@@ -658,14 +668,14 @@
         }
 
         /**
-         * Affiche la liste des tags dans le tableau
+         * Affiche la liste des tags dans le tableau avec effet semi-transparent
          */
         function displayTags(tags) {
             const tbody = document.querySelector('#tags-table tbody');
             tbody.innerHTML = tags.map(t => `
                 <tr>
                     <td>
-                        <span class="tag-button" style="background-color: ${t.color}; color: white; padding: 6px 16px; border-radius: 20px; display: inline-block; font-weight: 600; font-size: 12px;">
+                        <span class="tag-button" style="background-color: rgba(${hexToRgb(t.color)}, 0.2); color: ${t.color}; border: 2px solid ${t.color}; padding: 6px 16px; border-radius: 20px; display: inline-block; font-weight: 600; font-size: 12px;">
                             ${t.name}
                         </span>
                     </td>
@@ -677,7 +687,7 @@
         }
 
         /**
-         * Affiche les tags dans le sélecteur du formulaire vidéo (design boutons)
+         * Affiche les tags dans le sélecteur du formulaire vidéo (design boutons avec effet semi-transparent)
          */
         function renderTagSelector(tags) {
             const selector = document.getElementById('tag-selector');
@@ -685,7 +695,7 @@
                 <button type="button"
                         class="tag-button"
                         data-tag-id="${t.id}"
-                        style="background-color: ${t.color};"
+                        style="background-color: rgba(${hexToRgb(t.color)}, 0.2); color: ${t.color}; border: 2px solid ${t.color};"
                         onclick="toggleTag(this, ${t.id})">
                     ${t.name}
                 </button>

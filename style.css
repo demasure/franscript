@@ -255,19 +255,21 @@ img {
     color: var(--color-text-secondary);
     border-radius: 20px;
     font-size: var(--font-size-sm);
-    font-weight: 500;
+    font-weight: 600;
     transition: all var(--transition-speed);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .filter-btn:hover {
-    background-color: var(--color-bg-light);
-    color: var(--color-text-primary);
     transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .filter-btn.active {
-    background-color: var(--color-primary);
-    color: var(--color-text-primary);
+    /* Renforcer l'opacité du fond pour montrer la sélection */
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3), 0 4px 12px rgba(0, 0, 0, 0.3);
+    transform: scale(1.05);
 }
 
 /* ========================================

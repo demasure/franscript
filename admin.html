@@ -407,27 +407,37 @@
         // Vérifier l'authentification admin
         async function checkAuth() {
             try {
+                console.log('[DEBUG] Checking auth...');
                 const response = await fetch(`${API_URL}/auth/me`, {
                     credentials: 'include'
                 });
 
+                console.log('[DEBUG] Response status:', response.status);
+                console.log('[DEBUG] Response ok:', response.ok);
+
                 if (!response.ok) {
-                    window.location.href = 'auth-demo.html';
+                    console.error('[DEBUG] Auth failed - not ok. Status:', response.status);
+                    alert(`Erreur auth: ${response.status} - Vérifiez la console`);
+                    // window.location.href = 'auth-demo.html';
                     return;
                 }
 
                 const data = await response.json();
+                console.log('[DEBUG] User data:', data);
 
                 if (data.user.role !== 'admin') {
-                    alert('Accès refusé : Admin uniquement');
-                    window.location.href = 'auth-demo.html';
+                    console.error('[DEBUG] Not admin. Role:', data.user.role);
+                    alert('Accès refusé : Admin uniquement. Role: ' + data.user.role);
+                    // window.location.href = 'auth-demo.html';
                     return;
                 }
 
+                console.log('[DEBUG] Auth success! Email:', data.user.email);
                 document.getElementById('admin-email').textContent = data.user.email;
             } catch (error) {
-                console.error('Erreur auth:', error);
-                window.location.href = 'auth-demo.html';
+                console.error('[DEBUG] Exception in checkAuth:', error);
+                alert('Exception: ' + error.message);
+                // window.location.href = 'auth-demo.html';
             }
         }
 

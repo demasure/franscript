@@ -1665,10 +1665,36 @@ img {
     font-weight: 600;
 }
 
+/* Bouton toggle compact/développé */
+.notes-toggle-btn {
+    padding: 6px 12px;
+    background: var(--color-bg-elevated);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-bg-hover);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.notes-toggle-btn:hover {
+    background: var(--color-bg-hover);
+    color: var(--color-text-primary);
+    border-color: var(--color-primary);
+}
+
+.notes-toggle-btn.compact-mode {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+}
+
 /* Formulaire de création de note */
 .note-form-container {
-    margin-bottom: 20px;
-    padding: 15px;
+    margin-bottom: 15px;
+    padding: 12px;
     background: var(--color-bg-elevated);
     border-radius: 8px;
     border: 2px solid rgba(52, 152, 219, 0.2);
@@ -1676,17 +1702,22 @@ img {
 
 .note-textarea {
     width: 100%;
-    min-height: 80px;
-    padding: 12px;
+    min-height: 70px;
+    padding: 10px;
     border: 2px solid var(--color-bg-hover);
     border-radius: 8px;
     background-color: var(--color-bg-card);
     color: var(--color-text-primary);
     font-family: inherit;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     resize: vertical;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     transition: border-color 0.3s;
+}
+
+.btn-save-note {
+    font-size: 0.85rem;
+    padding: 8px 12px;
 }
 
 .note-textarea:focus {
@@ -1704,14 +1735,17 @@ img {
 .notes-list-container {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
+    max-height: 400px;
+    overflow-y: auto;
 }
 
 .no-notes-message {
     text-align: center;
-    padding: 20px;
+    padding: 15px;
     color: var(--color-text-muted);
     font-style: italic;
+    font-size: 0.9rem;
 }
 
 /* Bouton ajouter dans le bandeau */
@@ -1761,8 +1795,8 @@ img {
 .note-banner-item {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    padding: 12px 15px;
+    gap: 8px;
+    padding: 10px 12px;
     background: var(--color-bg-elevated);
     border: 1px solid rgba(52, 152, 219, 0.2);
     border-radius: 8px;
@@ -1776,11 +1810,11 @@ img {
 
 .note-banner-timecode {
     display: inline-block;
-    padding: 4px 10px;
+    padding: 3px 8px;
     background: var(--color-primary);
     color: white;
-    border-radius: 6px;
-    font-size: 0.85rem;
+    border-radius: 5px;
+    font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -1795,35 +1829,39 @@ img {
 .note-banner-text {
     flex: 1;
     color: var(--color-text-primary);
-    line-height: 1.6;
-    font-size: 0.95rem;
+    line-height: 1.5;
+    font-size: 0.9rem;
     white-space: pre-wrap;
+    word-break: break-word;
 }
 
 .note-banner-actions {
     display: flex;
-    gap: 8px;
+    gap: 6px;
 }
 
 .note-banner-edit,
 .note-banner-delete {
-    padding: 6px 12px;
+    padding: 5px 10px;
     background: none;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 1rem;
+    border: 1px solid var(--color-bg-hover);
+    border-radius: 5px;
+    font-size: 0.85rem;
     cursor: pointer;
     transition: all 0.3s ease;
+    color: var(--color-text-secondary);
 }
 
 .note-banner-edit:hover {
     background: rgba(52, 152, 219, 0.15);
     border-color: var(--color-primary);
+    color: var(--color-primary);
 }
 
 .note-banner-delete:hover {
     background: rgba(231, 76, 60, 0.15);
     border-color: #e74c3c;
+    color: #e74c3c;
 }
 
 /* Panneau de toutes les notes (mode panel) */

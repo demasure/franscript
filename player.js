@@ -21,6 +21,8 @@ let editedSubtitles = {};  // Sous-titres modifiés {index: newText}
 let currentVideoId = null;  // ID de la vidéo courante
 let isAdmin = false;  // Utilisateur admin ou non
 let userNotes = [];  // Notes personnelles de l'utilisateur pour cette vidéo
+let isNotesCompactMode = true;  // Mode compact (±10s) par défaut, false = toutes les notes
+let lastNotesRefreshTime = -1;  // Dernier temps où les notes ont été rafraîchies (pour throttle)
 
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🎬 Player initialisé');
@@ -47,8 +49,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Initialiser le mode édition
     initializeEditMode();
 
-    // Charger les vidéos suggérées
-    loadSuggestedVideos();
+    // Vidéos suggérées désactivées (bandeau supprimé)
+    // loadSuggestedVideos();
 });
 
 // ========================================
@@ -1351,6 +1353,12 @@ async function initNotes() {
         notesBanner.style.display = 'block';
     }
 
+    // Initialiser le bouton toggle en mode compact par défaut
+    const toggleBtn = document.getElementById('notes-toggle-btn');
+    if (toggleBtn) {
+        toggleBtn.classList.add('compact-mode');
+    }
+
     // Initialiser le formulaire de notes
     initializeNotesForm();
 
@@ -1367,8 +1375,9 @@ function initializeNotesForm() {
     const textarea = document.getElementById('note-text-input');
     const saveBtn = document.getElementById('save-note-btn');
     const charCounter = document.getElementById('note-char-counter');
+    const toggleBtn = document.getElementById('notes-toggle-btn');
 
-    if (!textarea || !saveBtn || !charCounter) {
+    if (!textarea || !saveBtn || !charCounter || !toggleBtn) {
         console.error('❌ Éléments du formulaire de notes introuvables');
         return;
     }
@@ -1387,6 +1396,24 @@ function initializeNotesForm() {
             saveCurrentNote();
         }
     });
+
+    // Toggle compact/développé
+    toggleBtn.addEventListener('click', toggleNotesMode);
+
+    // Rafraîchir automatiquement en mode compact quand la vidéo avance
+    // Throttle: rafraîchir seulement si on a bougé de plus de 2 secondes
+    const video = document.getElementById('video-player');
+    if (video) {
+        video.addEventListener('timeupdate', () => {
+            if (isNotesCompactMode && userNotes.length > 0) {
+                const currentTime = Math.floor(video.currentTime);
+                if (Math.abs(currentTime - lastNotesRefreshTime) >= 2) {
+                    lastNotesRefreshTime = currentTime;
+                    refreshNotesList();
+                }
+            }
+        });
+    }
 
     console.log('📝 Formulaire de notes initialisé');
 }
@@ -1442,7 +1469,34 @@ async function saveCurrentNote() {
 }
 
 /**
- * Rafraîchit l'affichage de toutes les notes (triées par timecode)
+ * Bascule entre mode compact (±10s) et mode développé (toutes les notes)
+ */
+function toggleNotesMode() {
+    isNotesCompactMode = !isNotesCompactMode;
+
+    const toggleBtn = document.getElementById('notes-toggle-btn');
+    if (toggleBtn) {
+        if (isNotesCompactMode) {
+            toggleBtn.textContent = '📋 Toutes';
+            toggleBtn.classList.add('compact-mode');
+            toggleBtn.title = 'Afficher toutes les notes (mode développé)';
+        } else {
+            toggleBtn.textContent = '⏱️ ±10s';
+            toggleBtn.classList.remove('compact-mode');
+            toggleBtn.title = 'Afficher uniquement les notes proches (mode compact)';
+        }
+    }
+
+    // Rafraîchir immédiatement l'affichage
+    refreshNotesList();
+
+    console.log(`📝 Mode notes: ${isNotesCompactMode ? 'Compact (±10s)' : 'Développé (toutes)'}`);
+}
+
+/**
+ * Rafraîchit l'affichage des notes selon le mode actif
+ * Mode compact: notes dans la fenêtre currentTime ± 10s
+ * Mode développé: toutes les notes triées par timecode
  */
 function refreshNotesList() {
     const notesListContainer = document.getElementById('notes-list-container');
@@ -1461,11 +1515,38 @@ function refreshNotesList() {
         return;
     }
 
-    // Trier les notes par timecode croissant
-    const sortedNotes = [...userNotes].sort((a, b) => a.start_time - b.start_time);
+    // Filtrer selon le mode
+    let notesToDisplay;
+
+    if (isNotesCompactMode) {
+        // Mode compact: afficher seulement les notes ± 10s du temps actuel
+        const video = document.getElementById('video-player');
+        const currentTime = video ? video.currentTime : 0;
+        const timeWindow = 10; // secondes
+
+        notesToDisplay = userNotes.filter(note =>
+            Math.abs(note.start_time - currentTime) <= timeWindow
+        );
+
+        // Si aucune note dans la fenêtre temporelle
+        if (notesToDisplay.length === 0) {
+            notesListContainer.innerHTML = `
+                <div class="no-notes-message">
+                    🕒 Aucune note entre ${formatTimecode(Math.max(0, currentTime - timeWindow))} et ${formatTimecode(currentTime + timeWindow)}
+                </div>
+            `;
+            return;
+        }
+    } else {
+        // Mode développé: afficher toutes les notes
+        notesToDisplay = [...userNotes];
+    }
+
+    // Trier par timecode croissant
+    notesToDisplay.sort((a, b) => a.start_time - b.start_time);
 
     // Générer le HTML pour chaque note
-    const notesHTML = sortedNotes.map(note => {
+    const notesHTML = notesToDisplay.map(note => {
         const formattedTime = formatTimecode(note.start_time);
         return `
             <div class="note-banner-item">
@@ -1486,7 +1567,9 @@ function refreshNotesList() {
     }).join('');
 
     notesListContainer.innerHTML = notesHTML;
-    console.log(`📝 Affichage de ${userNotes.length} notes triées par timecode`);
+
+    const modeLabel = isNotesCompactMode ? '(±10s)' : '(toutes)';
+    console.log(`📝 Affichage de ${notesToDisplay.length}/${userNotes.length} notes ${modeLabel}`);
 }
 
 console.log('🎥 Player ready!');

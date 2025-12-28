@@ -448,6 +448,7 @@
         </div>
     </div>
 
+    <script src="utils.js"></script>
     <script>
         // ============================================
         // CONFIGURATION
@@ -518,8 +519,10 @@
                 });
 
                 if (!response.ok) {
-                    alert('Vous devez être connecté pour accéder à cette page');
-                    window.location.href = '/auth.html';
+                    showNotification('Vous devez être connecté pour accéder à cette page', 'warning', 2000);
+                    setTimeout(() => {
+                        window.location.href = '/auth.html';
+                    }, 2000);
                     return;
                 }
 
@@ -527,8 +530,10 @@
 
                 // Vérifier le rôle admin
                 if (data.user.role !== 'admin') {
-                    alert('Accès réservé aux administrateurs');
-                    window.location.href = '/index.html';
+                    showNotification('Accès réservé aux administrateurs', 'error', 2000);
+                    setTimeout(() => {
+                        window.location.href = '/index.html';
+                    }, 2000);
                     return;
                 }
 

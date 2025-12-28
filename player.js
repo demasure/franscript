@@ -356,7 +356,7 @@ function addComment() {
     const text = input.value.trim();
 
     if (text.length === 0) {
-        alert('Veuillez saisir un commentaire.');
+        showNotification('Veuillez saisir un commentaire.', 'warning');
         return;
     }
 
@@ -458,14 +458,14 @@ function initializeReportForm() {
         const description = document.getElementById('report-description').value;
 
         if (!description.trim()) {
-            alert('Veuillez décrire le problème.');
+            showNotification('Veuillez décrire le problème.', 'warning');
             return;
         }
 
         // TODO: Envoyer à un backend
         console.log('⚠️ Signalement :', { type, description });
 
-        alert('Merci ! Votre signalement a été envoyé.');
+        showNotification('Merci ! Votre signalement a été envoyé.', 'success');
         closeReportModal();
         form.reset();
     });
@@ -499,7 +499,7 @@ function shareVideo() {
     } else {
         // Copier dans le presse-papier
         navigator.clipboard.writeText(url).then(() => {
-            alert('Lien copié dans le presse-papier !');
+            showNotification('Lien copié dans le presse-papier !', 'success');
         });
     }
 
@@ -622,12 +622,12 @@ function updateSubtitleEditability(subtitleElement) {
  */
 async function saveSubtitles() {
     if (!currentVideoId) {
-        alert('Impossible de sauvegarder : ID de vidéo manquant');
+        showNotification('Impossible de sauvegarder : ID de vidéo manquant', 'error');
         return;
     }
 
     if (Object.keys(editedSubtitles).length === 0) {
-        alert('Aucune modification à sauvegarder');
+        showNotification('Aucune modification à sauvegarder', 'info');
         return;
     }
 
@@ -670,17 +670,19 @@ async function saveSubtitles() {
 
         const result = await saveResponse.json();
 
-        alert('✅ Sous-titres sauvegardés avec succès !\n\nUn backup a été créé : ' + result.backupPath);
+        showNotification('✅ Sous-titres sauvegardés avec succès ! (backup créé)', 'success', 3000);
 
         // Réinitialiser
         editedSubtitles = {};
 
-        // Recharger la page en forçant le cache (équivalent de Ctrl+Shift+R)
-        window.location.reload(true);
+        // Recharger la page après 3 secondes pour laisser voir le message
+        setTimeout(() => {
+            window.location.reload(true);
+        }, 3000);
 
     } catch (error) {
         console.error('Erreur sauvegarde:', error);
-        alert('❌ Erreur lors de la sauvegarde : ' + error.message);
+        showNotification('❌ Erreur lors de la sauvegarde : ' + error.message, 'error', 5000);
     } finally {
         saveBtn.disabled = false;
         saveBtn.textContent = '💾 Sauvegarder les modifications';

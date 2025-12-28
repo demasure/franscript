@@ -1426,3 +1426,56 @@ img {
         display: none;
     }
 }
+
+/* ========================================
+   NOTIFICATION BANNER SYSTEM
+   ======================================== */
+.notification-banner {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-120%);
+    z-index: 10000;
+    min-width: 300px;
+    max-width: 600px;
+    padding: 16px 24px;
+    border-radius: var(--border-radius);
+    background: var(--color-bg-elevated);
+    border: 2px solid;
+    box-shadow: var(--box-shadow-lg);
+    font-size: var(--font-size-base);
+    font-weight: 500;
+    text-align: center;
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55),
+                opacity 0.4s ease;
+}
+
+.notification-banner.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.notification-banner.success {
+    background-color: rgba(46, 204, 113, 0.15);
+    border-color: #2ecc71;
+    color: #2ecc71;
+}
+
+.notification-banner.error {
+    background-color: rgba(231, 76, 60, 0.15);
+    border-color: #e74c3c;
+    color: #e74c3c;
+}
+
+.notification-banner.info {
+    background-color: rgba(74, 144, 226, 0.15);
+    border-color: #4A90E2;
+    color: #4A90E2;
+}
+
+.notification-banner.warning {
+    background-color: rgba(243, 156, 18, 0.15);
+    border-color: #f39c12;
+    color: #f39c12;
+}

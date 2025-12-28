@@ -364,7 +364,7 @@ function initializeVideoCards() {
                 window.location.href = url;
             } else {
                 console.log(`⚠️ Pas de fichier vidéo pour : ${videoTitle}`);
-                alert('Cette vidéo n\'est pas encore disponible. Seule "Ma Première Vidéo" contient un fichier réel.');
+                showNotification('Cette vidéo n\'est pas encore disponible.', 'info');
             }
         });
     });
@@ -395,7 +395,7 @@ function initializeVideoCards() {
                 window.location.href = url;
             } else {
                 console.log(`⚠️ Pas de fichier vidéo pour : ${videoTitle}`);
-                alert('Cette vidéo n\'est pas encore disponible. Seule "Ma Première Vidéo" contient un fichier réel.');
+                showNotification('Cette vidéo n\'est pas encore disponible.', 'info');
             }
         });
     });

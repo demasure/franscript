@@ -675,8 +675,8 @@ async function saveSubtitles() {
         // Réinitialiser
         editedSubtitles = {};
 
-        // Recharger la page pour afficher les nouveaux sous-titres
-        window.location.reload();
+        // Recharger la page en forçant le cache (équivalent de Ctrl+Shift+R)
+        window.location.reload(true);
 
     } catch (error) {
         console.error('Erreur sauvegarde:', error);

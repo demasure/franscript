@@ -9,15 +9,11 @@
  *   app.get('/protected', requireAuth, (req, res) => { ... })
  */
 function requireAuth(req, res, next) {
-    console.log('🔐 [requireAuth] Session:', req.session);
-    console.log('🔐 [requireAuth] userId:', req.session.userId);
     if (!req.session.userId) {
-        console.log('❌ [requireAuth] REJET: pas de userId');
         return res.status(401).json({
             error: 'Authentification requise'
         });
     }
-    console.log('✅ [requireAuth] OK');
     next();
 }
 
@@ -34,24 +30,18 @@ function requireAuth(req, res, next) {
  * Note: Toujours utiliser requireAuth AVANT requireAdmin
  */
 function requireAdmin(req, res, next) {
-    console.log('👑 [requireAdmin] Session:', req.session);
-    console.log('👑 [requireAdmin] userId:', req.session.userId);
-    console.log('👑 [requireAdmin] userRole:', req.session.userRole);
     if (!req.session.userId) {
-        console.log('❌ [requireAdmin] REJET: pas de userId');
         return res.status(401).json({
             error: 'Authentification requise'
         });
     }
 
     if (req.session.userRole !== 'admin') {
-        console.log('❌ [requireAdmin] REJET: rôle =', req.session.userRole, '(pas admin)');
         return res.status(403).json({
             error: 'Accès réservé aux administrateurs'
         });
     }
 
-    console.log('✅ [requireAdmin] OK');
     next();
 }
 

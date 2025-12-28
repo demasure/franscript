@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const session = require('express-session');
-const { initDatabase } = require('./database');
+const { initDatabase, getVideoById, createVideo } = require('./database');
 const authRoutes = require('./auth');
 const adminRoutes = require('./admin');
 const subtitlesRoutes = require('./subtitles');
@@ -12,6 +12,21 @@ const PORT = 3000;
 
 // Initialiser la base de données
 initDatabase();
+
+// Créer la vidéo de démonstration si elle n'existe pas
+const demoVideo = getVideoById(1);
+if (!demoVideo) {
+    console.log('📹 Création de la vidéo de démonstration...');
+    createVideo({
+        title: 'Ma Première Vidéo',
+        description: 'Introduction à FranScript avec sous-titres interactifs pour apprendre le français.',
+        video_url: 'videos/ma_video.mp4',
+        subtitle_url: 'videos/ma_video.vtt',
+        is_paid: false,
+        tagIds: []
+    });
+    console.log('✅ Vidéo de démonstration créée avec ID: 1');
+}
 
 // Middleware CORS - Configuration complète pour les sessions
 app.use(cors({

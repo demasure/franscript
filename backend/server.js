@@ -3,6 +3,7 @@ const cors = require('cors');
 const session = require('express-session');
 const { initDatabase, getVideoById, createVideo } = require('./database');
 const authRoutes = require('./auth');
+const userFeaturesRoutes = require('./userFeatures');
 const adminRoutes = require('./admin');
 const subtitlesRoutes = require('./subtitles');
 const { requireAuth, requireAdmin } = require('./middleware');
@@ -52,6 +53,9 @@ app.use(session({
 
 // Routes d'authentification
 app.use('/auth', authRoutes);
+
+// Routes des fonctionnalités utilisateur (commentaires, likes, notes)
+app.use('/', userFeaturesRoutes);
 
 // Routes sous-titres - Protégées par requireAuth et requireAdmin
 // IMPORTANT: Doit être AVANT /admin car plus spécifique

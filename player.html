@@ -142,6 +142,36 @@
 
             </div>
 
+            <!-- SECTION COMMENTAIRES -->
+            <div class="comments-section" id="comments-section">
+                <h2 class="section-title">💬 Commentaires</h2>
+
+                <!-- Formulaire de commentaire (visible uniquement si connecté) -->
+                <div class="comment-form-container" id="comment-form-container" style="display: none;">
+                    <textarea
+                        id="comment-text"
+                        class="comment-textarea"
+                        placeholder="Ajouter un commentaire..."
+                        maxlength="1000"
+                    ></textarea>
+                    <div class="comment-form-actions">
+                        <span class="char-counter" id="char-counter">0/1000</span>
+                        <button class="btn-primary" id="post-comment-btn">Publier</button>
+                    </div>
+                </div>
+
+                <!-- Message si non connecté -->
+                <div class="login-prompt" id="login-prompt" style="display: none;">
+                    <p>Connectez-vous pour commenter</p>
+                    <a href="/auth.html" class="btn-primary">Se connecter</a>
+                </div>
+
+                <!-- Liste des commentaires -->
+                <div class="comments-list" id="comments-list">
+                    <!-- Chargés dynamiquement par player.js -->
+                </div>
+            </div>
+
         </div>
     </main>
 

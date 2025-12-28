@@ -59,10 +59,52 @@ function initDatabase() {
         )
     `;
 
+    // Table des commentaires
+    const createCommentsTable = `
+        CREATE TABLE IF NOT EXISTS comments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            video_id INTEGER NOT NULL,
+            text TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (video_id) REFERENCES videos(id) ON DELETE CASCADE
+        )
+    `;
+
+    // Table des likes sur les commentaires
+    const createCommentLikesTable = `
+        CREATE TABLE IF NOT EXISTS comment_likes (
+            user_id INTEGER NOT NULL,
+            comment_id INTEGER NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id, comment_id),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (comment_id) REFERENCES comments(id) ON DELETE CASCADE
+        )
+    `;
+
+    // Table des notes personnelles sur les sous-titres
+    const createSubtitleNotesTable = `
+        CREATE TABLE IF NOT EXISTS subtitle_notes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            video_id INTEGER NOT NULL,
+            start_time REAL NOT NULL,
+            text TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (video_id) REFERENCES videos(id) ON DELETE CASCADE
+        )
+    `;
+
     db.exec(createUsersTable);
     db.exec(createVideosTable);
     db.exec(createTagsTable);
     db.exec(createVideoTagsTable);
+    db.exec(createCommentsTable);
+    db.exec(createCommentLikesTable);
+    db.exec(createSubtitleNotesTable);
 
     // Migration : ajouter la colonne color si elle n'existe pas
     try {
@@ -351,6 +393,211 @@ function deleteTag(id) {
     db.prepare('DELETE FROM tags WHERE id = ?').run(id);
 }
 
+// ============================================
+// GESTION DES COMMENTAIRES
+// ============================================
+
+/**
+ * Récupère tous les commentaires d'une vidéo avec les infos utilisateur
+ * @param {number} videoId - ID de la vidéo
+ * @returns {Array} Liste des commentaires
+ */
+function getCommentsByVideo(videoId) {
+    const comments = db.prepare(`
+        SELECT c.*, u.username, u.profile_picture, u.email
+        FROM comments c
+        JOIN users u ON c.user_id = u.id
+        WHERE c.video_id = ?
+        ORDER BY c.created_at DESC
+    `).all(videoId);
+
+    // Ajouter le nombre de likes pour chaque commentaire
+    comments.forEach(comment => {
+        const likeCount = db.prepare('SELECT COUNT(*) as count FROM comment_likes WHERE comment_id = ?')
+            .get(comment.id).count;
+        comment.like_count = likeCount;
+    });
+
+    return comments;
+}
+
+/**
+ * Crée un nouveau commentaire
+ * @param {number} userId - ID de l'utilisateur
+ * @param {number} videoId - ID de la vidéo
+ * @param {string} text - Texte du commentaire
+ * @returns {object} Le commentaire créé
+ */
+function createComment(userId, videoId, text) {
+    const stmt = db.prepare(`
+        INSERT INTO comments (user_id, video_id, text)
+        VALUES (?, ?, ?)
+    `);
+
+    const result = stmt.run(userId, videoId, text);
+    return {
+        id: result.lastInsertRowid,
+        user_id: userId,
+        video_id: videoId,
+        text,
+        created_at: new Date().toISOString()
+    };
+}
+
+/**
+ * Supprime un commentaire (seulement si c'est l'auteur)
+ * @param {number} commentId - ID du commentaire
+ * @param {number} userId - ID de l'utilisateur qui demande la suppression
+ * @returns {boolean} True si supprimé, false sinon
+ */
+function deleteComment(commentId, userId) {
+    const comment = db.prepare('SELECT * FROM comments WHERE id = ?').get(commentId);
+
+    if (!comment || comment.user_id !== userId) {
+        return false; // Pas le droit de supprimer
+    }
+
+    db.prepare('DELETE FROM comments WHERE id = ?').run(commentId);
+    return true;
+}
+
+// ============================================
+// GESTION DES LIKES SUR COMMENTAIRES
+// ============================================
+
+/**
+ * Vérifie si un utilisateur a liké un commentaire
+ * @param {number} userId - ID de l'utilisateur
+ * @param {number} commentId - ID du commentaire
+ * @returns {boolean} True si liké, false sinon
+ */
+function hasUserLikedComment(userId, commentId) {
+    const result = db.prepare(`
+        SELECT COUNT(*) as count FROM comment_likes
+        WHERE user_id = ? AND comment_id = ?
+    `).get(userId, commentId);
+
+    return result.count > 0;
+}
+
+/**
+ * Like un commentaire
+ * @param {number} userId - ID de l'utilisateur
+ * @param {number} commentId - ID du commentaire
+ * @returns {boolean} True si ajouté, false si déjà liké
+ */
+function likeComment(userId, commentId) {
+    if (hasUserLikedComment(userId, commentId)) {
+        return false; // Déjà liké
+    }
+
+    const stmt = db.prepare(`
+        INSERT INTO comment_likes (user_id, comment_id)
+        VALUES (?, ?)
+    `);
+
+    stmt.run(userId, commentId);
+    return true;
+}
+
+/**
+ * Unlike un commentaire
+ * @param {number} userId - ID de l'utilisateur
+ * @param {number} commentId - ID du commentaire
+ * @returns {boolean} True si supprimé, false si pas liké
+ */
+function unlikeComment(userId, commentId) {
+    if (!hasUserLikedComment(userId, commentId)) {
+        return false; // Pas liké
+    }
+
+    const stmt = db.prepare(`
+        DELETE FROM comment_likes
+        WHERE user_id = ? AND comment_id = ?
+    `);
+
+    stmt.run(userId, commentId);
+    return true;
+}
+
+// ============================================
+// GESTION DES NOTES PERSONNELLES
+// ============================================
+
+/**
+ * Récupère toutes les notes d'un utilisateur pour une vidéo
+ * @param {number} userId - ID de l'utilisateur
+ * @param {number} videoId - ID de la vidéo
+ * @returns {Array} Liste des notes
+ */
+function getNotesByUserAndVideo(userId, videoId) {
+    return db.prepare(`
+        SELECT * FROM subtitle_notes
+        WHERE user_id = ? AND video_id = ?
+        ORDER BY start_time ASC
+    `).all(userId, videoId);
+}
+
+/**
+ * Crée une nouvelle note
+ * @param {number} userId - ID de l'utilisateur
+ * @param {number} videoId - ID de la vidéo
+ * @param {number} startTime - Timecode de début (en secondes)
+ * @param {string} text - Texte de la note
+ * @returns {object} La note créée
+ */
+function createNote(userId, videoId, startTime, text) {
+    const stmt = db.prepare(`
+        INSERT INTO subtitle_notes (user_id, video_id, start_time, text)
+        VALUES (?, ?, ?, ?)
+    `);
+
+    const result = stmt.run(userId, videoId, startTime, text);
+    return {
+        id: result.lastInsertRowid,
+        user_id: userId,
+        video_id: videoId,
+        start_time: startTime,
+        text,
+        created_at: new Date().toISOString()
+    };
+}
+
+/**
+ * Met à jour une note
+ * @param {number} noteId - ID de la note
+ * @param {number} userId - ID de l'utilisateur (pour vérifier la propriété)
+ * @param {string} text - Nouveau texte
+ * @returns {boolean} True si mise à jour, false sinon
+ */
+function updateNote(noteId, userId, text) {
+    const note = db.prepare('SELECT * FROM subtitle_notes WHERE id = ?').get(noteId);
+
+    if (!note || note.user_id !== userId) {
+        return false; // Pas le droit de modifier
+    }
+
+    db.prepare('UPDATE subtitle_notes SET text = ? WHERE id = ?').run(text, noteId);
+    return true;
+}
+
+/**
+ * Supprime une note
+ * @param {number} noteId - ID de la note
+ * @param {number} userId - ID de l'utilisateur (pour vérifier la propriété)
+ * @returns {boolean} True si supprimé, false sinon
+ */
+function deleteNote(noteId, userId) {
+    const note = db.prepare('SELECT * FROM subtitle_notes WHERE id = ?').get(noteId);
+
+    if (!note || note.user_id !== userId) {
+        return false; // Pas le droit de supprimer
+    }
+
+    db.prepare('DELETE FROM subtitle_notes WHERE id = ?').run(noteId);
+    return true;
+}
+
 module.exports = {
     db,
     initDatabase,
@@ -370,5 +617,18 @@ module.exports = {
     getTagById,
     createTag,
     updateTag,
-    deleteTag
+    deleteTag,
+    // Commentaires
+    getCommentsByVideo,
+    createComment,
+    deleteComment,
+    // Likes
+    hasUserLikedComment,
+    likeComment,
+    unlikeComment,
+    // Notes
+    getNotesByUserAndVideo,
+    createNote,
+    updateNote,
+    deleteNote
 };

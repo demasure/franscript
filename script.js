@@ -104,7 +104,7 @@ function createVideoCard(video) {
     const tagNames = video.tags ? video.tags.map(t => t.name.toLowerCase()).join(' ') : '';
     article.setAttribute('data-categories', tagNames);
     article.setAttribute('data-tag-ids', video.tags ? video.tags.map(t => t.id).join(',') : '');
-    article.setAttribute('data-level', 'B2'); // TODO: ajouter niveau dans la base de données
+    article.setAttribute('data-level', video.level || 'B2');
     article.setAttribute('data-video-src', video.video_url);
     article.setAttribute('data-subtitle-src', video.subtitle_url || '');
     article.setAttribute('data-video-id', video.id);
@@ -113,6 +113,10 @@ function createVideoCard(video) {
     const tagsHTML = video.tags && video.tags.length > 0
         ? video.tags.map(tag => `<span class="tag" style="background-color: rgba(${hexToRgb(tag.color)}, 0.2); color: ${tag.color}; border: 2px solid ${tag.color};">${tag.name.toUpperCase()}</span>`).join('')
         : '';
+
+    // Déterminer la classe CSS du niveau
+    const level = video.level || 'B2';
+    const levelClass = `level-${level.toLowerCase()}`;
 
     article.innerHTML = `
         <div class="video-thumbnail">
@@ -127,7 +131,7 @@ function createVideoCard(video) {
             <p class="video-description">${video.description || ''}</p>
             <div class="video-meta">
                 <span class="video-duration">40 sec</span>
-                <span class="video-level level-badge level-b2">B2</span>
+                <span class="video-level level-badge ${levelClass}">${level}</span>
             </div>
             <div class="video-tags">
                 ${tagsHTML}

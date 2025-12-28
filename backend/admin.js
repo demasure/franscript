@@ -58,13 +58,14 @@ router.get('/videos/:id', (req, res) => {
  *   description: string
  *   video_url: string (requis)
  *   subtitle_url: string
+ *   level: string (B2, C1, C2)
  *   is_paid: boolean
  *   tagIds: number[] (IDs des tags)
  * }
  */
 router.post('/videos', (req, res) => {
     try {
-        const { title, description, video_url, subtitle_url, is_paid, tagIds } = req.body;
+        const { title, description, video_url, subtitle_url, level, is_paid, tagIds } = req.body;
 
         // Validation
         if (!title || !video_url) {
@@ -78,6 +79,7 @@ router.post('/videos', (req, res) => {
             description: description || '',
             video_url,
             subtitle_url,
+            level: level || 'B2',
             is_paid: is_paid || false,
             tagIds: tagIds || []
         });
@@ -101,6 +103,7 @@ router.post('/videos', (req, res) => {
  *   description: string
  *   video_url: string
  *   subtitle_url: string
+ *   level: string (B2, C1, C2)
  *   is_paid: boolean
  *   tagIds: number[]
  * }
@@ -108,7 +111,7 @@ router.post('/videos', (req, res) => {
 router.put('/videos/:id', (req, res) => {
     try {
         const id = parseInt(req.params.id);
-        const { title, description, video_url, subtitle_url, is_paid, tagIds } = req.body;
+        const { title, description, video_url, subtitle_url, level, is_paid, tagIds } = req.body;
 
         // Vérifier que la vidéo existe
         const existingVideo = getVideoById(id);
@@ -128,6 +131,7 @@ router.put('/videos/:id', (req, res) => {
             description: description || '',
             video_url,
             subtitle_url,
+            level: level || 'B2',
             is_paid: is_paid || false,
             tagIds: tagIds || []
         });

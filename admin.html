@@ -252,11 +252,52 @@
             font-weight: 600;
         }
 
-        .tag-selector {
+        .tag-selector,
+        .level-selector {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
             margin-top: 12px;
+        }
+
+        .level-btn {
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background-color: transparent;
+        }
+
+        .level-btn[data-level="B2"] {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: #2ecc71;
+            border: 2px solid #2ecc71;
+        }
+
+        .level-btn[data-level="C1"] {
+            background-color: rgba(243, 156, 18, 0.2);
+            color: #f39c12;
+            border: 2px solid #f39c12;
+        }
+
+        .level-btn[data-level="C2"] {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            border: 2px solid #e74c3c;
+        }
+
+        .level-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .level-btn.active {
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3), 0 4px 12px rgba(0, 0, 0, 0.3);
+            transform: scale(1.05);
         }
 
         .tag-button {
@@ -333,6 +374,14 @@
                     <div class="form-group">
                         <label>Tags</label>
                         <div id="tag-selector" class="tag-selector"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>Niveau CECRL *</label>
+                        <div class="level-selector">
+                            <button type="button" class="level-btn active" data-level="B2" onclick="selectLevel(this, 'B2')">B2</button>
+                            <button type="button" class="level-btn" data-level="C1" onclick="selectLevel(this, 'C1')">C1</button>
+                            <button type="button" class="level-btn" data-level="C2" onclick="selectLevel(this, 'C2')">C2</button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <div class="checkbox-group">
@@ -543,11 +592,13 @@
             e.preventDefault();
 
             const id = document.getElementById('video-id').value;
+            const selectedLevel = document.querySelector('.level-btn.active');
             const videoData = {
                 title: document.getElementById('video-title').value,
                 description: document.getElementById('video-description').value,
                 video_url: document.getElementById('video-url').value,
                 subtitle_url: document.getElementById('subtitle-url').value,
+                level: selectedLevel ? selectedLevel.getAttribute('data-level') : 'B2',
                 is_paid: document.getElementById('is-paid').checked,
                 tagIds: Array.from(document.querySelectorAll('#tag-selector .tag-button.selected')).map(btn => parseInt(btn.dataset.tagId))
             };
@@ -595,6 +646,16 @@
                 document.getElementById('video-url').value = video.video_url;
                 document.getElementById('subtitle-url').value = video.subtitle_url || '';
                 document.getElementById('is-paid').checked = video.is_paid === 1;
+
+                // Sélectionner le niveau
+                const videoLevel = video.level || 'B2';
+                document.querySelectorAll('.level-btn').forEach(btn => {
+                    if (btn.getAttribute('data-level') === videoLevel) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
 
                 // Sélectionner les tags
                 const videoTagIds = video.tags.map(t => t.id);
@@ -646,6 +707,15 @@
             document.getElementById('video-id').value = '';
             document.getElementById('submit-btn').textContent = 'Créer la vidéo';
             document.querySelectorAll('#tag-selector .tag-button').forEach(btn => btn.classList.remove('selected'));
+
+            // Réinitialiser le niveau à B2
+            document.querySelectorAll('.level-btn').forEach(btn => {
+                if (btn.getAttribute('data-level') === 'B2') {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
         }
 
         // ============================================
@@ -710,6 +780,16 @@
          */
         function toggleTag(button, tagId) {
             button.classList.toggle('selected');
+        }
+
+        /**
+         * Sélectionne un niveau CECRL (exclusif)
+         */
+        function selectLevel(button, level) {
+            // Désélectionner tous les boutons de niveau
+            document.querySelectorAll('.level-btn').forEach(btn => btn.classList.remove('active'));
+            // Sélectionner le bouton cliqué
+            button.classList.add('active');
         }
 
         /**

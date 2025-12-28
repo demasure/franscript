@@ -15,8 +15,42 @@
  */
 
 // ========================================
-// CHARGEMENT DYNAMIQUE DES VIDÉOS
+// CHARGEMENT DYNAMIQUE DES TAGS ET VIDÉOS
 // ========================================
+async function loadTags() {
+    try {
+        const response = await fetch('http://localhost:3000/tags');
+        if (!response.ok) {
+            throw new Error('Erreur lors du chargement des tags');
+        }
+
+        const { tags } = await response.json();
+        const categoryFilters = document.querySelector('.category-filters');
+
+        // Garder le bouton "Toutes"
+        const allButton = categoryFilters.querySelector('[data-category="all"]');
+        categoryFilters.innerHTML = '';
+        if (allButton) {
+            categoryFilters.appendChild(allButton);
+        }
+
+        // Créer les boutons de filtre pour chaque tag
+        tags.forEach(tag => {
+            const button = document.createElement('button');
+            button.className = 'filter-btn';
+            button.setAttribute('data-category', tag.name.toLowerCase());
+            button.style.backgroundColor = tag.color;
+            button.style.color = 'white';
+            button.textContent = tag.name;
+            categoryFilters.appendChild(button);
+        });
+
+        console.log(`✅ ${tags.length} tag(s) chargé(s)`);
+    } catch (error) {
+        console.error('Erreur chargement tags:', error);
+    }
+}
+
 async function loadVideos() {
     try {
         const response = await fetch('http://localhost:3000/videos');
@@ -91,11 +125,12 @@ function createVideoCard(video) {
 // ========================================
 // INITIALISATION AU CHARGEMENT DE LA PAGE
 // ========================================
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('🎬 FranScript initialisé');
 
-    // Charger les vidéos depuis la base de données
-    loadVideos();
+    // Charger les tags et vidéos depuis la base de données
+    await loadTags();
+    await loadVideos();
 
     // Initialiser les filtres de catégories
     initializeFilters();

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Profil - FranScript</title>
+
+    <!-- Protection: Redirection vers auth si non connecté -->
+    <script src="authGuard.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="navbar.css">
+</head>
+<body>
+    <!-- HEADER - Navigation principale -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <!-- Logo / Nom du site -->
+                <a href="index.html" class="logo">
+                    <img src="images/logo.png" alt="FranScript" class="logo-icon">
+                    <span class="logo-text">FranScript</span>
+                </a>
+
+                <!-- Navigation -->
+                <nav class="nav">
+                    <ul class="nav-list">
+                        <li><a href="index.html" class="nav-link">Accueil</a></li>
+                        <li><a href="profile.html" class="nav-link active">Mon Profil</a></li>
+                        <li class="nav-account-placeholder" style="display: none;"></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+        <div class="container" style="max-width: 900px;">
+            <h1 class="section-title">👤 Mon Profil</h1>
+
+            <!-- Message de succès/erreur -->
+            <div id="profile-message" class="message" style="display: none;"></div>
+
+            <!-- SECTION INFORMATIONS UTILISATEUR -->
+            <section class="profile-section">
+                <h2 class="profile-section-title">📋 Informations du compte</h2>
+
+                <div class="profile-card">
+                    <!-- Avatar -->
+                    <div class="profile-avatar-section">
+                        <div class="avatar-display">
+                            <img id="avatar-preview" src="/uploads/avatars/default-avatar.png" alt="Avatar" class="profile-avatar">
+                            <span id="premium-badge" class="premium-badge" style="display: none;">👑 Premium</span>
+                        </div>
+
+                        <div class="avatar-upload">
+                            <label for="avatar-input" class="btn-secondary">
+                                📷 Changer l'avatar
+                            </label>
+                            <input type="file" id="avatar-input" accept="image/*" style="display: none;">
+                            <p class="form-help">JPG, PNG ou GIF - Max 2 MB</p>
+                        </div>
+                    </div>
+
+                    <!-- Informations -->
+                    <div class="profile-info-grid">
+                        <div class="form-group">
+                            <label for="email" class="form-label">📧 Email</label>
+                            <input type="email" id="email" class="form-input" readonly disabled>
+                            <p class="form-help">L'email ne peut pas être modifié</p>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="username" class="form-label">✏️ Pseudo</label>
+                            <input type="text" id="username" class="form-input" placeholder="Votre pseudo">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">📅 Membre depuis</label>
+                            <input type="text" id="member-since" class="form-input" readonly disabled>
+                        </div>
+                    </div>
+
+                    <button id="save-profile-btn" class="btn-primary">
+                        💾 Sauvegarder les modifications
+                    </button>
+                </div>
+            </section>
+
+            <!-- SECTION RÉGLAGES -->
+            <section class="profile-section">
+                <h2 class="profile-section-title">⚙️ Réglages d'apprentissage</h2>
+
+                <div class="profile-card">
+                    <div class="settings-grid">
+                        <!-- Fenêtre temporelle pour les notes -->
+                        <div class="form-group">
+                            <label for="note-window" class="form-label">
+                                ⏱️ Fenêtre temporelle des notes
+                            </label>
+                            <div class="range-input-group">
+                                <input type="range" id="note-window" min="1" max="60" value="10" class="form-range">
+                                <span id="note-window-value" class="range-value">10 secondes</span>
+                            </div>
+                            <p class="form-help">Durée d'affichage des notes personnelles autour du timestamp</p>
+                        </div>
+
+                        <!-- Affichage de l'aide IA par défaut -->
+                        <div class="form-group">
+                            <label class="form-label">
+                                <input type="checkbox" id="show-ai-help" class="form-checkbox">
+                                🤖 Afficher l'aide IA par défaut
+                            </label>
+                            <p class="form-help">Le panneau d'aide IA sera ouvert au chargement des vidéos</p>
+                        </div>
+
+                        <!-- Affichage des notes par défaut -->
+                        <div class="form-group">
+                            <label class="form-label">
+                                <input type="checkbox" id="show-notes" class="form-checkbox">
+                                📝 Afficher les notes par défaut
+                            </label>
+                            <p class="form-help">Le panneau de notes sera ouvert au chargement des vidéos</p>
+                        </div>
+                    </div>
+
+                    <button id="save-settings-btn" class="btn-primary">
+                        ⚙️ Sauvegarder les réglages
+                    </button>
+                </div>
+            </section>
+
+            <!-- SECTION DÉCONNEXION -->
+            <section class="profile-section">
+                <div class="profile-card profile-danger-zone">
+                    <h3 class="profile-section-title">🚪 Déconnexion</h3>
+                    <p>Vous souhaitez vous déconnecter de votre compte ?</p>
+                    <button id="logout-btn" class="btn-danger">
+                        Déconnexion
+                    </button>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <p>&copy; 2024 FranScript - Tous droits réservés</p>
+                <div class="footer-links">
+                    <a href="#privacy">Confidentialité</a>
+                    <a href="#terms">Conditions d'utilisation</a>
+                    <a href="#contact">Contact</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="navbar.js"></script>
+    <script src="utils.js"></script>
+    <script src="profile.js"></script>
+</body>
+</html>

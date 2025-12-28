@@ -433,6 +433,51 @@
         #recent-videos-table {
             margin-top: 16px;
         }
+
+        /* Status badges pour signalements */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .status-new {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .status-resolved {
+            background: #e8f5e9;
+            color: #388e3c;
+        }
+
+        .status-ignored {
+            background: #fbe9e7;
+            color: #d84315;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .filter-btn:hover {
+            border-color: #1e3c72;
+        }
+
+        .filter-btn.active {
+            background: #1e3c72;
+            color: white;
+            border-color: #1e3c72;
+        }
     </style>
 </head>
 <body>
@@ -453,6 +498,7 @@
         <div class="tabs">
             <button class="tab active" onclick="switchTab('videos')">Vidéos</button>
             <button class="tab" onclick="switchTab('tags')">Tags</button>
+            <button class="tab" onclick="switchTab('reports')">⚠️ Signalements</button>
             <button class="tab" onclick="switchTab('stats')">📊 Statistiques</button>
         </div>
 
@@ -547,6 +593,46 @@
                     </thead>
                     <tbody></tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- TAB SIGNALEMENTS -->
+        <div id="tab-reports" class="tab-content">
+            <div class="panel">
+                <h2>⚠️ Signalements des utilisateurs</h2>
+                <p style="color: #666; margin-bottom: 20px;">Gérez les signalements de problèmes envoyés par les utilisateurs.</p>
+
+                <!-- Filtres -->
+                <div class="form-group">
+                    <label>Filtrer par statut</label>
+                    <div class="report-filters" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                        <button class="filter-btn active" onclick="filterReports('all')">Tous</button>
+                        <button class="filter-btn" onclick="filterReports('nouveau')">Nouveaux</button>
+                        <button class="filter-btn" onclick="filterReports('traité')">Traités</button>
+                        <button class="filter-btn" onclick="filterReports('ignoré')">Ignorés</button>
+                    </div>
+                </div>
+
+                <!-- Table des signalements -->
+                <table id="reports-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Utilisateur</th>
+                            <th>Vidéo</th>
+                            <th>Message</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Chargé dynamiquement -->
+                    </tbody>
+                </table>
+
+                <p id="no-reports-message" style="text-align: center; color: #999; padding: 40px; display: none;">
+                    Aucun signalement trouvé.
+                </p>
             </div>
         </div>
 
@@ -669,9 +755,11 @@
             event.target.classList.add('active');
             document.getElementById(`tab-${tab}`).classList.add('active');
 
-            // Charger les statistiques quand on passe à l'onglet stats
+            // Charger les données spécifiques à chaque onglet
             if (tab === 'stats') {
                 loadStats();
+            } else if (tab === 'reports') {
+                loadReports();
             }
         }
 
@@ -1222,6 +1310,142 @@
                     </tr>
                 `;
             }).join('');
+        }
+
+        // ========================================
+        // GESTION DES SIGNALEMENTS
+        // ========================================
+
+        let allReports = [];
+        let currentReportFilter = 'all';
+
+        async function loadReports() {
+            try {
+                const response = await fetch(`${API_URL}/reports`, {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erreur chargement signalements');
+                }
+
+                allReports = await response.json();
+                console.log(`📋 ${allReports.length} signalements chargés`);
+                displayReports();
+            } catch (error) {
+                console.error('Erreur:', error);
+                showMessage('Erreur lors du chargement des signalements', 'error');
+            }
+        }
+
+        function displayReports() {
+            const tbody = document.querySelector('#reports-table tbody');
+            const noReportsMsg = document.getElementById('no-reports-message');
+
+            // Filtrer les signalements selon le filtre actif
+            const filteredReports = currentReportFilter === 'all'
+                ? allReports
+                : allReports.filter(r => r.status === currentReportFilter);
+
+            if (filteredReports.length === 0) {
+                tbody.innerHTML = '';
+                noReportsMsg.style.display = 'block';
+                return;
+            }
+
+            noReportsMsg.style.display = 'none';
+
+            tbody.innerHTML = filteredReports.map(report => {
+                const date = new Date(report.created_at).toLocaleDateString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                const statusClass = {
+                    'nouveau': 'status-new',
+                    'traité': 'status-resolved',
+                    'ignoré': 'status-ignored'
+                }[report.status] || '';
+
+                const statusEmoji = {
+                    'nouveau': '🆕',
+                    'traité': '✅',
+                    'ignoré': '🚫'
+                }[report.status] || '';
+
+                return `
+                    <tr>
+                        <td>${date}</td>
+                        <td>${report.username || report.email}</td>
+                        <td><a href="player.html?id=${report.video_id}" target="_blank">${report.video_title}</a></td>
+                        <td style="max-width: 300px; word-wrap: break-word;">${escapeHtml(report.message)}</td>
+                        <td>
+                            <span class="status-badge ${statusClass}">
+                                ${statusEmoji} ${report.status}
+                            </span>
+                        </td>
+                        <td>
+                            <select onchange="updateReportStatus(${report.id}, this.value)"
+                                    style="padding: 6px; border-radius: 4px; border: 1px solid #ddd;">
+                                <option value="nouveau" ${report.status === 'nouveau' ? 'selected' : ''}>Nouveau</option>
+                                <option value="traité" ${report.status === 'traité' ? 'selected' : ''}>Traité</option>
+                                <option value="ignoré" ${report.status === 'ignoré' ? 'selected' : ''}>Ignoré</option>
+                            </select>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterReports(status) {
+            currentReportFilter = status;
+
+            // Mettre à jour les boutons actifs
+            document.querySelectorAll('.report-filters .filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            displayReports();
+        }
+
+        async function updateReportStatus(reportId, newStatus) {
+            try {
+                const response = await fetch(`${API_URL}/reports/${reportId}/status`, {
+                    method: 'PUT',
+                    credentials: 'include',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erreur mise à jour statut');
+                }
+
+                showMessage(`✅ Statut mis à jour: ${newStatus}`, 'success');
+
+                // Mettre à jour localement
+                const report = allReports.find(r => r.id === reportId);
+                if (report) {
+                    report.status = newStatus;
+                    displayReports();
+                }
+
+            } catch (error) {
+                console.error('Erreur:', error);
+                showMessage('Erreur lors de la mise à jour du statut', 'error');
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
     </script>
 </body>

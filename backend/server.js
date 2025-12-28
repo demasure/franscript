@@ -242,6 +242,65 @@ app.get('/api/admin/stats', requireAuth, requireAdmin, (req, res) => {
     });
 });
 
+// ============================================
+// ROUTE PROTÉGÉE POUR LES VIDÉOS
+// ============================================
+
+/**
+ * Route pour servir les fichiers vidéo avec contrôle d'accès premium
+ * - Si la vidéo est gratuite (is_paid = 0) : accès libre
+ * - Si la vidéo est payante (is_paid = 1) : vérifier que l'utilisateur est premium
+ */
+app.get('/videos/:filename', (req, res) => {
+    const { getVideoByUrl, findUserById } = require('./database');
+    const filename = req.params.filename;
+
+    // Construire le chemin relatif comme stocké en base de données
+    const videoPath = `videos/${filename}`;
+
+    // Chercher la vidéo dans la base de données
+    const video = getVideoByUrl(videoPath);
+
+    // Si la vidéo n'existe pas en base, retourner 404
+    if (!video) {
+        // Permettre l'accès aux fichiers .vtt (sous-titres) sans restriction
+        if (filename.endsWith('.vtt')) {
+            const filePath = path.join(__dirname, '..', 'videos', filename);
+            return res.sendFile(filePath);
+        }
+        return res.status(404).json({ error: 'Vidéo introuvable' });
+    }
+
+    // Si la vidéo est gratuite, servir directement
+    if (!video.is_paid) {
+        const filePath = path.join(__dirname, '..', 'videos', filename);
+        return res.sendFile(filePath);
+    }
+
+    // Vidéo payante : vérifier que l'utilisateur est premium
+    if (!req.session.userId) {
+        return res.status(401).json({
+            error: 'Cette vidéo nécessite un compte premium',
+            isPaid: true,
+            requiresPremium: true
+        });
+    }
+
+    const user = findUserById(req.session.userId);
+
+    if (!user || !user.is_premium) {
+        return res.status(403).json({
+            error: 'Cette vidéo est réservée aux membres premium',
+            isPaid: true,
+            requiresPremium: true
+        });
+    }
+
+    // Utilisateur premium : servir la vidéo
+    const filePath = path.join(__dirname, '..', 'videos', filename);
+    res.sendFile(filePath);
+});
+
 // Servir les fichiers uploadés (avatars, etc.)
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 

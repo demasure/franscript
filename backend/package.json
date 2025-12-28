@@ -13,6 +13,7 @@
     "express": "^4.18.2",
     "express-session": "^1.17.3",
     "fluent-ffmpeg": "^2.1.3",
-    "get-video-duration": "^5.0.0"
+    "get-video-duration": "^5.0.0",
+    "multer": "^2.0.2"
   }
 }

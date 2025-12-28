@@ -362,6 +362,25 @@ function getVideoById(id) {
 }
 
 /**
+ * Récupère une vidéo par son URL
+ * @param {string} videoUrl - URL de la vidéo (ex: 'videos/ma_video.mp4')
+ * @returns {object|null} La vidéo ou null si non trouvée
+ */
+function getVideoByUrl(videoUrl) {
+    const video = db.prepare('SELECT * FROM videos WHERE video_url = ?').get(videoUrl);
+    if (!video) return null;
+
+    const tags = db.prepare(`
+        SELECT t.* FROM tags t
+        JOIN video_tags vt ON t.id = vt.tag_id
+        WHERE vt.video_id = ?
+    `).all(video.id);
+    video.tags = tags;
+
+    return video;
+}
+
+/**
  * Crée une nouvelle vidéo
  * @param {object} videoData - { title, description, video_url, subtitle_url, thumbnail_url, level, duration, is_paid, tagIds }
  * @returns {object} La vidéo créée
@@ -763,6 +782,7 @@ module.exports = {
     // Vidéos
     getAllVideos,
     getVideoById,
+    getVideoByUrl,
     createVideo,
     updateVideo,
     deleteVideo,

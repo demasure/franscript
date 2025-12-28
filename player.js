@@ -115,6 +115,15 @@ async function loadVideoMetadata(videoId) {
             const data = await response.json();
             const video = data.video;
 
+            // Vérifier si la vidéo est payante et si l'utilisateur a accès
+            if (video.is_paid) {
+                const hasAccess = await checkPremiumAccess();
+                if (!hasAccess) {
+                    blockVideoAccess();
+                    return;
+                }
+            }
+
             // Afficher la description
             if (video.description) {
                 document.getElementById('video-description').textContent = video.description;
@@ -144,6 +153,59 @@ async function loadVideoMetadata(videoId) {
     } catch (error) {
         console.error('Erreur chargement métadonnées:', error);
     }
+}
+
+/**
+ * Vérifie si l'utilisateur connecté a un compte premium
+ */
+async function checkPremiumAccess() {
+    try {
+        const response = await fetch('http://localhost:3000/auth/me', {
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            return false;
+        }
+
+        const data = await response.json();
+        return data.user && data.user.is_premium === 1;
+    } catch (error) {
+        console.error('Erreur vérification premium:', error);
+        return false;
+    }
+}
+
+/**
+ * Bloque l'accès à la vidéo et affiche un message pour les vidéos premium
+ */
+function blockVideoAccess() {
+    const videoContainer = document.querySelector('.video-player-container');
+
+    // Masquer le lecteur vidéo
+    const videoPlayer = document.getElementById('video-player');
+    videoPlayer.style.display = 'none';
+
+    // Créer et afficher le message de blocage
+    const blockedMessage = document.createElement('div');
+    blockedMessage.className = 'premium-video-blocked';
+    blockedMessage.innerHTML = `
+        <div class="blocked-content">
+            <div class="blocked-icon">👑</div>
+            <h2 class="blocked-title">Vidéo Premium</h2>
+            <p class="blocked-text">
+                Cette vidéo est réservée aux membres premium.<br>
+                Passez à un compte premium pour accéder à l'intégralité du contenu.
+            </p>
+            <div class="blocked-actions">
+                <a href="index.html" class="btn-secondary">← Retour aux vidéos</a>
+            </div>
+        </div>
+    `;
+
+    videoContainer.appendChild(blockedMessage);
+
+    console.log('🔒 Accès à la vidéo premium bloqué');
 }
 
 /**

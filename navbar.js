@@ -96,14 +96,11 @@ async function updateNavbar() {
         divider.className = 'dropdown-divider';
         dropdown.appendChild(divider);
 
-        // Option: Modifier profil (future feature)
-        const editProfileBtn = document.createElement('button');
+        // Option: Modifier profil
+        const editProfileBtn = document.createElement('a');
+        editProfileBtn.href = '/profile.html';
         editProfileBtn.className = 'dropdown-item';
-        editProfileBtn.innerHTML = '👤 Modifier mon profil';
-        editProfileBtn.onclick = () => {
-            alert('Cette fonctionnalité sera bientôt disponible !');
-            toggleProfileMenu();
-        };
+        editProfileBtn.innerHTML = '👤 Mon profil';
         dropdown.appendChild(editProfileBtn);
 
         // Si admin : bouton espace admin

@@ -173,6 +173,18 @@ English translation:`;
     });
 });
 
+// Route publique pour récupérer toutes les vidéos (pour la page d'accueil)
+app.get('/videos', (req, res) => {
+    try {
+        const { getAllVideos } = require('./database');
+        const videos = getAllVideos();
+        res.json({ videos });
+    } catch (error) {
+        console.error('Erreur récupération vidéos:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des vidéos' });
+    }
+});
+
 // Endpoint health check
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', port: PORT });

@@ -15,16 +15,80 @@
  */
 
 // ========================================
+// CHARGEMENT DYNAMIQUE DES VIDÉOS
+// ========================================
+async function loadVideos() {
+    try {
+        const response = await fetch('http://localhost:3000/videos');
+        if (!response.ok) {
+            throw new Error('Erreur lors du chargement des vidéos');
+        }
+
+        const { videos } = await response.json();
+        const videoGrid = document.querySelector('.video-grid');
+
+        // Vider la grille actuelle
+        videoGrid.innerHTML = '';
+
+        // Créer une carte pour chaque vidéo
+        videos.forEach(video => {
+            const card = createVideoCard(video);
+            videoGrid.appendChild(card);
+        });
+
+        // Réinitialiser les événements de clic sur les nouvelles cartes
+        initializeVideoCards();
+
+        console.log(`✅ ${videos.length} vidéo(s) chargée(s)`);
+    } catch (error) {
+        console.error('Erreur chargement vidéos:', error);
+    }
+}
+
+function createVideoCard(video) {
+    const article = document.createElement('article');
+    article.className = 'video-card';
+    article.setAttribute('data-categories', 'education'); // TODO: utiliser les vrais tags
+    article.setAttribute('data-level', 'B2'); // TODO: utiliser le vrai niveau
+    article.setAttribute('data-video-src', video.video_url);
+    article.setAttribute('data-subtitle-src', video.subtitle_url || '');
+
+    article.innerHTML = `
+        <div class="video-thumbnail">
+            <img src="https://via.placeholder.com/400x225/2ecc71/ffffff?text=${encodeURIComponent(video.title)}" alt="${video.title}">
+            <div class="video-overlay">
+                <button class="play-btn">▶ Lire</button>
+            </div>
+            <span class="badge badge-real" style="position: absolute; top: 8px; left: 8px; background: #2ecc71; color: white; padding: 4px 12px; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">Vidéo Réelle</span>
+        </div>
+        <div class="video-info">
+            <h3 class="video-title">${video.title}</h3>
+            <p class="video-description">${video.description || ''}</p>
+            <div class="video-meta">
+                <span class="video-duration">40 sec</span>
+                <span class="video-level level-badge level-b2">B2</span>
+            </div>
+            <div class="video-tags">
+                <span class="tag tag-education">EDUCATION</span>
+                ${video.is_paid ? '<span class="tag tag-culte">⭐ CULTE</span>' : ''}
+            </div>
+        </div>
+    `;
+
+    return article;
+}
+
+// ========================================
 // INITIALISATION AU CHARGEMENT DE LA PAGE
 // ========================================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🎬 FranScript initialisé');
 
+    // Charger les vidéos depuis la base de données
+    loadVideos();
+
     // Initialiser les filtres de catégories
     initializeFilters();
-
-    // Initialiser les cartes vidéo (événements de clic)
-    initializeVideoCards();
 
     // Préparer les conteneurs pour futures fonctionnalités
     prepareFutureFeatures();

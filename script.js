@@ -437,7 +437,7 @@ function enableContentProtection() {
 
     setInterval(function() {
         devToolsOpen = false;
-        console.log(element);
+        // console.log(element); // Commenté pour éviter le spam
         if (devToolsOpen) {
             // Les DevTools sont ouverts - on peut afficher un avertissement
             // Mais on ne peut pas vraiment les fermer

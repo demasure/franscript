@@ -21,8 +21,23 @@ let editedSubtitles = {};  // Sous-titres modifiés {index: newText}
 let currentVideoId = null;  // ID de la vidéo courante
 let isAdmin = false;  // Utilisateur admin ou non
 let userNotes = [];  // Notes personnelles de l'utilisateur pour cette vidéo
-let isNotesCompactMode = true;  // Mode compact (±10s) par défaut, false = toutes les notes
+let isNotesCompactMode = true;  // Mode compact (défaut) : affiche notes dans fenêtre temporelle
 let lastNotesRefreshTime = -1;  // Dernier temps où les notes ont été rafraîchies (pour throttle)
+let isAiHelpCollapsed = false;  // État collapse du panneau Aide IA
+let isNotesCollapsed = false;  // État collapse du panneau Notes
+const NOTE_TIME_WINDOW = 10;  // Fenêtre temporelle pour affichage des notes (en secondes)
+
+/**
+ * Vérifie si une note doit être affichée selon le temps actuel de la vidéo
+ * Une note est affichée si: currentTime >= note.timestamp AND currentTime <= note.timestamp + windowSize
+ * @param {Object} note - Note avec propriété start_time
+ * @param {number} currentTime - Temps actuel de la vidéo en secondes
+ * @param {number} windowSize - Taille de la fenêtre temporelle en secondes (défaut: NOTE_TIME_WINDOW)
+ * @returns {boolean} true si la note doit être affichée
+ */
+function isNoteInTimeWindow(note, currentTime, windowSize = NOTE_TIME_WINDOW) {
+    return currentTime >= note.start_time && currentTime <= (note.start_time + windowSize);
+}
 
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🎬 Player initialisé');
@@ -36,6 +51,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     // IMPORTANT: Initialiser auth et charger données AVANT d'afficher les sous-titres
     await initComments();
     await initNotes();
+
+    // Initialiser les boutons collapse des panneaux latéraux
+    initializeCollapseButtons();
 
     // Initialiser le lecteur vidéo (lance l'affichage des sous-titres)
     initializePlayer();
@@ -1369,6 +1387,67 @@ async function initNotes() {
 }
 
 /**
+ * Initialise les boutons collapse pour les panneaux latéraux
+ */
+function initializeCollapseButtons() {
+    // Bouton collapse Aide IA
+    const aiCollapseBtn = document.getElementById('ai-help-collapse-btn');
+    if (aiCollapseBtn) {
+        aiCollapseBtn.addEventListener('click', toggleAiHelpCollapse);
+    }
+
+    // Bouton collapse Notes
+    const notesCollapseBtn = document.getElementById('notes-collapse-btn');
+    if (notesCollapseBtn) {
+        notesCollapseBtn.addEventListener('click', toggleNotesCollapse);
+    }
+}
+
+/**
+ * Bascule l'affichage du panneau Aide IA (collapse/expand)
+ */
+function toggleAiHelpCollapse() {
+    isAiHelpCollapsed = !isAiHelpCollapsed;
+
+    const content = document.getElementById('ai-help-content');
+    const btn = document.getElementById('ai-help-collapse-btn');
+
+    if (!content || !btn) return;
+
+    if (isAiHelpCollapsed) {
+        content.style.display = 'none';
+        btn.classList.add('collapsed');
+        btn.textContent = '▶';
+    } else {
+        content.style.display = 'block';
+        btn.classList.remove('collapsed');
+        btn.textContent = '▼';
+    }
+}
+
+/**
+ * Bascule l'affichage du panneau Notes (collapse/expand)
+ */
+function toggleNotesCollapse() {
+    isNotesCollapsed = !isNotesCollapsed;
+
+    const content = document.getElementById('notes-content');
+    const btn = document.getElementById('notes-collapse-btn');
+
+    if (!content || !btn) return;
+
+    if (isNotesCollapsed) {
+        content.style.display = 'none';
+        btn.classList.add('collapsed');
+        btn.textContent = '▶';
+    } else {
+        content.style.display = 'block';
+        btn.classList.remove('collapsed');
+        btn.textContent = '▼';
+    }
+}
+
+/**
  * Initialise le formulaire de prise de notes
  */
 function initializeNotesForm() {
@@ -1469,7 +1548,7 @@ async function saveCurrentNote() {
 }
 
 /**
- * Bascule entre mode compact (±10s) et mode développé (toutes les notes)
+ * Bascule entre mode compact (fenêtre temporelle) et mode développé (toutes les notes)
  */
 function toggleNotesMode() {
     isNotesCompactMode = !isNotesCompactMode;
@@ -1481,21 +1560,21 @@ function toggleNotesMode() {
             toggleBtn.classList.add('compact-mode');
             toggleBtn.title = 'Afficher toutes les notes (mode développé)';
         } else {
-            toggleBtn.textContent = '⏱️ ±10s';
+            toggleBtn.textContent = '⏱️ Fenêtre';
             toggleBtn.classList.remove('compact-mode');
-            toggleBtn.title = 'Afficher uniquement les notes proches (mode compact)';
+            toggleBtn.title = 'Afficher uniquement les notes actives (mode compact)';
         }
     }
 
     // Rafraîchir immédiatement l'affichage
     refreshNotesList();
 
-    console.log(`📝 Mode notes: ${isNotesCompactMode ? 'Compact (±10s)' : 'Développé (toutes)'}`);
+    console.log(`📝 Mode notes: ${isNotesCompactMode ? 'Compact (fenêtre temporelle)' : 'Développé (toutes)'}`);
 }
 
 /**
  * Rafraîchit l'affichage des notes selon le mode actif
- * Mode compact: notes dans la fenêtre currentTime ± 10s
+ * Mode compact: notes dans la fenêtre temporelle (currentTime >= note.start_time AND currentTime <= note.start_time + NOTE_TIME_WINDOW)
  * Mode développé: toutes les notes triées par timecode
  */
 function refreshNotesList() {
@@ -1519,20 +1598,20 @@ function refreshNotesList() {
     let notesToDisplay;
 
     if (isNotesCompactMode) {
-        // Mode compact: afficher seulement les notes ± 10s du temps actuel
+        // Mode compact: afficher les notes dans la fenêtre temporelle valide
+        // Une note est affichée si: currentTime >= note.start_time AND currentTime <= note.start_time + NOTE_TIME_WINDOW
         const video = document.getElementById('video-player');
         const currentTime = video ? video.currentTime : 0;
-        const timeWindow = 10; // secondes
 
         notesToDisplay = userNotes.filter(note =>
-            Math.abs(note.start_time - currentTime) <= timeWindow
+            isNoteInTimeWindow(note, currentTime, NOTE_TIME_WINDOW)
         );
 
         // Si aucune note dans la fenêtre temporelle
         if (notesToDisplay.length === 0) {
             notesListContainer.innerHTML = `
                 <div class="no-notes-message">
-                    🕒 Aucune note entre ${formatTimecode(Math.max(0, currentTime - timeWindow))} et ${formatTimecode(currentTime + timeWindow)}
+                    🕒 Aucune note active entre ${formatTimecode(currentTime)} et ${formatTimecode(currentTime + NOTE_TIME_WINDOW)}
                 </div>
             `;
             return;
@@ -1568,7 +1647,7 @@ function refreshNotesList() {
 
     notesListContainer.innerHTML = notesHTML;
 
-    const modeLabel = isNotesCompactMode ? '(±10s)' : '(toutes)';
+    const modeLabel = isNotesCompactMode ? '(fenêtre temporelle)' : '(toutes)';
     console.log(`📝 Affichage de ${notesToDisplay.length}/${userNotes.length} notes ${modeLabel}`);
 }
 

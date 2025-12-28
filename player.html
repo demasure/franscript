@@ -128,8 +128,13 @@
 
                     <!-- Aide IA -->
                     <div class="ai-help-panel" id="ai-help-panel">
-                        <h3 class="panel-title">🤖 Aide IA</h3>
-                        <div class="ai-help-content">
+                        <div class="panel-header-with-toggle">
+                            <h3 class="panel-title">🤖 Aide IA</h3>
+                            <button id="ai-help-collapse-btn" class="collapse-toggle-btn" title="Masquer/Afficher">
+                                ▼
+                            </button>
+                        </div>
+                        <div id="ai-help-content" class="ai-help-content">
                             <p class="selected-text"><strong>Texte sélectionné :</strong> <span id="selected-subtitle-text"></span></p>
                             <div class="ai-response" id="ai-response">
                                 <p>Cliquez sur un sous-titre pour obtenir une explication contextuelle avec l'IA.</p>
@@ -141,13 +146,20 @@
                     <div id="notes-banner" class="notes-banner" style="display: none;">
                         <div class="notes-banner-header">
                             <h3 class="notes-banner-title">📝 Mes notes</h3>
-                            <button id="notes-toggle-btn" class="notes-toggle-btn" title="Basculer entre mode compact (±10s) et développé (toutes les notes)">
-                                📋 Toutes
-                            </button>
+                            <div class="notes-header-actions">
+                                <button id="notes-toggle-btn" class="notes-toggle-btn" title="Basculer entre mode compact et développé">
+                                    📋 Toutes
+                                </button>
+                                <button id="notes-collapse-btn" class="collapse-toggle-btn" title="Masquer/Afficher">
+                                    ▼
+                                </button>
+                            </div>
                         </div>
 
-                        <!-- Formulaire d'ajout de note -->
-                        <div class="note-form-container">
+                        <!-- Contenu collapsible -->
+                        <div id="notes-content" class="notes-content">
+                            <!-- Formulaire d'ajout de note -->
+                            <div class="note-form-container">
                             <textarea id="note-text-input"
                                       class="note-textarea"
                                       placeholder="Écrivez une note... Elle sera timestampée au moment actuel."
@@ -160,13 +172,14 @@
                             </div>
                         </div>
 
-                        <!-- Liste des notes existantes -->
-                        <div id="notes-list-container" class="notes-list-container">
-                            <!-- Contenu dynamique: liste des notes triées par timecode -->
-                        </div>
-                    </div>
+                            <!-- Liste des notes existantes -->
+                            <div id="notes-list-container" class="notes-list-container">
+                                <!-- Contenu dynamique: liste des notes triées par timecode -->
+                            </div>
+                        </div><!-- fin notes-content -->
+                    </div><!-- fin notes-banner -->
 
-                </div>
+                </div><!-- fin player-sidebar -->
 
             </div>
 

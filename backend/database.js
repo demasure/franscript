@@ -154,6 +154,62 @@ function initDatabase() {
         // La colonne existe déjà, ignorer l'erreur
     }
 
+    // Migration : ajouter is_premium si elle n'existe pas
+    try {
+        db.exec(`ALTER TABLE users ADD COLUMN is_premium INTEGER DEFAULT 0`);
+        console.log('✅ Colonne "is_premium" ajoutée à la table users');
+    } catch (error) {
+        // La colonne existe déjà, ignorer l'erreur
+    }
+
+    // Migration : ajouter note_window_seconds si elle n'existe pas
+    try {
+        db.exec(`ALTER TABLE users ADD COLUMN note_window_seconds INTEGER DEFAULT 10`);
+        console.log('✅ Colonne "note_window_seconds" ajoutée à la table users');
+    } catch (error) {
+        // La colonne existe déjà, ignorer l'erreur
+    }
+
+    // Migration : ajouter show_ai_help_default si elle n'existe pas
+    try {
+        db.exec(`ALTER TABLE users ADD COLUMN show_ai_help_default INTEGER DEFAULT 1`);
+        console.log('✅ Colonne "show_ai_help_default" ajoutée à la table users');
+    } catch (error) {
+        // La colonne existe déjà, ignorer l'erreur
+    }
+
+    // Migration : ajouter show_notes_default si elle n'existe pas
+    try {
+        db.exec(`ALTER TABLE users ADD COLUMN show_notes_default INTEGER DEFAULT 1`);
+        console.log('✅ Colonne "show_notes_default" ajoutée à la table users');
+    } catch (error) {
+        // La colonne existe déjà, ignorer l'erreur
+    }
+
+    // Migration : ajouter is_paid si elle n'existe pas
+    try {
+        db.exec(`ALTER TABLE videos ADD COLUMN is_paid INTEGER DEFAULT 0`);
+        console.log('✅ Colonne "is_paid" ajoutée à la table videos');
+    } catch (error) {
+        // La colonne existe déjà, ignorer l'erreur
+    }
+
+    // Table des signalements (reports)
+    const createReportsTable = `
+        CREATE TABLE IF NOT EXISTS reports (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            video_id INTEGER NOT NULL,
+            message TEXT NOT NULL,
+            status TEXT DEFAULT 'nouveau',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (video_id) REFERENCES videos(id) ON DELETE CASCADE
+        )
+    `;
+
+    db.exec(createReportsTable);
+
     console.log('✅ Base de données initialisée');
 }
 
@@ -196,26 +252,60 @@ function findUserByEmail(email) {
  * @returns {object|null} L'utilisateur ou null si non trouvé
  */
 function findUserById(id) {
-    const stmt = db.prepare('SELECT id, email, username, profile_picture, role, created_at FROM users WHERE id = ?');
+    const stmt = db.prepare(`
+        SELECT id, email, username, profile_picture, role, is_premium,
+               note_window_seconds, show_ai_help_default, show_notes_default, created_at
+        FROM users
+        WHERE id = ?
+    `);
     return stmt.get(id);
 }
 
 /**
- * Met à jour les informations d'un utilisateur
+ * Met à jour les informations d'un utilisateur (profil et réglages)
  * @param {number} id - ID de l'utilisateur
- * @param {object} userData - { username, profile_picture }
+ * @param {object} userData - Nouvelles données
  * @returns {object} L'utilisateur mis à jour
  */
 function updateUser(id, userData) {
-    const { username, profile_picture } = userData;
+    const fields = [];
+    const values = [];
+
+    // Construire dynamiquement la requête selon les champs fournis
+    if (userData.username !== undefined) {
+        fields.push('username = ?');
+        values.push(userData.username);
+    }
+    if (userData.profile_picture !== undefined) {
+        fields.push('profile_picture = ?');
+        values.push(userData.profile_picture);
+    }
+    if (userData.note_window_seconds !== undefined) {
+        fields.push('note_window_seconds = ?');
+        values.push(userData.note_window_seconds);
+    }
+    if (userData.show_ai_help_default !== undefined) {
+        fields.push('show_ai_help_default = ?');
+        values.push(userData.show_ai_help_default ? 1 : 0);
+    }
+    if (userData.show_notes_default !== undefined) {
+        fields.push('show_notes_default = ?');
+        values.push(userData.show_notes_default ? 1 : 0);
+    }
+
+    if (fields.length === 0) {
+        return findUserById(id); // Rien à mettre à jour
+    }
+
+    values.push(id); // Ajouter l'ID à la fin pour le WHERE
 
     const stmt = db.prepare(`
         UPDATE users
-        SET username = ?, profile_picture = ?
+        SET ${fields.join(', ')}
         WHERE id = ?
     `);
 
-    stmt.run(username || null, profile_picture || null, id);
+    stmt.run(...values);
     return findUserById(id);
 }
 
@@ -598,6 +688,70 @@ function deleteNote(noteId, userId) {
     return true;
 }
 
+// ============================================
+// GESTION DES SIGNALEMENTS
+// ============================================
+
+/**
+ * Crée un signalement
+ * @param {object} reportData - { user_id, video_id, message }
+ * @returns {object} Le signalement créé
+ */
+function createReport(reportData) {
+    const { user_id, video_id, message } = reportData;
+
+    const stmt = db.prepare(`
+        INSERT INTO reports (user_id, video_id, message)
+        VALUES (?, ?, ?)
+    `);
+
+    const result = stmt.run(user_id, video_id, message);
+    return {
+        id: result.lastInsertRowid,
+        user_id,
+        video_id,
+        message,
+        status: 'nouveau'
+    };
+}
+
+/**
+ * Récupère tous les signalements (pour l'admin)
+ * @returns {Array} Liste des signalements avec infos utilisateur et vidéo
+ */
+function getAllReports() {
+    const stmt = db.prepare(`
+        SELECT
+            r.id,
+            r.message,
+            r.status,
+            r.created_at,
+            u.id as user_id,
+            u.username,
+            u.email,
+            v.id as video_id,
+            v.title as video_title
+        FROM reports r
+        JOIN users u ON r.user_id = u.id
+        JOIN videos v ON r.video_id = v.id
+        ORDER BY r.created_at DESC
+    `);
+
+    return stmt.all();
+}
+
+/**
+ * Met à jour le statut d'un signalement
+ * @param {number} reportId - ID du signalement
+ * @param {string} status - Nouveau statut (nouveau, traité, ignoré)
+ * @returns {boolean} True si mis à jour, false sinon
+ */
+function updateReportStatus(reportId, status) {
+    const stmt = db.prepare('UPDATE reports SET status = ? WHERE id = ?');
+    const result = stmt.run(status, reportId);
+    return result.changes > 0;
+}
+
 module.exports = {
     db,
     initDatabase,
@@ -630,5 +784,9 @@ module.exports = {
     getNotesByUserAndVideo,
     createNote,
     updateNote,
-    deleteNote
+    deleteNote,
+    // Signalements
+    createReport,
+    getAllReports,
+    updateReportStatus
 };

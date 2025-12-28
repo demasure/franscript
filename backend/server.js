@@ -1,9 +1,11 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const session = require('express-session');
 const { initDatabase, getVideoById, createVideo } = require('./database');
 const authRoutes = require('./auth');
 const userFeaturesRoutes = require('./userFeatures');
+const profileRoutes = require('./profile');
 const adminRoutes = require('./admin');
 const subtitlesRoutes = require('./subtitles');
 const { requireAuth, requireAdmin } = require('./middleware');
@@ -56,6 +58,9 @@ app.use('/auth', authRoutes);
 
 // Routes des fonctionnalités utilisateur (commentaires, likes, notes)
 app.use('/', userFeaturesRoutes);
+
+// Routes de profil et signalements
+app.use('/', profileRoutes);
 
 // Routes sous-titres - Protégées par requireAuth et requireAdmin
 // IMPORTANT: Doit être AVANT /admin car plus spécifique
@@ -236,6 +241,9 @@ app.get('/api/admin/stats', requireAuth, requireAdmin, (req, res) => {
         totalUsers: result.total
     });
 });
+
+// Servir les fichiers uploadés (avatars, etc.)
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 app.listen(PORT, () => {
     console.log(`🤖 Backend FranScript démarré sur http://localhost:${PORT}`);

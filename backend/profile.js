@@ -181,8 +181,8 @@ router.post('/reports', (req, res) => {
             return res.status(400).json({ error: 'Vidéo et message requis' });
         }
 
-        if (message.length > 1000) {
-            return res.status(400).json({ error: 'Message trop long (max 1000 caractères)' });
+        if (message.length > 300) {
+            return res.status(400).json({ error: 'Message trop long (max 300 caractères)' });
         }
 
         const report = createReport({

@@ -81,9 +81,25 @@ async function loadVideoFromURL() {
     const subtitleSrc = params.get('subtitle') || 'videos/ma_video.vtt';
     const title = params.get('title') || 'Ma Première Vidéo';
     const level = params.get('level') || 'B2';
-    currentVideoId = params.get('id') || null;  // Récupérer l'ID de la vidéo
+    currentVideoId = params.get('id') || null;
 
-    // Charger la vidéo
+    // Mettre à jour les informations de base
+    document.getElementById('video-title').textContent = title;
+    document.querySelector('.video-level-badge').textContent = level;
+    document.querySelector('.video-level-badge').className = `video-level-badge level-${level.toLowerCase()}`;
+
+    // CRITIQUE : Vérifier l'accès AVANT de charger la vidéo
+    if (currentVideoId) {
+        const canAccess = await checkVideoAccessBeforeLoad(currentVideoId);
+        if (!canAccess) {
+            return; // Bloqué - ne pas charger la vidéo
+        }
+
+        // Charger les métadonnées
+        await loadVideoMetadata(currentVideoId);
+    }
+
+    // SEULEMENT MAINTENANT charger la vidéo si autorisé
     const videoElement = document.getElementById('video-player');
     const sourceElement = document.getElementById('video-source');
     const trackElement = document.getElementById('subtitle-track');
@@ -92,21 +108,45 @@ async function loadVideoFromURL() {
     trackElement.src = subtitleSrc;
     videoElement.load();
 
-    // Mettre à jour les informations de base
-    document.getElementById('video-title').textContent = title;
-    document.querySelector('.video-level-badge').textContent = level;
-    document.querySelector('.video-level-badge').className = `video-level-badge level-${level.toLowerCase()}`;
-
-    // Si on a un ID, charger les infos complètes depuis la base de données
-    if (currentVideoId) {
-        await loadVideoMetadata(currentVideoId);
-    }
-
     console.log(`📹 Vidéo chargée : ${title} (${level})`);
 }
 
 /**
+ * Vérifie l'accès à la vidéo AVANT de la charger
+ * Retourne true si l'utilisateur peut accéder, false sinon
+ */
+async function checkVideoAccessBeforeLoad(videoId) {
+    try {
+        const response = await fetch(`http://localhost:3000/api/videos/${videoId}`);
+        if (!response.ok) {
+            return false;
+        }
+
+        const data = await response.json();
+        const video = data.video;
+
+        // Si vidéo gratuite, accès autorisé
+        if (!video.is_paid) {
+            return true;
+        }
+
+        // Vidéo payante : vérifier premium
+        const hasAccess = await checkPremiumAccess();
+        if (!hasAccess) {
+            blockVideoAccess();
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Erreur vérification accès:', error);
+        return false;
+    }
+}
+
+/**
  * Charge les métadonnées complètes de la vidéo depuis la base de données
+ * Note: La vérification d'accès est déjà faite avant l'appel de cette fonction
  */
 async function loadVideoMetadata(videoId) {
     try {
@@ -114,15 +154,6 @@ async function loadVideoMetadata(videoId) {
         if (response.ok) {
             const data = await response.json();
             const video = data.video;
-
-            // Vérifier si la vidéo est payante et si l'utilisateur a accès
-            if (video.is_paid) {
-                const hasAccess = await checkPremiumAccess();
-                if (!hasAccess) {
-                    blockVideoAccess();
-                    return;
-                }
-            }
 
             // Afficher la description
             if (video.description) {
@@ -608,23 +639,58 @@ function closeReportModal() {
 function initializeReportForm() {
     const form = document.getElementById('report-form');
 
-    form.addEventListener('submit', function(e) {
+    form.addEventListener('submit', async function(e) {
         e.preventDefault();
 
         const type = document.getElementById('report-type').value;
-        const description = document.getElementById('report-description').value;
+        const description = document.getElementById('report-description').value.trim();
 
-        if (!description.trim()) {
+        // Validation
+        if (!description) {
             showNotification('Veuillez décrire le problème.', 'warning');
             return;
         }
 
-        // TODO: Envoyer à un backend
-        console.log('⚠️ Signalement :', { type, description });
+        // Limite de 300 caractères
+        if (description.length > 300) {
+            showNotification('Le message ne peut pas dépasser 300 caractères.', 'warning');
+            return;
+        }
 
-        showNotification('Merci ! Votre signalement a été envoyé.', 'success');
-        closeReportModal();
-        form.reset();
+        if (!currentVideoId) {
+            showNotification('Erreur : ID vidéo manquant.', 'error');
+            return;
+        }
+
+        // Construire le message avec le type
+        const fullMessage = `[${type}] ${description}`;
+
+        try {
+            const response = await fetch('http://localhost:3000/reports', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    video_id: currentVideoId,
+                    message: fullMessage
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Erreur lors de l\'envoi');
+            }
+
+            showNotification('✅ Merci ! Votre signalement a été envoyé.', 'success');
+            closeReportModal();
+            form.reset();
+
+        } catch (error) {
+            console.error('Erreur envoi signalement:', error);
+            showNotification('Erreur lors de l\'envoi du signalement.', 'error');
+        }
     });
 }
 

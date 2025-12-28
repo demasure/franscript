@@ -215,8 +215,9 @@
                     <option>Autre</option>
                 </select>
 
-                <label for="report-description">Description :</label>
-                <textarea id="report-description" class="form-input" rows="4" placeholder="Décrivez le problème..."></textarea>
+                <label for="report-description">Description (max 300 caractères) :</label>
+                <textarea id="report-description" class="form-input" rows="4" maxlength="300" placeholder="Décrivez le problème..."></textarea>
+                <small style="color: #999;">Limite : 300 caractères</small>
 
                 <button type="submit" class="btn-primary">Envoyer le signalement</button>
             </form>

@@ -88,11 +88,15 @@
                 </div>
             </section>
 
-            <!-- SECTION RÉGLAGES -->
+            <!-- SECTION RÉGLAGES (Temporairement désactivée) -->
             <section class="profile-section">
                 <h2 class="profile-section-title">⚙️ Réglages d'apprentissage</h2>
 
-                <div class="profile-card">
+                <div class="profile-card" style="opacity: 0.6; pointer-events: none;">
+                    <p style="color: #f39c12; font-weight: 600; margin-bottom: 1rem;">
+                        🚧 Ces réglages seront bientôt disponibles
+                    </p>
+
                     <div class="settings-grid">
                         <!-- Fenêtre temporelle pour les notes -->
                         <div class="form-group">
@@ -100,7 +104,7 @@
                                 ⏱️ Fenêtre temporelle des notes
                             </label>
                             <div class="range-input-group">
-                                <input type="range" id="note-window" min="1" max="60" value="10" class="form-range">
+                                <input type="range" id="note-window" min="1" max="60" value="10" class="form-range" disabled>
                                 <span id="note-window-value" class="range-value">10 secondes</span>
                             </div>
                             <p class="form-help">Durée d'affichage des notes personnelles autour du timestamp</p>
@@ -109,7 +113,7 @@
                         <!-- Affichage de l'aide IA par défaut -->
                         <div class="form-group">
                             <label class="form-label">
-                                <input type="checkbox" id="show-ai-help" class="form-checkbox">
+                                <input type="checkbox" id="show-ai-help" class="form-checkbox" disabled>
                                 🤖 Afficher l'aide IA par défaut
                             </label>
                             <p class="form-help">Le panneau d'aide IA sera ouvert au chargement des vidéos</p>
@@ -118,14 +122,14 @@
                         <!-- Affichage des notes par défaut -->
                         <div class="form-group">
                             <label class="form-label">
-                                <input type="checkbox" id="show-notes" class="form-checkbox">
+                                <input type="checkbox" id="show-notes" class="form-checkbox" disabled>
                                 📝 Afficher les notes par défaut
                             </label>
                             <p class="form-help">Le panneau de notes sera ouvert au chargement des vidéos</p>
                         </div>
                     </div>
 
-                    <button id="save-settings-btn" class="btn-primary">
+                    <button id="save-settings-btn" class="btn-primary" disabled style="opacity: 0.5; cursor: not-allowed;">
                         ⚙️ Sauvegarder les réglages
                     </button>
                 </div>

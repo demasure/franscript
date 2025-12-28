@@ -176,8 +176,15 @@ function initializeVideoCards() {
             // Vérifier si la vidéo a un fichier source
             if (videoSrc && videoSrc.trim() !== '') {
                 console.log(`📹 Redirection vers player : ${videoTitle}`);
+
+                // Ajouter l'ID pour "Ma Première Vidéo" (ID 1 dans la base de données)
+                let url = `player.html?video=${encodeURIComponent(videoSrc)}&subtitle=${encodeURIComponent(subtitleSrc)}&title=${encodeURIComponent(videoTitle)}&level=${encodeURIComponent(videoLevel)}`;
+                if (videoTitle === 'Ma Première Vidéo') {
+                    url += '&id=1';
+                }
+
                 // Rediriger vers la page player avec paramètres
-                window.location.href = `player.html?video=${encodeURIComponent(videoSrc)}&subtitle=${encodeURIComponent(subtitleSrc)}&title=${encodeURIComponent(videoTitle)}&level=${encodeURIComponent(videoLevel)}`;
+                window.location.href = url;
             } else {
                 console.log(`⚠️ Pas de fichier vidéo pour : ${videoTitle}`);
                 alert('Cette vidéo n\'est pas encore disponible. Seule "Ma Première Vidéo" contient un fichier réel.');
@@ -199,8 +206,15 @@ function initializeVideoCards() {
             // Vérifier si la vidéo a un fichier source
             if (videoSrc && videoSrc.trim() !== '') {
                 console.log(`▶️ Redirection vers player : ${videoTitle}`);
+
+                // Ajouter l'ID pour "Ma Première Vidéo" (ID 1 dans la base de données)
+                let url = `player.html?video=${encodeURIComponent(videoSrc)}&subtitle=${encodeURIComponent(subtitleSrc)}&title=${encodeURIComponent(videoTitle)}&level=${encodeURIComponent(videoLevel)}`;
+                if (videoTitle === 'Ma Première Vidéo') {
+                    url += '&id=1';
+                }
+
                 // Rediriger vers la page player avec paramètres
-                window.location.href = `player.html?video=${encodeURIComponent(videoSrc)}&subtitle=${encodeURIComponent(subtitleSrc)}&title=${encodeURIComponent(videoTitle)}&level=${encodeURIComponent(videoLevel)}`;
+                window.location.href = url;
             } else {
                 console.log(`⚠️ Pas de fichier vidéo pour : ${videoTitle}`);
                 alert('Cette vidéo n\'est pas encore disponible. Seule "Ma Première Vidéo" contient un fichier réel.');

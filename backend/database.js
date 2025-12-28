@@ -96,26 +96,44 @@ function initDatabase() {
         // La colonne existe déjà, ignorer l'erreur
     }
 
+    // Migration : ajouter la colonne username si elle n'existe pas
+    try {
+        db.exec(`ALTER TABLE users ADD COLUMN username TEXT`);
+        console.log('✅ Colonne "username" ajoutée à la table users');
+    } catch (error) {
+        // La colonne existe déjà, ignorer l'erreur
+    }
+
+    // Migration : ajouter la colonne profile_picture si elle n'existe pas
+    try {
+        db.exec(`ALTER TABLE users ADD COLUMN profile_picture TEXT`);
+        console.log('✅ Colonne "profile_picture" ajoutée à la table users');
+    } catch (error) {
+        // La colonne existe déjà, ignorer l'erreur
+    }
+
     console.log('✅ Base de données initialisée');
 }
 
 /**
  * Crée un nouvel utilisateur
- * @param {string} email - Email de l'utilisateur
- * @param {string} passwordHash - Hash du mot de passe
- * @param {string} role - Rôle (user ou admin)
+ * @param {object} userData - { email, passwordHash, username, profile_picture, role }
  * @returns {object} L'utilisateur créé
  */
-function createUser(email, passwordHash, role = 'user') {
+function createUser(userData) {
+    const { email, passwordHash, username, profile_picture, role = 'user' } = userData;
+
     const stmt = db.prepare(`
-        INSERT INTO users (email, password_hash, role)
-        VALUES (?, ?, ?)
+        INSERT INTO users (email, password_hash, username, profile_picture, role)
+        VALUES (?, ?, ?, ?, ?)
     `);
 
-    const result = stmt.run(email, passwordHash, role);
+    const result = stmt.run(email, passwordHash, username || null, profile_picture || null, role);
     return {
         id: result.lastInsertRowid,
         email,
+        username,
+        profile_picture,
         role
     };
 }
@@ -136,8 +154,27 @@ function findUserByEmail(email) {
  * @returns {object|null} L'utilisateur ou null si non trouvé
  */
 function findUserById(id) {
-    const stmt = db.prepare('SELECT id, email, role, created_at FROM users WHERE id = ?');
+    const stmt = db.prepare('SELECT id, email, username, profile_picture, role, created_at FROM users WHERE id = ?');
     return stmt.get(id);
+}
+
+/**
+ * Met à jour les informations d'un utilisateur
+ * @param {number} id - ID de l'utilisateur
+ * @param {object} userData - { username, profile_picture }
+ * @returns {object} L'utilisateur mis à jour
+ */
+function updateUser(id, userData) {
+    const { username, profile_picture } = userData;
+
+    const stmt = db.prepare(`
+        UPDATE users
+        SET username = ?, profile_picture = ?
+        WHERE id = ?
+    `);
+
+    stmt.run(username || null, profile_picture || null, id);
+    return findUserById(id);
 }
 
 /**
@@ -320,6 +357,7 @@ module.exports = {
     createUser,
     findUserByEmail,
     findUserById,
+    updateUser,
     countUsers,
     // Vidéos
     getAllVideos,

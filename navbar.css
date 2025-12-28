@@ -18,6 +18,33 @@
     padding: 0 12px;
 }
 
+/* Photo de profil */
+.nav-profile-container {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.nav-profile-container:hover {
+    transform: scale(1.05);
+}
+
+.nav-profile-pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #1e3c72;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.nav-profile-pic:hover {
+    border-color: #2a5298;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
 /* Boutons navbar */
 .nav-btn {
     display: inline-block;

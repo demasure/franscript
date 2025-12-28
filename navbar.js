@@ -58,11 +58,21 @@ async function updateNavbar() {
     navAccountPlaceholder.innerHTML = '';
 
     if (user) {
-        // Utilisateur connecté
-        const userInfo = document.createElement('span');
-        userInfo.className = 'nav-user-info';
-        userInfo.textContent = `Connecté en tant que ${user.email}`;
-        navAccountPlaceholder.appendChild(userInfo);
+        // Utilisateur connecté - Afficher photo de profil
+        const profileContainer = document.createElement('div');
+        profileContainer.className = 'nav-profile-container';
+        profileContainer.title = `${user.username || user.email}`;
+
+        const profilePic = document.createElement('img');
+        profilePic.className = 'nav-profile-pic';
+        profilePic.src = user.profile_picture || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default';
+        profilePic.alt = user.username || 'Profil';
+        profilePic.onerror = function() {
+            this.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default';
+        };
+
+        profileContainer.appendChild(profilePic);
+        navAccountPlaceholder.appendChild(profileContainer);
 
         // Bouton déconnexion
         const logoutBtn = document.createElement('button');

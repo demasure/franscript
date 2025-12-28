@@ -1,26 +1,35 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
-const { createUser, findUserByEmail, findUserById, countUsers } = require('./database');
+const { createUser, findUserByEmail, findUserById, updateUser, countUsers } = require('./database');
 
 const router = express.Router();
 const SALT_ROUNDS = 10;
+
+// Avatar par défaut (collection d'avatars neutres)
+const DEFAULT_AVATARS = [
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=1',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=2',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=3',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=4',
+    'https://api.dicebear.com/7.x/avataaars/svg?seed=5'
+];
 
 /**
  * POST /auth/register
  * Inscription d'un nouvel utilisateur
  *
- * Body: { email, password }
+ * Body: { email, password, username }
  *
  * Le premier utilisateur inscrit devient automatiquement admin
  */
 router.post('/register', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { email, password, username } = req.body;
 
         // Validation des champs
-        if (!email || !password) {
+        if (!email || !password || !username) {
             return res.status(400).json({
-                error: 'Email et mot de passe requis'
+                error: 'Email, mot de passe et pseudo requis'
             });
         }
 
@@ -35,6 +44,19 @@ router.post('/register', async (req, res) => {
         if (password.length < 6) {
             return res.status(400).json({
                 error: 'Le mot de passe doit contenir au moins 6 caractères'
+            });
+        }
+
+        // Validation pseudo (3-20 caractères, alphanumérique + underscore)
+        if (username.length < 3 || username.length > 20) {
+            return res.status(400).json({
+                error: 'Le pseudo doit contenir entre 3 et 20 caractères'
+            });
+        }
+
+        if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+            return res.status(400).json({
+                error: 'Le pseudo ne peut contenir que des lettres, chiffres et underscores'
             });
         }
 
@@ -53,8 +75,17 @@ router.post('/register', async (req, res) => {
         const userCount = countUsers();
         const role = userCount === 0 ? 'admin' : 'user';
 
+        // Choisir un avatar par défaut aléatoire
+        const randomAvatar = DEFAULT_AVATARS[Math.floor(Math.random() * DEFAULT_AVATARS.length)];
+
         // Créer l'utilisateur
-        const user = createUser(email, passwordHash, role);
+        const user = createUser({
+            email,
+            passwordHash,
+            username,
+            profile_picture: randomAvatar,
+            role
+        });
 
         // Créer la session
         req.session.userId = user.id;
@@ -65,6 +96,8 @@ router.post('/register', async (req, res) => {
             user: {
                 id: user.id,
                 email: user.email,
+                username: user.username,
+                profile_picture: user.profile_picture,
                 role: user.role
             }
         });
@@ -175,9 +208,67 @@ router.get('/me', (req, res) => {
         user: {
             id: user.id,
             email: user.email,
+            username: user.username,
+            profile_picture: user.profile_picture,
             role: user.role
         }
     });
+});
+
+/**
+ * PUT /auth/profile
+ * Met à jour le profil de l'utilisateur connecté
+ * Body: { username, profile_picture }
+ */
+router.put('/profile', (req, res) => {
+    // Vérifier si l'utilisateur est connecté
+    if (!req.session.userId) {
+        return res.status(401).json({
+            error: 'Non authentifié'
+        });
+    }
+
+    try {
+        const { username, profile_picture } = req.body;
+
+        // Validation pseudo si fourni
+        if (username) {
+            if (username.length < 3 || username.length > 20) {
+                return res.status(400).json({
+                    error: 'Le pseudo doit contenir entre 3 et 20 caractères'
+                });
+            }
+
+            if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+                return res.status(400).json({
+                    error: 'Le pseudo ne peut contenir que des lettres, chiffres et underscores'
+                });
+            }
+        }
+
+        // Mettre à jour l'utilisateur
+        const updatedUser = updateUser(req.session.userId, {
+            username: username || undefined,
+            profile_picture: profile_picture || undefined
+        });
+
+        res.json({
+            message: 'Profil mis à jour',
+            user: {
+                id: updatedUser.id,
+                email: updatedUser.email,
+                username: updatedUser.username,
+                profile_picture: updatedUser.profile_picture,
+                role: updatedUser.role
+            }
+        });
+
+    } catch (error) {
+        console.error('Erreur mise à jour profil:', error);
+        res.status(500).json({
+            error: 'Erreur lors de la mise à jour du profil'
+        });
+    }
 });
 
 module.exports = router;

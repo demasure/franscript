@@ -441,7 +441,11 @@
             <a href="/index.html" style="color: #1e3c72; text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 10px;">← Retour à l'accueil</a>
             <button class="logout-btn" onclick="logout()">Se déconnecter</button>
             <h1>👑 Panel Admin FranScript</h1>
-            <p><span class="admin-badge">Admin</span> <span id="admin-email"></span></p>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span class="admin-badge">Admin</span>
+                <img id="admin-profile-pic" src="" alt="Profil" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #ffc107; object-fit: cover; display: none;">
+                <span id="admin-username" style="font-weight: 600; color: #333;"></span>
+            </div>
         </header>
 
         <div id="message" class="message"></div>
@@ -714,8 +718,19 @@
                     return;
                 }
 
-                // Afficher l'email de l'admin
-                document.getElementById('admin-email').textContent = data.user.email;
+                // Afficher les infos de l'admin
+                const adminProfilePic = document.getElementById('admin-profile-pic');
+                const adminUsername = document.getElementById('admin-username');
+
+                if (data.user.profile_picture) {
+                    adminProfilePic.src = data.user.profile_picture;
+                    adminProfilePic.style.display = 'block';
+                    adminProfilePic.onerror = function() {
+                        this.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default';
+                    };
+                }
+
+                adminUsername.textContent = data.user.username || data.user.email;
             } catch (error) {
                 console.error('Erreur d\'authentification:', error);
                 window.location.href = '/auth.html';

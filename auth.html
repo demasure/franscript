@@ -284,6 +284,11 @@
                         <input type="email" id="register-email" placeholder="votre@email.com" required>
                     </div>
                     <div class="form-group">
+                        <label for="register-username">Pseudo</label>
+                        <input type="text" id="register-username" placeholder="VotrePseudo" required minlength="3" maxlength="20" pattern="[a-zA-Z0-9_]+">
+                        <small style="color: var(--color-text-secondary); font-size: 0.85rem; margin-top: 4px; display: block;">3-20 caractères, lettres, chiffres et underscores uniquement</small>
+                    </div>
+                    <div class="form-group">
                         <label for="register-password">Mot de passe</label>
                         <input type="password" id="register-password" placeholder="••••••••" required>
                     </div>
@@ -350,6 +355,7 @@
             e.preventDefault();
 
             const email = document.getElementById('register-email').value;
+            const username = document.getElementById('register-username').value;
             const password = document.getElementById('register-password').value;
             const confirm = document.getElementById('register-confirm').value;
 
@@ -363,7 +369,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({ email, username, password })
                 });
 
                 const data = await response.json();

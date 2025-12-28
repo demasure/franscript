@@ -38,11 +38,12 @@ app.use(session({
 // Routes d'authentification
 app.use('/auth', authRoutes);
 
+// Routes sous-titres - Protégées par requireAuth et requireAdmin
+// IMPORTANT: Doit être AVANT /admin car plus spécifique
+app.use('/admin/subtitles', requireAuth, requireAdmin, subtitlesRoutes);
+
 // Routes admin - Protégées par requireAuth et requireAdmin
 app.use('/admin', requireAuth, requireAdmin, adminRoutes);
-
-// Routes sous-titres - Protégées par requireAuth et requireAdmin
-app.use('/admin/subtitles', requireAuth, requireAdmin, subtitlesRoutes);
 
 // Fonction pour appeler Ollama avec système prompt
 async function callOllama(prompt, systemPrompt = null, model = 'llama3.1:8b') {

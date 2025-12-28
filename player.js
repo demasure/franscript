@@ -47,6 +47,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Charger les vidéos suggérées
     loadSuggestedVideos();
+
+    // Initialiser les commentaires
+    initComments();
 });
 
 // ========================================
@@ -838,6 +841,273 @@ function getLevelColor(level) {
         'C2': 'e74c3c'
     };
     return colors[level] || '3498db';
+}
+
+// ========================================
+// COMMENTAIRES
+// ========================================
+
+let currentUser = null; // Stocke les infos de l'utilisateur connecté
+
+/**
+ * Vérifie si l'utilisateur est connecté et stocke ses infos
+ */
+async function checkUserAuth() {
+    try {
+        const response = await fetch('http://localhost:3000/auth/me', {
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            currentUser = data.user;
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error('Erreur vérification auth:', error);
+        return false;
+    }
+}
+
+/**
+ * Charge et affiche les commentaires
+ */
+async function loadComments() {
+    if (!currentVideoId) return;
+
+    try {
+        const response = await fetch(`http://localhost:3000/comments/${currentVideoId}`, {
+            credentials: 'include'
+        });
+
+        const comments = await response.json();
+        displayComments(comments);
+    } catch (error) {
+        console.error('Erreur chargement commentaires:', error);
+    }
+}
+
+/**
+ * Affiche la liste des commentaires
+ */
+function displayComments(comments) {
+    const commentsList = document.getElementById('comments-list');
+
+    if (comments.length === 0) {
+        commentsList.innerHTML = '<p class="no-comments">Aucun commentaire pour le moment. Soyez le premier à commenter!</p>';
+        return;
+    }
+
+    commentsList.innerHTML = comments.map(comment => {
+        const date = new Date(comment.created_at);
+        const formattedDate = formatCommentDate(date);
+        const isOwner = currentUser && currentUser.id === comment.user_id;
+
+        return `
+            <div class="comment-card">
+                <div class="comment-header">
+                    <img src="${comment.profile_picture || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'}" alt="${comment.username}" class="comment-avatar">
+                    <div class="comment-user-info">
+                        <div class="comment-username">${comment.username || comment.email}</div>
+                        <div class="comment-date">${formattedDate}</div>
+                    </div>
+                </div>
+                <div class="comment-text">${escapeHtml(comment.text)}</div>
+                <div class="comment-actions">
+                    ${currentUser ? `
+                        <button
+                            class="comment-like-btn ${comment.liked_by_user ? 'liked' : ''}"
+                            onclick="toggleLike(${comment.id})"
+                            data-comment-id="${comment.id}">
+                            👍 <span class="like-count">${comment.like_count || 0}</span>
+                        </button>
+                    ` : `
+                        <span class="comment-likes">👍 ${comment.like_count || 0}</span>
+                    `}
+                    ${isOwner ? `
+                        <button class="comment-delete-btn" onclick="deleteComment(${comment.id})">
+                            🗑️ Supprimer
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+/**
+ * Formate la date du commentaire de manière lisible
+ */
+function formatCommentDate(date) {
+    const now = new Date();
+    const diff = now - date;
+    const seconds = Math.floor(diff / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 7) {
+        return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+    } else if (days > 0) {
+        return `Il y a ${days} jour${days > 1 ? 's' : ''}`;
+    } else if (hours > 0) {
+        return `Il y a ${hours} heure${hours > 1 ? 's' : ''}`;
+    } else if (minutes > 0) {
+        return `Il y a ${minutes} minute${minutes > 1 ? 's' : ''}`;
+    } else {
+        return 'À l\'instant';
+    }
+}
+
+/**
+ * Échappe le HTML pour éviter les injections XSS
+ */
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/**
+ * Poste un nouveau commentaire
+ */
+async function postComment() {
+    const textarea = document.getElementById('comment-text');
+    const text = textarea.value.trim();
+
+    if (!text) {
+        showNotification('Le commentaire ne peut pas être vide', 'warning');
+        return;
+    }
+
+    if (!currentVideoId) {
+        showNotification('Erreur: ID de vidéo manquant', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch('http://localhost:3000/comments', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                video_id: currentVideoId,
+                text: text
+            })
+        });
+
+        if (response.ok) {
+            textarea.value = '';
+            updateCharCounter();
+            showNotification('Commentaire publié!', 'success');
+            loadComments(); // Recharger les commentaires
+        } else {
+            const data = await response.json();
+            showNotification(data.error || 'Erreur lors de la publication', 'error');
+        }
+    } catch (error) {
+        console.error('Erreur post commentaire:', error);
+        showNotification('Erreur de connexion au serveur', 'error');
+    }
+}
+
+/**
+ * Toggle like/unlike sur un commentaire
+ */
+async function toggleLike(commentId) {
+    try {
+        const response = await fetch(`http://localhost:3000/comments/${commentId}/like`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            loadComments(); // Recharger pour mettre à jour les compteurs
+        } else {
+            showNotification('Erreur lors du like', 'error');
+        }
+    } catch (error) {
+        console.error('Erreur toggle like:', error);
+        showNotification('Erreur de connexion au serveur', 'error');
+    }
+}
+
+/**
+ * Supprime un commentaire
+ */
+async function deleteComment(commentId) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce commentaire?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`http://localhost:3000/comments/${commentId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            showNotification('Commentaire supprimé', 'success');
+            loadComments();
+        } else {
+            showNotification('Erreur lors de la suppression', 'error');
+        }
+    } catch (error) {
+        console.error('Erreur suppression commentaire:', error);
+        showNotification('Erreur de connexion au serveur', 'error');
+    }
+}
+
+/**
+ * Met à jour le compteur de caractères
+ */
+function updateCharCounter() {
+    const textarea = document.getElementById('comment-text');
+    const counter = document.getElementById('char-counter');
+    if (textarea && counter) {
+        counter.textContent = `${textarea.value.length}/1000`;
+    }
+}
+
+/**
+ * Initialise la section commentaires
+ */
+async function initComments() {
+    const isAuth = await checkUserAuth();
+
+    const commentForm = document.getElementById('comment-form-container');
+    const loginPrompt = document.getElementById('login-prompt');
+
+    if (isAuth && currentUser) {
+        // Utilisateur connecté: afficher le formulaire
+        commentForm.style.display = 'block';
+        loginPrompt.style.display = 'none';
+
+        // Événement submit
+        const postBtn = document.getElementById('post-comment-btn');
+        postBtn.addEventListener('click', postComment);
+
+        // Événement compteur de caractères
+        const textarea = document.getElementById('comment-text');
+        textarea.addEventListener('input', updateCharCounter);
+
+        // Entrée pour poster avec Ctrl+Enter
+        textarea.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                postComment();
+            }
+        });
+    } else {
+        // Utilisateur non connecté: afficher le message
+        commentForm.style.display = 'none';
+        loginPrompt.style.display = 'block';
+    }
+
+    // Charger les commentaires dans tous les cas
+    await loadComments();
 }
 
 console.log('🎥 Player ready!');

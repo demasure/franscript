@@ -3,306 +3,322 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FranScript - Authentification</title>
+    <title>FranScript - Connexion</title>
+    <link rel="stylesheet" href="style.css">
     <style>
-        * {
+        body {
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
+            font-family: var(--font-main);
+            background: var(--color-bg-main);
+            overflow: hidden;
         }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            min-height: 100vh;
+        .auth-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* PARTIE GAUCHE - Image/Branding */
+        .auth-left {
+            flex: 1;
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-left::before {
+            content: '';
+            position: absolute;
+            width: 300%;
+            height: 300%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: float 20s linear infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        .auth-branding {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            color: white;
+        }
+
+        .auth-logo {
+            font-size: 4rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            text-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        }
+
+        .auth-tagline {
+            font-size: 1.5rem;
+            opacity: 0.95;
+            line-height: 1.6;
+            max-width: 400px;
+        }
+
+        .auth-decorative-image {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 200px;
+            background: rgba(255,255,255,0.05);
+            clip-path: polygon(0 50%, 100% 0, 100% 100%, 0 100%);
+        }
+
+        /* PARTIE DROITE - Formulaires */
+        .auth-right {
+            flex: 1;
+            background: var(--color-bg-card);
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 60px;
         }
 
-        .container {
-            background: white;
-            border-radius: 12px;
-            padding: 40px;
-            max-width: 500px;
+        .auth-form-container {
             width: 100%;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            max-width: 450px;
         }
 
-        h1 {
-            color: #1e3c72;
+        .auth-form-header {
+            margin-bottom: 40px;
+        }
+
+        .auth-form-header h1 {
+            color: var(--color-text-primary);
+            font-size: 2.5rem;
             margin-bottom: 10px;
         }
 
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
+        .auth-form-header p {
+            color: var(--color-text-secondary);
+            font-size: 1.1rem;
         }
 
-        .tabs {
+        .auth-tabs {
             display: flex;
             gap: 10px;
             margin-bottom: 30px;
-            border-bottom: 2px solid #e0e0e0;
+            background: var(--color-bg-elevated);
+            padding: 6px;
+            border-radius: 12px;
         }
 
-        .tab {
-            padding: 10px 20px;
-            background: none;
+        .auth-tab {
+            flex: 1;
+            padding: 12px;
+            background: transparent;
             border: none;
             cursor: pointer;
-            font-size: 16px;
-            color: #666;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            border-radius: 8px;
             transition: all 0.3s;
         }
 
-        .tab.active {
-            color: #1e3c72;
-            border-bottom: 2px solid #1e3c72;
-            margin-bottom: -2px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: #1e3c72;
-        }
-
-        button {
-            width: 100%;
-            padding: 14px;
-            background: #1e3c72;
+        .auth-tab.active {
+            background: var(--color-primary);
             color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.3s;
+            box-shadow: 0 2px 8px rgba(0, 85, 164, 0.3);
         }
 
-        button:hover {
-            background: #2a5298;
-        }
-
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-
-        .message {
-            padding: 12px;
-            border-radius: 6px;
-            margin-bottom: 20px;
+        .auth-form {
             display: none;
         }
 
-        .message.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .message.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .message.show {
+        .auth-form.active {
             display: block;
         }
 
-        .user-info {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 6px;
-            margin-top: 20px;
+        .form-group {
+            margin-bottom: 24px;
         }
 
-        .user-info h3 {
-            margin-bottom: 10px;
-            color: #1e3c72;
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--color-text-primary);
+            font-weight: 500;
+            font-size: 0.95rem;
         }
 
-        .user-info p {
-            margin: 5px 0;
-            color: #666;
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--color-bg-elevated);
+            border: 2px solid transparent;
+            border-radius: 8px;
+            color: var(--color-text-primary);
+            font-size: 1rem;
+            transition: all 0.3s;
         }
 
-        .badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 600;
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            background: var(--color-bg-main);
         }
 
-        .badge.admin {
-            background: #ffc107;
-            color: #000;
-        }
-
-        .badge.user {
-            background: #28a745;
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: var(--color-primary);
+            border: none;
+            border-radius: 8px;
             color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(0, 85, 164, 0.3);
         }
 
-        .logout-btn {
-            background: #dc3545;
-            margin-top: 15px;
+        .submit-btn:hover {
+            background: var(--color-primary-light);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 85, 164, 0.4);
         }
 
-        .logout-btn:hover {
-            background: #c82333;
+        .submit-btn:active {
+            transform: translateY(0);
         }
 
-        .test-section {
-            margin-top: 30px;
-            padding-top: 30px;
-            border-top: 2px solid #e0e0e0;
+        .form-footer {
+            margin-top: 24px;
+            text-align: center;
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
         }
 
-        .test-btn {
-            background: #6c757d;
-            margin-top: 10px;
-        }
+        /* Responsive */
+        @media (max-width: 968px) {
+            .auth-container {
+                flex-direction: column;
+            }
 
-        .test-btn:hover {
-            background: #5a6268;
-        }
+            .auth-left {
+                min-height: 30vh;
+                padding: 40px 20px;
+            }
 
-        pre {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 6px;
-            overflow-x: auto;
-            margin-top: 10px;
-            font-size: 14px;
+            .auth-logo {
+                font-size: 2.5rem;
+            }
+
+            .auth-tagline {
+                font-size: 1.1rem;
+            }
+
+            .auth-right {
+                padding: 40px 20px;
+            }
+
+            .auth-form-header h1 {
+                font-size: 2rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🔐 FranScript Auth</h1>
-        <p class="subtitle">Démo du système d'authentification</p>
-        <p style="text-align: center; margin-bottom: 20px;">
-            <a href="/index.html" style="color: #1e3c72; text-decoration: none;">← Retour à l'accueil</a>
-        </p>
-
-        <!-- Messages -->
-        <div id="message" class="message"></div>
-
-        <!-- Formulaires Login/Register -->
-        <div id="auth-forms">
-            <div class="tabs">
-                <button class="tab active" onclick="switchTab('login')">Connexion</button>
-                <button class="tab" onclick="switchTab('register')">Inscription</button>
+    <div class="auth-container">
+        <!-- PARTIE GAUCHE - Image/Branding -->
+        <div class="auth-left">
+            <div class="auth-branding">
+                <div class="auth-logo">FranScript</div>
+                <div class="auth-tagline">
+                    Apprenez le français à travers des vidéos authentiques avec sous-titres interactifs
+                </div>
             </div>
-
-            <!-- Formulaire de connexion -->
-            <form id="login-form" style="display: block;">
-                <div class="form-group">
-                    <label for="login-email">Email</label>
-                    <input type="email" id="login-email" placeholder="votre@email.com" required>
-                </div>
-                <div class="form-group">
-                    <label for="login-password">Mot de passe</label>
-                    <input type="password" id="login-password" placeholder="••••••••" required>
-                </div>
-                <button type="submit">Se connecter</button>
-            </form>
-
-            <!-- Formulaire d'inscription -->
-            <form id="register-form" style="display: none;">
-                <div class="form-group">
-                    <label for="register-email">Email</label>
-                    <input type="email" id="register-email" placeholder="votre@email.com" required>
-                </div>
-                <div class="form-group">
-                    <label for="register-password">Mot de passe (min. 6 caractères)</label>
-                    <input type="password" id="register-password" placeholder="••••••••" required minlength="6">
-                </div>
-                <button type="submit">S'inscrire</button>
-                <p style="margin-top: 10px; font-size: 14px; color: #666;">
-                    💡 Le premier utilisateur devient automatiquement admin
-                </p>
-            </form>
+            <div class="auth-decorative-image"></div>
         </div>
 
-        <!-- Informations utilisateur connecté -->
-        <div id="user-info" class="user-info" style="display: none;">
-            <h3>✅ Connecté</h3>
-            <p><strong>Email:</strong> <span id="user-email"></span></p>
-            <p><strong>Rôle:</strong> <span id="user-role-badge"></span></p>
-            <button class="logout-btn" onclick="logout()">Se déconnecter</button>
+        <!-- PARTIE DROITE - Formulaires -->
+        <div class="auth-right">
+            <div class="auth-form-container">
+                <div class="auth-form-header">
+                    <h1>Bienvenue</h1>
+                    <p>Connectez-vous pour continuer</p>
+                </div>
 
-            <!-- Section de test des routes protégées -->
-            <div class="test-section">
-                <h3>🧪 Tester les routes protégées</h3>
-                <button class="test-btn" onclick="testProfile()">GET /api/profile (auth requise)</button>
-                <button class="test-btn" onclick="testAdminStats()">GET /api/admin/stats (admin uniquement)</button>
-                <pre id="test-result" style="display: none;"></pre>
+                <!-- Tabs -->
+                <div class="auth-tabs">
+                    <button class="auth-tab active" onclick="switchTab('login')">Connexion</button>
+                    <button class="auth-tab" onclick="switchTab('register')">Inscription</button>
+                </div>
+
+                <!-- Formulaire de Connexion -->
+                <form id="login-form" class="auth-form active">
+                    <div class="form-group">
+                        <label for="login-email">Email</label>
+                        <input type="email" id="login-email" placeholder="votre@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Mot de passe</label>
+                        <input type="password" id="login-password" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="submit-btn">Se connecter</button>
+                    <div class="form-footer">
+                        Pas encore de compte ? <a href="#" onclick="switchTab('register'); return false;" style="color: var(--color-primary);">S'inscrire</a>
+                    </div>
+                </form>
+
+                <!-- Formulaire d'Inscription -->
+                <form id="register-form" class="auth-form">
+                    <div class="form-group">
+                        <label for="register-email">Email</label>
+                        <input type="email" id="register-email" placeholder="votre@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Mot de passe</label>
+                        <input type="password" id="register-password" placeholder="••••••••" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-confirm">Confirmer le mot de passe</label>
+                        <input type="password" id="register-confirm" placeholder="••••••••" required>
+                    </div>
+                    <button type="submit" class="submit-btn">Créer un compte</button>
+                    <div class="form-footer">
+                        Déjà un compte ? <a href="#" onclick="switchTab('login'); return false;" style="color: var(--color-primary);">Se connecter</a>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
+    <script src="utils.js"></script>
     <script>
         const API_URL = 'http://localhost:3000';
 
-        // Initialisation
-        document.addEventListener('DOMContentLoaded', () => {
-            checkAuth();
-
-            document.getElementById('login-form').addEventListener('submit', handleLogin);
-            document.getElementById('register-form').addEventListener('submit', handleRegister);
-        });
-
-        // Basculer entre les onglets
+        // Switcher entre onglets
         function switchTab(tab) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            // Mettre à jour les boutons
+            document.querySelectorAll('.auth-tab').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
 
-            if (tab === 'login') {
-                document.getElementById('login-form').style.display = 'block';
-                document.getElementById('register-form').style.display = 'none';
-            } else {
-                document.getElementById('login-form').style.display = 'none';
-                document.getElementById('register-form').style.display = 'block';
-            }
+            // Mettre à jour les formulaires
+            document.querySelectorAll('.auth-form').forEach(form => form.classList.remove('active'));
+            document.getElementById(`${tab}-form`).classList.add('active');
         }
 
-        // Afficher un message
-        function showMessage(text, type = 'success') {
-            const msg = document.getElementById('message');
-            msg.textContent = text;
-            msg.className = `message ${type} show`;
-            setTimeout(() => msg.classList.remove('show'), 5000);
-        }
-
-        // Connexion
-        async function handleLogin(e) {
+        // Gestion de la connexion
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
 
@@ -310,30 +326,37 @@
                 const response = await fetch(`${API_URL}/auth/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',  // Important pour les cookies de session
+                    credentials: 'include',
                     body: JSON.stringify({ email, password })
                 });
 
                 const data = await response.json();
 
                 if (response.ok) {
-                    showMessage('Connexion réussie ! Redirection...', 'success');
+                    showNotification('Connexion réussie ! Redirection...', 'success');
                     setTimeout(() => {
                         window.location.href = '/index.html';
                     }, 1000);
                 } else {
-                    showMessage(data.error || 'Erreur de connexion', 'error');
+                    showNotification(data.error || 'Erreur de connexion', 'error');
                 }
             } catch (error) {
-                showMessage('Erreur réseau. Le backend est-il démarré ?', 'error');
+                showNotification('Erreur de connexion au serveur', 'error');
             }
-        }
+        });
 
-        // Inscription
-        async function handleRegister(e) {
+        // Gestion de l'inscription
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+
             const email = document.getElementById('register-email').value;
             const password = document.getElementById('register-password').value;
+            const confirm = document.getElementById('register-confirm').value;
+
+            if (password !== confirm) {
+                showNotification('Les mots de passe ne correspondent pas', 'error');
+                return;
+            }
 
             try {
                 const response = await fetch(`${API_URL}/auth/register`, {
@@ -346,67 +369,17 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    showMessage('Inscription réussie ! Redirection...', 'success');
+                    showNotification('Compte créé avec succès ! Redirection...', 'success');
                     setTimeout(() => {
                         window.location.href = '/index.html';
                     }, 1000);
                 } else {
-                    showMessage(data.error || 'Erreur d\'inscription', 'error');
+                    showNotification(data.error || 'Erreur lors de l\'inscription', 'error');
                 }
             } catch (error) {
-                showMessage('Erreur réseau. Le backend est-il démarré ?', 'error');
+                showNotification('Erreur de connexion au serveur', 'error');
             }
-        }
-
-        // Vérifier l'authentification
-        async function checkAuth() {
-            try {
-                const response = await fetch(`${API_URL}/auth/me`, {
-                    credentials: 'include'
-                });
-
-                if (response.ok) {
-                    // Si déjà connecté, rediriger vers l'accueil
-                    window.location.href = '/index.html';
-                }
-            } catch (error) {
-                // Ignorer les erreurs, rester sur la page de login
-            }
-        }
-
-        // Tester /api/profile
-        async function testProfile() {
-            try {
-                const response = await fetch(`${API_URL}/api/profile`, {
-                    credentials: 'include'
-                });
-                const data = await response.json();
-                document.getElementById('test-result').style.display = 'block';
-                document.getElementById('test-result').textContent = JSON.stringify(data, null, 2);
-            } catch (error) {
-                showMessage('Erreur lors du test', 'error');
-            }
-        }
-
-        // Tester /api/admin/stats
-        async function testAdminStats() {
-            try {
-                const response = await fetch(`${API_URL}/api/admin/stats`, {
-                    credentials: 'include'
-                });
-                const data = await response.json();
-                document.getElementById('test-result').style.display = 'block';
-
-                if (response.ok) {
-                    document.getElementById('test-result').textContent = JSON.stringify(data, null, 2);
-                } else {
-                    document.getElementById('test-result').textContent =
-                        `❌ ${response.status}: ${data.error}\n\n(Cette route est réservée aux admins)`;
-                }
-            } catch (error) {
-                showMessage('Erreur lors du test', 'error');
-            }
-        }
+        });
     </script>
 </body>
 </html>

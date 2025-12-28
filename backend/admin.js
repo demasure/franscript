@@ -187,17 +187,17 @@ router.get('/tags', (req, res) => {
  * POST /admin/tags
  * Crée un nouveau tag
  *
- * Body: { name: string }
+ * Body: { name: string, color: string }
  */
 router.post('/tags', (req, res) => {
     try {
-        const { name } = req.body;
+        const { name, color } = req.body;
 
         if (!name || !name.trim()) {
             return res.status(400).json({ error: 'Le nom du tag est requis' });
         }
 
-        const tag = createTag(name.trim());
+        const tag = createTag(name.trim(), color || '#3498db');
 
         res.status(201).json({
             message: 'Tag créé avec succès',

@@ -40,7 +40,8 @@ function initDatabase() {
     const createTagsTable = `
         CREATE TABLE IF NOT EXISTS tags (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE NOT NULL
+            name TEXT UNIQUE NOT NULL,
+            color TEXT NOT NULL DEFAULT '#3498db'
         )
     `;
 
@@ -59,6 +60,15 @@ function initDatabase() {
     db.exec(createVideosTable);
     db.exec(createTagsTable);
     db.exec(createVideoTagsTable);
+
+    // Migration : ajouter la colonne color si elle n'existe pas
+    try {
+        db.exec(`ALTER TABLE tags ADD COLUMN color TEXT NOT NULL DEFAULT '#3498db'`);
+        console.log('✅ Colonne "color" ajoutée à la table tags');
+    } catch (error) {
+        // La colonne existe déjà, ignorer l'erreur
+    }
+
     console.log('✅ Base de données initialisée');
 }
 
@@ -230,14 +240,16 @@ function getAllTags() {
 /**
  * Crée un nouveau tag
  * @param {string} name - Nom du tag
+ * @param {string} color - Couleur hexadécimale du tag
  * @returns {object} Le tag créé
  */
-function createTag(name) {
-    const stmt = db.prepare('INSERT INTO tags (name) VALUES (?)');
-    const result = stmt.run(name);
+function createTag(name, color = '#3498db') {
+    const stmt = db.prepare('INSERT INTO tags (name, color) VALUES (?, ?)');
+    const result = stmt.run(name, color);
     return {
         id: result.lastInsertRowid,
-        name
+        name,
+        color
     };
 }
 

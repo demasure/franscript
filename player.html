@@ -53,6 +53,22 @@
 
                     <!-- Zone de sous-titres interactifs -->
                     <div class="interactive-subtitles-panel">
+                        <!-- Barre d'outils admin (visible uniquement pour les admins) -->
+                        <div id="subtitle-admin-toolbar" class="subtitle-toolbar" style="display: none;">
+                            <div class="toolbar-left">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="edit-mode-toggle">
+                                    <span class="toggle-slider"></span>
+                                    <span class="toggle-label">Mode édition</span>
+                                </label>
+                            </div>
+                            <div class="toolbar-right">
+                                <button id="save-subtitles-btn" class="btn-save" style="display: none;">
+                                    💾 Sauvegarder les modifications
+                                </button>
+                            </div>
+                        </div>
+
                         <div id="subtitles-display" class="subtitles-interactive">
                             <p class="subtitle-hint">Cliquez sur un sous-titre pour obtenir de l'aide IA</p>
                         </div>

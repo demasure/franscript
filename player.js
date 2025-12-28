@@ -16,9 +16,16 @@
 let currentSubtitles = [];
 let allSubtitles = [];  // Contexte complet pour l'IA
 let lastDisplayedCueText = '';  // Éviter de recréer le même sous-titre
+let isEditMode = false;  // Mode édition activé ou non
+let editedSubtitles = {};  // Sous-titres modifiés {index: newText}
+let currentVideoId = null;  // ID de la vidéo courante
+let isAdmin = false;  // Utilisateur admin ou non
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🎬 Player initialisé');
+
+    // Vérifier si l'utilisateur est admin
+    checkAdminStatus();
 
     // Charger la vidéo depuis les paramètres URL
     loadVideoFromURL();
@@ -34,6 +41,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialiser le formulaire de signalement
     initializeReportForm();
+
+    // Initialiser le mode édition
+    initializeEditMode();
 });
 
 // ========================================
@@ -46,6 +56,7 @@ function loadVideoFromURL() {
     const subtitleSrc = params.get('subtitle') || 'videos/ma_video.vtt';
     const title = params.get('title') || 'Ma Première Vidéo';
     const level = params.get('level') || 'B2';
+    currentVideoId = params.get('id') || null;  // Récupérer l'ID de la vidéo
 
     // Charger la vidéo
     const videoElement = document.getElementById('video-player');
@@ -125,23 +136,37 @@ function initializeSubtitles() {
 function displayInteractiveSubtitle(text, startTime, endTime) {
     const subtitlesDisplay = document.getElementById('subtitles-display');
 
+    // Trouver l'index du sous-titre dans allSubtitles
+    const index = allSubtitles.findIndex(sub => sub.start === startTime && sub.end === endTime);
+
     // Créer un élément cliquable pour chaque sous-titre
     const subtitleElement = document.createElement('p');
     subtitleElement.className = 'subtitle-item clickable';
     subtitleElement.textContent = text;
     subtitleElement.dataset.start = startTime;
     subtitleElement.dataset.end = endTime;
+    subtitleElement.dataset.index = index;  // Stocker l'index pour l'édition
 
     // Remplacer le contenu (on garde seulement le sous-titre actuel)
     subtitlesDisplay.innerHTML = '';
     subtitlesDisplay.appendChild(subtitleElement);
 
-    // Ajouter l'écouteur de clic
-    subtitleElement.addEventListener('click', function(e) {
-        console.log('🖱️ Clic sur sous-titre:', text);
-        e.preventDefault();
-        requestAIHelp(text, startTime, endTime);
-    });
+    // Gérer le mode édition si admin
+    if (isAdmin) {
+        updateSubtitleEditability(subtitleElement);
+    }
+
+    // Ajouter l'écouteur de clic UNIQUEMENT si pas en mode édition
+    if (!isEditMode || !isAdmin) {
+        subtitleElement.addEventListener('click', function(e) {
+            // Ne pas déclencher en mode édition
+            if (isEditMode && isAdmin) return;
+
+            console.log('🖱️ Clic sur sous-titre:', text);
+            e.preventDefault();
+            requestAIHelp(text, startTime, endTime);
+        });
+    }
 
     console.log('✅ Sous-titre affiché:', text.substring(0, 30) + '...');
 }
@@ -499,6 +524,162 @@ function escapeHTML(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// ========================================
+// ADMIN - ÉDITION DES SOUS-TITRES
+// ========================================
+
+/**
+ * Vérifier si l'utilisateur est admin
+ */
+async function checkAdminStatus() {
+    try {
+        const response = await fetch(`${AI_BACKEND_URL}/auth/me`, {
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            isAdmin = data.user && data.user.role === 'admin';
+
+            if (isAdmin) {
+                console.log('👑 Admin détecté - Mode édition disponible');
+                // Afficher la toolbar admin
+                document.getElementById('subtitle-admin-toolbar').style.display = 'flex';
+            }
+        }
+    } catch (error) {
+        console.error('Erreur vérification admin:', error);
+    }
+}
+
+/**
+ * Initialiser le mode édition
+ */
+function initializeEditMode() {
+    const toggle = document.getElementById('edit-mode-toggle');
+    const saveBtn = document.getElementById('save-subtitles-btn');
+
+    if (!toggle || !saveBtn) return;
+
+    // Écouteur sur le toggle
+    toggle.addEventListener('change', function() {
+        isEditMode = this.checked;
+
+        if (isEditMode) {
+            console.log('✏️ Mode édition activé');
+            saveBtn.style.display = 'inline-block';
+        } else {
+            console.log('👁️ Mode normal activé');
+            saveBtn.style.display = 'none';
+        }
+
+        // Mettre à jour le sous-titre actuel si présent
+        const currentSubtitle = document.querySelector('.subtitle-item');
+        if (currentSubtitle) {
+            updateSubtitleEditability(currentSubtitle);
+        }
+    });
+
+    // Écouteur sur le bouton sauvegarder
+    saveBtn.addEventListener('click', saveSubtitles);
+}
+
+/**
+ * Met à jour l'éditabilité d'un sous-titre
+ */
+function updateSubtitleEditability(subtitleElement) {
+    if (isEditMode && isAdmin) {
+        subtitleElement.contentEditable = 'true';
+        subtitleElement.classList.add('editable');
+        subtitleElement.classList.remove('clickable');
+
+        // Retirer l'event listener de clic pour l'IA
+        subtitleElement.style.cursor = 'text';
+
+        // Sauvegarder les modifications quand on édite
+        subtitleElement.addEventListener('input', function() {
+            const index = parseInt(this.dataset.index);
+            editedSubtitles[index] = this.textContent.trim();
+            console.log(`✏️ Sous-titre ${index} modifié`);
+        });
+    } else {
+        subtitleElement.contentEditable = 'false';
+        subtitleElement.classList.remove('editable');
+        subtitleElement.classList.add('clickable');
+        subtitleElement.style.cursor = 'pointer';
+    }
+}
+
+/**
+ * Sauvegarder les sous-titres modifiés
+ */
+async function saveSubtitles() {
+    if (!currentVideoId) {
+        alert('Impossible de sauvegarder : ID de vidéo manquant');
+        return;
+    }
+
+    if (Object.keys(editedSubtitles).length === 0) {
+        alert('Aucune modification à sauvegarder');
+        return;
+    }
+
+    const saveBtn = document.getElementById('save-subtitles-btn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = '💾 Sauvegarde en cours...';
+
+    try {
+        // Récupérer les sous-titres complets depuis le backend
+        const getResponse = await fetch(`${AI_BACKEND_URL}/admin/subtitles/${currentVideoId}`, {
+            credentials: 'include'
+        });
+
+        if (!getResponse.ok) {
+            throw new Error('Impossible de récupérer les sous-titres');
+        }
+
+        const { cues } = await getResponse.json();
+
+        // Appliquer les modifications
+        Object.keys(editedSubtitles).forEach(index => {
+            if (cues[index]) {
+                cues[index].text = editedSubtitles[index];
+            }
+        });
+
+        // Sauvegarder
+        const saveResponse = await fetch(`${AI_BACKEND_URL}/admin/subtitles/${currentVideoId}`, {
+            method: 'PUT',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ cues })
+        });
+
+        if (!saveResponse.ok) {
+            throw new Error('Échec de la sauvegarde');
+        }
+
+        const result = await saveResponse.json();
+
+        alert('✅ Sous-titres sauvegardés avec succès !\n\nUn backup a été créé : ' + result.backupPath);
+
+        // Réinitialiser
+        editedSubtitles = {};
+
+        // Recharger la page pour afficher les nouveaux sous-titres
+        window.location.reload();
+
+    } catch (error) {
+        console.error('Erreur sauvegarde:', error);
+        alert('❌ Erreur lors de la sauvegarde : ' + error.message);
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = '💾 Sauvegarder les modifications';
+    }
 }
 
 console.log('🎥 Player ready!');

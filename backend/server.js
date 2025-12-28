@@ -4,6 +4,7 @@ const session = require('express-session');
 const { initDatabase } = require('./database');
 const authRoutes = require('./auth');
 const adminRoutes = require('./admin');
+const subtitlesRoutes = require('./subtitles');
 const { requireAuth, requireAdmin } = require('./middleware');
 
 const app = express();
@@ -39,6 +40,9 @@ app.use('/auth', authRoutes);
 
 // Routes admin - Protégées par requireAuth et requireAdmin
 app.use('/admin', requireAuth, requireAdmin, adminRoutes);
+
+// Routes sous-titres - Protégées par requireAuth et requireAdmin
+app.use('/admin/subtitles', requireAuth, requireAdmin, subtitlesRoutes);
 
 // Fonction pour appeler Ollama avec système prompt
 async function callOllama(prompt, systemPrompt = null, model = 'llama3.1:8b') {

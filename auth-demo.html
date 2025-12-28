@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FranScript - Authentification Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            color: #1e3c72;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            color: #1e3c72;
+            border-bottom: 2px solid #1e3c72;
+            margin-bottom: -2px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #1e3c72;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #1e3c72;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #2a5298;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .user-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 20px;
+        }
+
+        .user-info h3 {
+            margin-bottom: 10px;
+            color: #1e3c72;
+        }
+
+        .user-info p {
+            margin: 5px 0;
+            color: #666;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .badge.admin {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .badge.user {
+            background: #28a745;
+            color: white;
+        }
+
+        .logout-btn {
+            background: #dc3545;
+            margin-top: 15px;
+        }
+
+        .logout-btn:hover {
+            background: #c82333;
+        }
+
+        .test-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .test-btn {
+            background: #6c757d;
+            margin-top: 10px;
+        }
+
+        .test-btn:hover {
+            background: #5a6268;
+        }
+
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 FranScript Auth</h1>
+        <p class="subtitle">Démo du système d'authentification</p>
+
+        <!-- Messages -->
+        <div id="message" class="message"></div>
+
+        <!-- Formulaires Login/Register -->
+        <div id="auth-forms">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('login')">Connexion</button>
+                <button class="tab" onclick="switchTab('register')">Inscription</button>
+            </div>
+
+            <!-- Formulaire de connexion -->
+            <form id="login-form" style="display: block;">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" placeholder="votre@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Mot de passe</label>
+                    <input type="password" id="login-password" placeholder="••••••••" required>
+                </div>
+                <button type="submit">Se connecter</button>
+            </form>
+
+            <!-- Formulaire d'inscription -->
+            <form id="register-form" style="display: none;">
+                <div class="form-group">
+                    <label for="register-email">Email</label>
+                    <input type="email" id="register-email" placeholder="votre@email.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="register-password">Mot de passe (min. 6 caractères)</label>
+                    <input type="password" id="register-password" placeholder="••••••••" required minlength="6">
+                </div>
+                <button type="submit">S'inscrire</button>
+                <p style="margin-top: 10px; font-size: 14px; color: #666;">
+                    💡 Le premier utilisateur devient automatiquement admin
+                </p>
+            </form>
+        </div>
+
+        <!-- Informations utilisateur connecté -->
+        <div id="user-info" class="user-info" style="display: none;">
+            <h3>✅ Connecté</h3>
+            <p><strong>Email:</strong> <span id="user-email"></span></p>
+            <p><strong>Rôle:</strong> <span id="user-role-badge"></span></p>
+            <button class="logout-btn" onclick="logout()">Se déconnecter</button>
+
+            <!-- Section de test des routes protégées -->
+            <div class="test-section">
+                <h3>🧪 Tester les routes protégées</h3>
+                <button class="test-btn" onclick="testProfile()">GET /api/profile (auth requise)</button>
+                <button class="test-btn" onclick="testAdminStats()">GET /api/admin/stats (admin uniquement)</button>
+                <pre id="test-result" style="display: none;"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+
+            document.getElementById('login-form').addEventListener('submit', handleLogin);
+            document.getElementById('register-form').addEventListener('submit', handleRegister);
+        });
+
+        // Basculer entre les onglets
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (tab === 'login') {
+                document.getElementById('login-form').style.display = 'block';
+                document.getElementById('register-form').style.display = 'none';
+            } else {
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('register-form').style.display = 'block';
+            }
+        }
+
+        // Afficher un message
+        function showMessage(text, type = 'success') {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = `message ${type} show`;
+            setTimeout(() => msg.classList.remove('show'), 5000);
+        }
+
+        // Connexion
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',  // Important pour les cookies de session
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage('Connexion réussie !', 'success');
+                    checkAuth();
+                } else {
+                    showMessage(data.error || 'Erreur de connexion', 'error');
+                }
+            } catch (error) {
+                showMessage('Erreur réseau. Le backend est-il démarré ?', 'error');
+            }
+        }
+
+        // Inscription
+        async function handleRegister(e) {
+            e.preventDefault();
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+
+            try {
+                const response = await fetch(`${API_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage('Inscription réussie ! Vous êtes maintenant connecté.', 'success');
+                    checkAuth();
+                } else {
+                    showMessage(data.error || 'Erreur d\'inscription', 'error');
+                }
+            } catch (error) {
+                showMessage('Erreur réseau. Le backend est-il démarré ?', 'error');
+            }
+        }
+
+        // Vérifier l'authentification
+        async function checkAuth() {
+            try {
+                const response = await fetch(`${API_URL}/auth/me`, {
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayUserInfo(data.user);
+                } else {
+                    displayAuthForms();
+                }
+            } catch (error) {
+                displayAuthForms();
+            }
+        }
+
+        // Afficher les infos utilisateur
+        function displayUserInfo(user) {
+            document.getElementById('auth-forms').style.display = 'none';
+            document.getElementById('user-info').style.display = 'block';
+            document.getElementById('user-email').textContent = user.email;
+
+            const roleBadge = user.role === 'admin'
+                ? '<span class="badge admin">Admin</span>'
+                : '<span class="badge user">User</span>';
+            document.getElementById('user-role-badge').innerHTML = roleBadge;
+        }
+
+        // Afficher les formulaires d'auth
+        function displayAuthForms() {
+            document.getElementById('auth-forms').style.display = 'block';
+            document.getElementById('user-info').style.display = 'none';
+        }
+
+        // Déconnexion
+        async function logout() {
+            try {
+                await fetch(`${API_URL}/auth/logout`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                showMessage('Déconnexion réussie', 'success');
+                displayAuthForms();
+            } catch (error) {
+                showMessage('Erreur lors de la déconnexion', 'error');
+            }
+        }
+
+        // Tester /api/profile
+        async function testProfile() {
+            try {
+                const response = await fetch(`${API_URL}/api/profile`, {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                document.getElementById('test-result').style.display = 'block';
+                document.getElementById('test-result').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                showMessage('Erreur lors du test', 'error');
+            }
+        }
+
+        // Tester /api/admin/stats
+        async function testAdminStats() {
+            try {
+                const response = await fetch(`${API_URL}/api/admin/stats`, {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                document.getElementById('test-result').style.display = 'block';
+
+                if (response.ok) {
+                    document.getElementById('test-result').textContent = JSON.stringify(data, null, 2);
+                } else {
+                    document.getElementById('test-result').textContent =
+                        `❌ ${response.status}: ${data.error}\n\n(Cette route est réservée aux admins)`;
+                }
+            } catch (error) {
+                showMessage('Erreur lors du test', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

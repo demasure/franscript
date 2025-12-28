@@ -1,11 +1,36 @@
 const express = require('express');
 const cors = require('cors');
+const session = require('express-session');
+const { initDatabase } = require('./database');
+const authRoutes = require('./auth');
+const { requireAuth, requireAdmin } = require('./middleware');
 
 const app = express();
 const PORT = 3000;
 
-app.use(cors());
+// Initialiser la base de données
+initDatabase();
+
+// Middleware
+app.use(cors({
+    origin: 'http://localhost:8000',  // Votre frontend
+    credentials: true  // Autoriser les cookies de session
+}));
 app.use(express.json());
+
+// Configuration des sessions
+app.use(session({
+    secret: 'votre-secret-super-securise-changez-moi',  // ⚠️ À changer en production !
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,
+        maxAge: 24 * 60 * 60 * 1000  // 24 heures
+    }
+}));
+
+// Routes d'authentification
+app.use('/auth', authRoutes);
 
 // Fonction pour appeler Ollama avec système prompt
 async function callOllama(prompt, systemPrompt = null, model = 'llama3.1:8b') {
@@ -125,12 +150,52 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', port: PORT });
 });
 
+// ============================================
+// EXEMPLES DE ROUTES PROTÉGÉES
+// ============================================
+
+/**
+ * Exemple: Route protégée par authentification
+ * Accessible uniquement aux utilisateurs connectés (user ou admin)
+ */
+app.get('/api/profile', requireAuth, (req, res) => {
+    res.json({
+        message: 'Bienvenue sur votre profil !',
+        userId: req.session.userId,
+        role: req.session.userRole
+    });
+});
+
+/**
+ * Exemple: Route protégée admin uniquement
+ * Accessible uniquement aux administrateurs
+ */
+app.get('/api/admin/stats', requireAuth, requireAdmin, (req, res) => {
+    const { db } = require('./database');
+    const stmt = db.prepare('SELECT COUNT(*) as total FROM users');
+    const result = stmt.get();
+
+    res.json({
+        message: 'Statistiques admin',
+        totalUsers: result.total
+    });
+});
+
 app.listen(PORT, () => {
-    console.log(`🤖 Backend IA démarré sur http://localhost:${PORT}`);
-    console.log(`📡 Endpoints disponibles:`);
+    console.log(`🤖 Backend FranScript démarré sur http://localhost:${PORT}`);
+    console.log(`\n📡 Endpoints disponibles:`);
+    console.log(`\n🔐 Authentification:`);
+    console.log(`   POST /auth/register - Inscription`);
+    console.log(`   POST /auth/login - Connexion`);
+    console.log(`   POST /auth/logout - Déconnexion`);
+    console.log(`   GET  /auth/me - Info utilisateur connecté`);
+    console.log(`\n🤖 IA (Ollama):`);
     console.log(`   POST /explain - Explication en français`);
     console.log(`   POST /translate - Traduction en anglais`);
-    console.log(`   GET /health - Statut du serveur`);
+    console.log(`\n🛡️  Exemples routes protégées:`);
+    console.log(`   GET  /api/profile - Profile (auth requise)`);
+    console.log(`   GET  /api/admin/stats - Stats (admin uniquement)`);
+    console.log(`\n✅ GET  /health - Statut du serveur`);
     console.log(`\n💡 Assurez-vous qu'Ollama est lancé avec:`);
     console.log(`   ollama serve`);
     console.log(`   ollama pull llama3.1:8b`);

@@ -9,7 +9,9 @@ const {
     getTagById,
     createTag,
     updateTag,
-    deleteTag
+    deleteTag,
+    countUsers,
+    db
 } = require('./database');
 const { detectVideoDuration, extractThumbnail } = require('./videoUtils');
 
@@ -321,6 +323,65 @@ router.delete('/tags/:id', (req, res) => {
     } catch (error) {
         console.error('Erreur suppression tag:', error);
         res.status(500).json({ error: 'Erreur lors de la suppression du tag' });
+    }
+});
+
+// ============================================
+// ROUTE STATISTIQUES - Admin uniquement
+// ============================================
+
+/**
+ * GET /admin/stats
+ * Récupère les statistiques globales du site
+ */
+router.get('/stats', (req, res) => {
+    try {
+        const videos = getAllVideos();
+        const tags = getAllTags();
+        const totalUsers = countUsers();
+
+        // Stats vidéos
+        const totalVideos = videos.length;
+        const totalDuration = videos.reduce((sum, v) => sum + (v.duration || 0), 0);
+        const avgDuration = totalVideos > 0 ? Math.round(totalDuration / totalVideos) : 0;
+
+        // Vidéos par niveau
+        const videosByLevel = videos.reduce((acc, v) => {
+            const level = v.level || 'B2';
+            acc[level] = (acc[level] || 0) + 1;
+            return acc;
+        }, {});
+
+        // Tags les plus utilisés
+        const tagUsage = {};
+        videos.forEach(v => {
+            v.tags.forEach(t => {
+                tagUsage[t.name] = (tagUsage[t.name] || 0) + 1;
+            });
+        });
+
+        const stats = {
+            overview: {
+                totalVideos,
+                totalUsers,
+                totalTags: tags.length,
+                totalDuration,
+                avgDuration
+            },
+            videosByLevel,
+            tagUsage,
+            recentVideos: videos.slice(0, 5).map(v => ({
+                id: v.id,
+                title: v.title,
+                level: v.level,
+                created_at: v.created_at
+            }))
+        };
+
+        res.json(stats);
+    } catch (error) {
+        console.error('Erreur récupération stats:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des statistiques' });
     }
 });
 

@@ -255,19 +255,32 @@
         .tag-selector {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 8px;
+            gap: 10px;
+            margin-top: 12px;
         }
 
-        .tag-option {
-            display: flex;
-            align-items: center;
-            gap: 4px;
+        .tag-button {
+            padding: 8px 20px;
+            border: 2px solid transparent;
+            border-radius: 25px;
+            color: white;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
-        .tag-option input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
+        .tag-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .tag-button.selected {
+            border-color: #fff;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3), 0 4px 12px rgba(0, 0, 0, 0.3);
+            transform: scale(1.05);
         }
 
         .logout-btn {
@@ -357,6 +370,10 @@
                     <div class="form-group">
                         <label for="tag-name">Nom du tag *</label>
                         <input type="text" id="tag-name" placeholder="Ex: Comédie, Drame, Education" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="tag-color">Couleur du tag *</label>
+                        <input type="color" id="tag-color" value="#3498db" required>
                     </div>
                     <button type="submit">Créer le tag</button>
                 </form>
@@ -520,7 +537,7 @@
                 video_url: document.getElementById('video-url').value,
                 subtitle_url: document.getElementById('subtitle-url').value,
                 is_paid: document.getElementById('is-paid').checked,
-                tagIds: Array.from(document.querySelectorAll('#tag-selector input:checked')).map(cb => parseInt(cb.value))
+                tagIds: Array.from(document.querySelectorAll('#tag-selector .tag-button.selected')).map(btn => parseInt(btn.dataset.tagId))
             };
 
             try {
@@ -567,10 +584,14 @@
                 document.getElementById('subtitle-url').value = video.subtitle_url || '';
                 document.getElementById('is-paid').checked = video.is_paid === 1;
 
-                // Cocher les tags
+                // Sélectionner les tags
                 const videoTagIds = video.tags.map(t => t.id);
-                document.querySelectorAll('#tag-selector input[type="checkbox"]').forEach(cb => {
-                    cb.checked = videoTagIds.includes(parseInt(cb.value));
+                document.querySelectorAll('#tag-selector .tag-button').forEach(btn => {
+                    if (videoTagIds.includes(parseInt(btn.dataset.tagId))) {
+                        btn.classList.add('selected');
+                    } else {
+                        btn.classList.remove('selected');
+                    }
                 });
 
                 document.getElementById('submit-btn').textContent = 'Mettre à jour';
@@ -612,7 +633,7 @@
             document.getElementById('video-form').reset();
             document.getElementById('video-id').value = '';
             document.getElementById('submit-btn').textContent = 'Créer la vidéo';
-            document.querySelectorAll('#tag-selector input[type="checkbox"]').forEach(cb => cb.checked = false);
+            document.querySelectorAll('#tag-selector .tag-button').forEach(btn => btn.classList.remove('selected'));
         }
 
         // ============================================
@@ -652,16 +673,26 @@
         }
 
         /**
-         * Affiche les tags dans le sélecteur du formulaire vidéo
+         * Affiche les tags dans le sélecteur du formulaire vidéo (design boutons)
          */
         function renderTagSelector(tags) {
             const selector = document.getElementById('tag-selector');
             selector.innerHTML = tags.map(t => `
-                <div class="tag-option">
-                    <input type="checkbox" id="tag-${t.id}" value="${t.id}">
-                    <label for="tag-${t.id}">${t.name}</label>
-                </div>
+                <button type="button"
+                        class="tag-button"
+                        data-tag-id="${t.id}"
+                        style="background-color: ${t.color};"
+                        onclick="toggleTag(this, ${t.id})">
+                    ${t.name}
+                </button>
             `).join('');
+        }
+
+        /**
+         * Toggle la sélection d'un tag (dans le formulaire vidéo)
+         */
+        function toggleTag(button, tagId) {
+            button.classList.toggle('selected');
         }
 
         /**
@@ -671,13 +702,14 @@
             e.preventDefault();
 
             const name = document.getElementById('tag-name').value;
+            const color = document.getElementById('tag-color').value;
 
             try {
                 const response = await fetch(`${API_URL}/admin/tags`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ name })
+                    body: JSON.stringify({ name, color })
                 });
 
                 const data = await response.json();

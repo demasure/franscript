@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FranScript - Authentification Demo</title>
+    <title>FranScript - Authentification</title>
     <style>
         * {
             margin: 0;
@@ -366,45 +366,11 @@
                 });
 
                 if (response.ok) {
-                    const data = await response.json();
-                    displayUserInfo(data.user);
-                } else {
-                    displayAuthForms();
+                    // Si déjà connecté, rediriger vers l'accueil
+                    window.location.href = '/index.html';
                 }
             } catch (error) {
-                displayAuthForms();
-            }
-        }
-
-        // Afficher les infos utilisateur
-        function displayUserInfo(user) {
-            document.getElementById('auth-forms').style.display = 'none';
-            document.getElementById('user-info').style.display = 'block';
-            document.getElementById('user-email').textContent = user.email;
-
-            const roleBadge = user.role === 'admin'
-                ? '<span class="badge admin">Admin</span>'
-                : '<span class="badge user">User</span>';
-            document.getElementById('user-role-badge').innerHTML = roleBadge;
-        }
-
-        // Afficher les formulaires d'auth
-        function displayAuthForms() {
-            document.getElementById('auth-forms').style.display = 'block';
-            document.getElementById('user-info').style.display = 'none';
-        }
-
-        // Déconnexion
-        async function logout() {
-            try {
-                await fetch(`${API_URL}/auth/logout`, {
-                    method: 'POST',
-                    credentials: 'include'
-                });
-                showMessage('Déconnexion réussie', 'success');
-                displayAuthForms();
-            } catch (error) {
-                showMessage('Erreur lors de la déconnexion', 'error');
+                // Ignorer les erreurs, rester sur la page de login
             }
         }
 

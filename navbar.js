@@ -82,13 +82,13 @@ async function updateNavbar() {
     } else {
         // Utilisateur non connecté
         const loginBtn = document.createElement('a');
-        loginBtn.href = '/auth-demo.html';
+        loginBtn.href = '/auth.html';
         loginBtn.className = 'nav-btn nav-btn-primary';
         loginBtn.textContent = 'Connexion';
         navAccountPlaceholder.appendChild(loginBtn);
 
         const registerBtn = document.createElement('a');
-        registerBtn.href = '/auth-demo.html';
+        registerBtn.href = '/auth.html';
         registerBtn.className = 'nav-btn nav-btn-secondary';
         registerBtn.textContent = 'Inscription';
         navAccountPlaceholder.appendChild(registerBtn);

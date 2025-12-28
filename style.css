@@ -432,35 +432,7 @@ img {
     letter-spacing: 0.5px;
 }
 
-.tag-comedie {
-    background-color: rgba(241, 196, 15, 0.2);
-    color: #f1c40f;
-    border: 1px solid rgba(241, 196, 15, 0.4);
-}
-
-.tag-drame {
-    background-color: rgba(52, 152, 219, 0.2);
-    color: #3498db;
-    border: 1px solid rgba(52, 152, 219, 0.4);
-}
-
-.tag-documentaire {
-    background-color: rgba(155, 89, 182, 0.2);
-    color: #9b59b6;
-    border: 1px solid rgba(155, 89, 182, 0.4);
-}
-
-.tag-education {
-    background-color: rgba(46, 204, 113, 0.2);
-    color: #2ecc71;
-    border: 1px solid rgba(46, 204, 113, 0.4);
-}
-
-.tag-culte {
-    background-color: rgba(255, 215, 0, 0.2);
-    color: #FFD700;
-    border: 1px solid rgba(255, 215, 0, 0.4);
-}
+/* Styles des tags désormais appliqués dynamiquement via style inline depuis la base de données */
 
 /* Stats vidéo (caché pour l'instant, pour futures annotations) */
 .video-stats {
@@ -1055,24 +1027,7 @@ img {
     flex-wrap: wrap;
 }
 
-.video-duration-info,
-.video-category-info,
-.video-culte-badge {
-    padding: 4px 12px;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    background-color: rgba(255, 255, 255, 0.1);
-    color: var(--color-text-secondary);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.video-culte-badge {
-    background-color: rgba(255, 215, 0, 0.2);
-    color: #FFD700;
-    border: 1px solid rgba(255, 215, 0, 0.4);
-    font-weight: 600;
-}
+/* Styles pour badges vidéo supprimés - utilisation de données dynamiques depuis la base de données */
 
 .btn-report {
     padding: 0.25rem 0.5rem;

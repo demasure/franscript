@@ -78,9 +78,12 @@ function cuesToWebVTT(cues) {
  * Récupère les sous-titres d'une vidéo parsés
  */
 router.get('/:videoId', (req, res) => {
+    console.log('📖 [GET /admin/subtitles/:videoId] Requête reçue pour videoId:', req.params.videoId);
     try {
         const videoId = parseInt(req.params.videoId);
+        console.log('📖 Recherche vidéo ID:', videoId);
         const video = getVideoById(videoId);
+        console.log('📖 Vidéo trouvée:', video);
 
         if (!video) {
             return res.status(404).json({ error: 'Vidéo non trouvée' });

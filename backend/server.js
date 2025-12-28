@@ -11,10 +11,13 @@ const PORT = 3000;
 // Initialiser la base de données
 initDatabase();
 
-// Middleware
+// Middleware CORS - Configuration complète pour les sessions
 app.use(cors({
-    origin: 'http://localhost:8000',  // Votre frontend
-    credentials: true  // Autoriser les cookies de session
+    origin: 'http://localhost:8000',  // Origine exacte du frontend
+    credentials: true,  // Autoriser les cookies de session
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['set-cookie']
 }));
 app.use(express.json());
 
@@ -25,6 +28,8 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
+        secure: false,  // false pour localhost (true pour HTTPS en prod)
+        sameSite: 'lax',  // Permet les cookies cross-origin pour les requêtes GET
         maxAge: 24 * 60 * 60 * 1000  // 24 heures
     }
 }));

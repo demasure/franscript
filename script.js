@@ -170,7 +170,7 @@ function initializeVideoCards() {
 
             const videoSrc = this.getAttribute('data-video-src');
             const subtitleSrc = this.getAttribute('data-subtitle-src');
-            const videoTitle = this.querySelector('.video-title').textContent;
+            const videoTitle = this.querySelector('.video-title').textContent.trim();
             const videoLevel = this.getAttribute('data-level') || 'B2';
 
             // Vérifier si la vidéo a un fichier source
@@ -180,6 +180,7 @@ function initializeVideoCards() {
                 // Ajouter l'ID pour "Ma Première Vidéo" (ID 1 dans la base de données)
                 let url = `player.html?video=${encodeURIComponent(videoSrc)}&subtitle=${encodeURIComponent(subtitleSrc)}&title=${encodeURIComponent(videoTitle)}&level=${encodeURIComponent(videoLevel)}`;
                 if (videoTitle === 'Ma Première Vidéo') {
+                    console.log('✅ Ajout de l\'ID=1 pour Ma Première Vidéo');
                     url += '&id=1';
                 }
 
@@ -200,7 +201,7 @@ function initializeVideoCards() {
             const card = this.closest('.video-card');
             const videoSrc = card.getAttribute('data-video-src');
             const subtitleSrc = card.getAttribute('data-subtitle-src');
-            const videoTitle = card.querySelector('.video-title').textContent;
+            const videoTitle = card.querySelector('.video-title').textContent.trim();
             const videoLevel = card.getAttribute('data-level') || 'B2';
 
             // Vérifier si la vidéo a un fichier source
@@ -210,6 +211,7 @@ function initializeVideoCards() {
                 // Ajouter l'ID pour "Ma Première Vidéo" (ID 1 dans la base de données)
                 let url = `player.html?video=${encodeURIComponent(videoSrc)}&subtitle=${encodeURIComponent(subtitleSrc)}&title=${encodeURIComponent(videoTitle)}&level=${encodeURIComponent(videoLevel)}`;
                 if (videoTitle === 'Ma Première Vidéo') {
+                    console.log('✅ Ajout de l\'ID=1 pour Ma Première Vidéo');
                     url += '&id=1';
                 }
 

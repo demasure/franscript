@@ -29,9 +29,8 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
-        secure: false,  // false pour localhost (true pour HTTPS en prod)
-        sameSite: 'lax',  // Permet les cookies cross-origin pour les requêtes GET
         maxAge: 24 * 60 * 60 * 1000  // 24 heures
+        // sameSite omis pour localhost (ajouter 'lax' ou 'strict' en prod avec HTTPS)
     }
 }));
 

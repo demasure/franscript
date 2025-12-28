@@ -92,9 +92,9 @@ function createVideoCard(video) {
     article.setAttribute('data-subtitle-src', video.subtitle_url || '');
     article.setAttribute('data-video-id', video.id);
 
-    // Générer les tags HTML
+    // Générer les tags HTML avec couleurs
     const tagsHTML = video.tags && video.tags.length > 0
-        ? video.tags.map(tag => `<span class="tag tag-${tag.name.toLowerCase()}">${tag.name.toUpperCase()}</span>`).join('')
+        ? video.tags.map(tag => `<span class="tag" style="background-color: ${tag.color}; color: white;">${tag.name.toUpperCase()}</span>`).join('')
         : '';
 
     article.innerHTML = `

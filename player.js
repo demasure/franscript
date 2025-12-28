@@ -229,8 +229,8 @@ function displayInteractiveSubtitle(text, startTime, endTime) {
     subtitleElement.dataset.end = endTime;
     subtitleElement.dataset.index = index;  // Stocker l'index pour l'édition
 
-    // Supprimer uniquement les anciens sous-titres et hints (SANS effacer le toolbar admin et le bouton notes)
-    const oldSubtitles = subtitlesDisplay.querySelectorAll('.subtitle-item, .subtitle-hint, .notes-bar');
+    // Supprimer uniquement les anciens sous-titres et hints (SANS effacer le toolbar admin)
+    const oldSubtitles = subtitlesDisplay.querySelectorAll('.subtitle-item, .subtitle-hint');
     oldSubtitles.forEach(el => el.remove());
 
     // Ajouter le nouveau sous-titre
@@ -253,58 +253,56 @@ function displayInteractiveSubtitle(text, startTime, endTime) {
         });
     }
 
-    // Afficher le bandeau de notes si utilisateur connecté
+    // Mettre à jour le bandeau de notes si utilisateur connecté
     if (currentUser) {
-        displayNotesBar(startTime);
+        updateNotesBanner(startTime);
     }
 
     console.log('✅ Sous-titre affiché:', text.substring(0, 30) + '...');
 }
 
 /**
- * Affiche le bandeau de notes compact sous le sous-titre
+ * Met à jour le bandeau de notes pour le sous-titre actuel
  */
-function displayNotesBar(startTime) {
-    const subtitlesDisplay = document.getElementById('subtitles-display');
+function updateNotesBanner(startTime) {
+    const notesBanner = document.getElementById('notes-banner');
+    const bannerContent = notesBanner.querySelector('.notes-banner-content');
+
+    // Afficher le bandeau
+    notesBanner.style.display = 'block';
 
     // Chercher les notes pour ce timecode (avec tolérance de 0.5s)
     const notesForSubtitle = userNotes.filter(note =>
         Math.abs(note.start_time - startTime) < 0.5
     );
 
-    // Créer le bandeau de notes
-    const notesBar = document.createElement('div');
-    notesBar.className = 'notes-bar';
-
     if (notesForSubtitle.length > 0) {
-        // Afficher un indicateur + les notes
-        notesBar.innerHTML = `
-            <div class="notes-bar-header">
-                <span class="notes-indicator">📝 ${notesForSubtitle.length} note${notesForSubtitle.length > 1 ? 's' : ''}</span>
+        // Afficher les notes existantes
+        bannerContent.innerHTML = `
+            <div class="notes-banner-header">
+                <h4 class="notes-banner-title">📝 Mes notes (${notesForSubtitle.length})</h4>
                 <button class="add-note-btn-small" onclick="addNoteToSubtitle(${startTime})">+ Ajouter</button>
             </div>
-            <div class="notes-bar-list">
+            <div class="notes-banner-list">
                 ${notesForSubtitle.map(note => `
-                    <div class="note-bar-item">
-                        <div class="note-bar-text">${escapeHtml(note.text)}</div>
-                        <div class="note-bar-actions">
-                            <button class="note-bar-edit" onclick="editNoteText(${note.id}, '${escapeHtml(note.text).replace(/'/g, "\\'")}')">✏️</button>
-                            <button class="note-bar-delete" onclick="deleteNoteById(${note.id})">🗑️</button>
+                    <div class="note-banner-item">
+                        <div class="note-banner-text">${escapeHtml(note.text)}</div>
+                        <div class="note-banner-actions">
+                            <button class="note-banner-edit" onclick="editNoteText(${note.id}, '${escapeHtml(note.text).replace(/'/g, "\\'")}')">✏️</button>
+                            <button class="note-banner-delete" onclick="deleteNoteById(${note.id})">🗑️</button>
                         </div>
                     </div>
                 `).join('')}
             </div>
         `;
     } else {
-        // Juste le bouton pour ajouter une note
-        notesBar.innerHTML = `
-            <button class="add-note-btn-compact" onclick="addNoteToSubtitle(${startTime})">
-                📝 Ajouter une note personnelle
+        // Pas de notes: afficher le bouton pour en ajouter
+        bannerContent.innerHTML = `
+            <button class="add-note-btn-banner" onclick="addNoteToSubtitle(${startTime})">
+                📝 Ajouter une note personnelle sur ce sous-titre
             </button>
         `;
     }
-
-    subtitlesDisplay.appendChild(notesBar);
 }
 
 function handleSubtitleSelection() {
@@ -1397,21 +1395,6 @@ async function initNotes() {
 
     // Charger les notes
     await loadUserNotes();
-
-    // Ajouter le bouton "Voir toutes mes notes" dans la zone des sous-titres
-    const subtitlesDisplay = document.getElementById('subtitles-display');
-
-    // Créer le bouton s'il n'existe pas déjà
-    if (!document.getElementById('all-notes-btn')) {
-        const allNotesBtn = document.createElement('button');
-        allNotesBtn.id = 'all-notes-btn';
-        allNotesBtn.className = 'all-notes-btn';
-        allNotesBtn.textContent = '📋 Voir toutes mes notes';
-        allNotesBtn.onclick = toggleAllNotesPanel;
-
-        // Insérer au début de la zone sous-titres
-        subtitlesDisplay.insertBefore(allNotesBtn, subtitlesDisplay.firstChild);
-    }
 
     console.log('📝 Système de notes initialisé');
 }

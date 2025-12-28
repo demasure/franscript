@@ -664,7 +664,11 @@
             const tbody = document.querySelector('#tags-table tbody');
             tbody.innerHTML = tags.map(t => `
                 <tr>
-                    <td>${t.name}</td>
+                    <td>
+                        <span class="tag-button" style="background-color: ${t.color}; color: white; padding: 6px 16px; border-radius: 20px; display: inline-block; font-weight: 600; font-size: 12px;">
+                            ${t.name}
+                        </span>
+                    </td>
                     <td class="actions">
                         <button class="danger" onclick="deleteTag(${t.id})">Supprimer</button>
                     </td>

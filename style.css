@@ -1633,3 +1633,251 @@ img {
         align-items: flex-start;
     }
 }
+
+/* ========================================
+   NOTES PERSONNELLES SUR SOUS-TITRES
+   ======================================== */
+
+/* Bouton toggle pour basculer entre modes inline/panel */
+.notes-toggle-btn {
+    display: inline-block;
+    padding: 10px 18px;
+    background: linear-gradient(135deg, var(--color-primary), #2a5298);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(30, 60, 114, 0.3);
+    transition: all 0.3s ease;
+}
+
+.notes-toggle-btn:hover {
+    background: linear-gradient(135deg, #2a5298, var(--color-primary));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(30, 60, 114, 0.4);
+}
+
+/* Container de notes sous un sous-titre (mode inline) */
+.subtitle-notes-container {
+    margin: 12px 0;
+    padding: 12px;
+    background: rgba(52, 152, 219, 0.05);
+    border-left: 3px solid var(--color-primary);
+    border-radius: 6px;
+}
+
+/* Bouton pour ajouter une note */
+.add-note-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.add-note-btn:hover {
+    background: #2a5298;
+    transform: scale(1.05);
+}
+
+/* Note inline individuelle */
+.inline-note {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.inline-note:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 2px 8px rgba(30, 60, 114, 0.15);
+}
+
+.inline-note-text {
+    flex: 1;
+    font-size: 0.9rem;
+    color: #555;
+    line-height: 1.5;
+}
+
+.inline-note-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.inline-note-edit,
+.inline-note-delete {
+    padding: 6px 10px;
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.inline-note-edit:hover {
+    background: #f0f8ff;
+    border-color: var(--color-primary);
+}
+
+.inline-note-delete:hover {
+    background: #fff5f5;
+    border-color: #e74c3c;
+    color: #e74c3c;
+}
+
+/* Panneau de toutes les notes (mode panel) */
+.notes-panel {
+    padding: 24px;
+    background: var(--color-bg-elevated);
+    border-radius: 12px;
+    border: 2px solid var(--color-primary);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+}
+
+.notes-panel h3 {
+    margin: 0 0 20px 0;
+    color: var(--color-primary);
+    font-size: 1.3rem;
+}
+
+.no-notes {
+    color: #666;
+    font-style: italic;
+    margin: 20px 0;
+}
+
+.notes-hint {
+    color: #888;
+    font-size: 0.9rem;
+    margin-top: 10px;
+}
+
+.notes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Note individuelle dans le panneau */
+.note-item {
+    padding: 16px;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.note-item:hover {
+    border-color: var(--color-primary);
+    box-shadow: 0 3px 10px rgba(30, 60, 114, 0.15);
+}
+
+.note-timecode {
+    display: inline-block;
+    padding: 4px 10px;
+    background: var(--color-primary);
+    color: white;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+.note-timecode:hover {
+    background: #2a5298;
+    transform: scale(1.05);
+}
+
+.note-text {
+    margin: 12px 0;
+    color: #333;
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+
+.note-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.note-edit-btn,
+.note-delete-btn {
+    padding: 6px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: none;
+}
+
+.note-edit-btn {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
+.note-edit-btn:hover {
+    background: var(--color-primary);
+    color: white;
+}
+
+.note-delete-btn {
+    color: #e74c3c;
+    border-color: #e74c3c;
+}
+
+.note-delete-btn:hover {
+    background: #e74c3c;
+    color: white;
+}
+
+/* Responsive pour les notes */
+@media (max-width: 768px) {
+    .notes-toggle-btn {
+        width: 100%;
+        text-align: center;
+    }
+
+    .inline-note {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .inline-note-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .note-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .note-edit-btn,
+    .note-delete-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}

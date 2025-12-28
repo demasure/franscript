@@ -52,6 +52,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialiser les commentaires
     initComments();
+
+    // Initialiser les notes
+    initNotes();
 });
 
 // ========================================
@@ -227,8 +230,8 @@ function displayInteractiveSubtitle(text, startTime, endTime) {
     subtitleElement.dataset.end = endTime;
     subtitleElement.dataset.index = index;  // Stocker l'index pour l'édition
 
-    // Supprimer uniquement les anciens sous-titres et hints (SANS effacer le toolbar admin)
-    const oldSubtitles = subtitlesDisplay.querySelectorAll('.subtitle-item, .subtitle-hint');
+    // Supprimer uniquement les anciens sous-titres et hints (SANS effacer le toolbar admin et le bouton toggle notes)
+    const oldSubtitles = subtitlesDisplay.querySelectorAll('.subtitle-item, .subtitle-hint, .subtitle-notes-container');
     oldSubtitles.forEach(el => el.remove());
 
     // Ajouter le nouveau sous-titre
@@ -251,7 +254,58 @@ function displayInteractiveSubtitle(text, startTime, endTime) {
         });
     }
 
+    // Afficher les notes en mode inline si utilisateur connecté
+    if (currentUser && notesDisplayMode === 'inline') {
+        displaySubtitleNotes(startTime);
+    }
+
     console.log('✅ Sous-titre affiché:', text.substring(0, 30) + '...');
+}
+
+/**
+ * Affiche les notes pour un sous-titre en mode inline
+ */
+function displaySubtitleNotes(startTime) {
+    const subtitlesDisplay = document.getElementById('subtitles-display');
+
+    // Chercher les notes pour ce timecode (avec tolérance de 0.5s)
+    const notesForSubtitle = userNotes.filter(note =>
+        Math.abs(note.start_time - startTime) < 0.5
+    );
+
+    // Créer le conteneur de notes
+    const notesContainer = document.createElement('div');
+    notesContainer.className = 'subtitle-notes-container';
+
+    // Bouton pour ajouter une note
+    const addNoteBtn = document.createElement('button');
+    addNoteBtn.className = 'add-note-btn';
+    addNoteBtn.textContent = '+ Note';
+    addNoteBtn.onclick = () => addNoteToSubtitle(startTime);
+
+    notesContainer.appendChild(addNoteBtn);
+
+    // Afficher les notes existantes
+    if (notesForSubtitle.length > 0) {
+        notesForSubtitle.forEach(note => {
+            const noteElement = document.createElement('div');
+            noteElement.className = 'inline-note';
+            noteElement.innerHTML = `
+                <div class="inline-note-text">📝 ${escapeHtml(note.text)}</div>
+                <div class="inline-note-actions">
+                    <button class="inline-note-edit" onclick="editNoteText(${note.id}, '${escapeHtml(note.text).replace(/'/g, "\\'")}')">
+                        ✏️
+                    </button>
+                    <button class="inline-note-delete" onclick="deleteNoteById(${note.id})">
+                        🗑️
+                    </button>
+                </div>
+            `;
+            notesContainer.appendChild(noteElement);
+        });
+    }
+
+    subtitlesDisplay.appendChild(notesContainer);
 }
 
 function handleSubtitleSelection() {
@@ -1110,6 +1164,255 @@ async function initComments() {
 
     // Charger les commentaires dans tous les cas
     await loadComments();
+}
+
+// ========================================
+// NOTES PERSONNELLES SUR SOUS-TITRES
+// ========================================
+
+/**
+ * Charge les notes de l'utilisateur pour cette vidéo
+ */
+async function loadUserNotes() {
+    if (!currentVideoId || !currentUser) return;
+
+    try {
+        const response = await fetch(`http://localhost:3000/notes/${currentVideoId}`, {
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            userNotes = await response.json();
+            console.log(`📝 ${userNotes.length} notes chargées`);
+
+            // Rafraîchir l'affichage des notes si en mode panel
+            if (notesDisplayMode === 'panel') {
+                displayNotesPanel();
+            }
+        }
+    } catch (error) {
+        console.error('Erreur chargement notes:', error);
+    }
+}
+
+/**
+ * Ajoute une note à un sous-titre
+ */
+async function addNoteToSubtitle(startTime) {
+    const text = prompt('Entrez votre note personnelle (max 500 caractères):');
+
+    if (!text || text.trim().length === 0) return;
+
+    if (text.length > 500) {
+        showNotification('Note trop longue (max 500 caractères)', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch('http://localhost:3000/notes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                video_id: currentVideoId,
+                start_time: startTime,
+                text: text.trim()
+            })
+        });
+
+        if (response.ok) {
+            showNotification('Note ajoutée!', 'success');
+            await loadUserNotes();
+        } else {
+            const data = await response.json();
+            showNotification(data.error || 'Erreur lors de l\'ajout', 'error');
+        }
+    } catch (error) {
+        console.error('Erreur ajout note:', error);
+        showNotification('Erreur de connexion au serveur', 'error');
+    }
+}
+
+/**
+ * Modifie une note existante
+ */
+async function editNoteText(noteId, currentText) {
+    const text = prompt('Modifier votre note:', currentText);
+
+    if (!text || text.trim().length === 0) return;
+
+    if (text === currentText) return; // Pas de changement
+
+    if (text.length > 500) {
+        showNotification('Note trop longue (max 500 caractères)', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch(`http://localhost:3000/notes/${noteId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({ text: text.trim() })
+        });
+
+        if (response.ok) {
+            showNotification('Note modifiée!', 'success');
+            await loadUserNotes();
+        } else {
+            const data = await response.json();
+            showNotification(data.error || 'Erreur lors de la modification', 'error');
+        }
+    } catch (error) {
+        console.error('Erreur modification note:', error);
+        showNotification('Erreur de connexion au serveur', 'error');
+    }
+}
+
+/**
+ * Supprime une note
+ */
+async function deleteNoteById(noteId) {
+    if (!confirm('Voulez-vous vraiment supprimer cette note?')) return;
+
+    try {
+        const response = await fetch(`http://localhost:3000/notes/${noteId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            showNotification('Note supprimée', 'success');
+            await loadUserNotes();
+        } else {
+            showNotification('Erreur lors de la suppression', 'error');
+        }
+    } catch (error) {
+        console.error('Erreur suppression note:', error);
+        showNotification('Erreur de connexion au serveur', 'error');
+    }
+}
+
+/**
+ * Affiche le panneau avec toutes les notes
+ */
+function displayNotesPanel() {
+    const subtitlesDisplay = document.getElementById('subtitles-display');
+
+    // Retirer le panneau existant si présent
+    const existingPanel = document.getElementById('notes-panel');
+    if (existingPanel) existingPanel.remove();
+
+    // Créer le panneau
+    const panel = document.createElement('div');
+    panel.id = 'notes-panel';
+    panel.className = 'notes-panel';
+
+    if (userNotes.length === 0) {
+        panel.innerHTML = `
+            <h3>📝 Mes notes personnelles</h3>
+            <p class="no-notes">Vous n'avez pas encore de notes pour cette vidéo.</p>
+            <p class="notes-hint">Cliquez sur "Mode Notes Inline" pour ajouter des notes sur les sous-titres.</p>
+        `;
+    } else {
+        const notesHTML = userNotes.map(note => {
+            const formattedTime = formatTimecode(note.start_time);
+            return `
+                <div class="note-item" data-note-id="${note.id}">
+                    <div class="note-timecode" onclick="jumpToTime(${note.start_time})">
+                        🕒 ${formattedTime}
+                    </div>
+                    <div class="note-text">${escapeHtml(note.text)}</div>
+                    <div class="note-actions">
+                        <button class="note-edit-btn" onclick="editNoteText(${note.id}, '${escapeHtml(note.text).replace(/'/g, "\\'")}')">
+                            ✏️ Modifier
+                        </button>
+                        <button class="note-delete-btn" onclick="deleteNoteById(${note.id})">
+                            🗑️ Supprimer
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        panel.innerHTML = `
+            <h3>📝 Mes notes personnelles (${userNotes.length})</h3>
+            <div class="notes-list">${notesHTML}</div>
+        `;
+    }
+
+    subtitlesDisplay.appendChild(panel);
+}
+
+/**
+ * Saute à un moment précis de la vidéo
+ */
+function jumpToTime(seconds) {
+    const video = document.getElementById('video-player');
+    video.currentTime = seconds;
+    video.play();
+    showNotification(`⏩ Saut à ${formatTimecode(seconds)}`, 'info', 1500);
+}
+
+/**
+ * Formate un timecode en secondes vers MM:SS
+ */
+function formatTimecode(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Bascule entre le mode inline et le mode panel
+ */
+function toggleNotesDisplay() {
+    if (notesDisplayMode === 'inline') {
+        notesDisplayMode = 'panel';
+        displayNotesPanel();
+        document.getElementById('notes-toggle-btn').textContent = '📝 Mode Notes Inline';
+    } else {
+        notesDisplayMode = 'inline';
+        const panel = document.getElementById('notes-panel');
+        if (panel) panel.remove();
+        document.getElementById('notes-toggle-btn').textContent = '📋 Voir Toutes Mes Notes';
+    }
+}
+
+/**
+ * Initialise le système de notes
+ */
+async function initNotes() {
+    const isAuth = await checkUserAuth();
+
+    if (!isAuth || !currentUser) {
+        console.log('📝 Notes désactivées: utilisateur non connecté');
+        return;
+    }
+
+    // Charger les notes
+    await loadUserNotes();
+
+    // Ajouter le bouton de toggle dans la zone des sous-titres
+    const subtitlesDisplay = document.getElementById('subtitles-display');
+
+    // Créer le bouton toggle s'il n'existe pas déjà
+    if (!document.getElementById('notes-toggle-btn')) {
+        const toggleBtn = document.createElement('button');
+        toggleBtn.id = 'notes-toggle-btn';
+        toggleBtn.className = 'notes-toggle-btn';
+        toggleBtn.textContent = '📋 Voir Toutes Mes Notes';
+        toggleBtn.onclick = toggleNotesDisplay;
+
+        // Insérer au début de la zone sous-titres
+        subtitlesDisplay.insertBefore(toggleBtn, subtitlesDisplay.firstChild);
+    }
+
+    console.log('📝 Système de notes initialisé');
 }
 
 console.log('🎥 Player ready!');

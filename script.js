@@ -160,11 +160,17 @@ function initializeVideoCards() {
     const videoCards = document.querySelectorAll('.video-card');
     const playButtons = document.querySelectorAll('.play-btn');
 
+    console.log(`🎯 DEBUG: ${videoCards.length} cartes vidéo trouvées`);
+    console.log(`🎯 DEBUG: ${playButtons.length} boutons play trouvés`);
+
     // Événement de clic sur les cartes vidéo
     videoCards.forEach(card => {
         card.addEventListener('click', function(event) {
+            console.log('🖱️ DEBUG: Clic détecté sur une carte');
+
             // Empêcher le clic si on clique sur le bouton play directement
             if (event.target.classList.contains('play-btn')) {
+                console.log('⚠️ DEBUG: Clic sur bouton play - event stoppé');
                 return;
             }
 
@@ -172,6 +178,8 @@ function initializeVideoCards() {
             const subtitleSrc = this.getAttribute('data-subtitle-src');
             const videoTitle = this.querySelector('.video-title').textContent.trim();
             const videoLevel = this.getAttribute('data-level') || 'B2';
+
+            console.log(`🔍 DEBUG: videoSrc="${videoSrc}", titre="${videoTitle}"`);
 
             // Vérifier si la vidéo a un fichier source
             if (videoSrc && videoSrc.trim() !== '') {

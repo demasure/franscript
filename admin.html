@@ -411,12 +411,13 @@
                     credentials: 'include'
                 });
 
-                if (!response.ok || !(await response.json()).user.role === 'admin') {
+                if (!response.ok) {
                     window.location.href = 'auth-demo.html';
                     return;
                 }
 
                 const data = await response.json();
+
                 if (data.user.role !== 'admin') {
                     alert('Accès refusé : Admin uniquement');
                     window.location.href = 'auth-demo.html';
@@ -425,6 +426,7 @@
 
                 document.getElementById('admin-email').textContent = data.user.email;
             } catch (error) {
+                console.error('Erreur auth:', error);
                 window.location.href = 'auth-demo.html';
             }
         }

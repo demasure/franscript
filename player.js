@@ -1607,13 +1607,9 @@ function refreshNotesList() {
             isNoteInTimeWindow(note, currentTime, NOTE_TIME_WINDOW)
         );
 
-        // Si aucune note dans la fenêtre temporelle
+        // Si aucune note dans la fenêtre temporelle, afficher vide
         if (notesToDisplay.length === 0) {
-            notesListContainer.innerHTML = `
-                <div class="no-notes-message">
-                    🕒 Aucune note active entre ${formatTimecode(currentTime)} et ${formatTimecode(currentTime + NOTE_TIME_WINDOW)}
-                </div>
-            `;
+            notesListContainer.innerHTML = '';
             return;
         }
     } else {

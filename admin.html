@@ -331,6 +331,108 @@
         .logout-btn:hover {
             background: #c82333;
         }
+
+        /* STYLES STATISTIQUES */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        }
+
+        .stat-icon {
+            font-size: 3rem;
+            filter: grayscale(0.2);
+        }
+
+        .stat-info {
+            flex: 1;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e3c72;
+        }
+
+        .level-stats, .tag-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .level-bar, .tag-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .level-bar-label, .tag-bar-label {
+            min-width: 80px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .level-bar-bg, .tag-bar-bg {
+            flex: 1;
+            height: 32px;
+            background: #f0f0f0;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .level-bar-fill, .tag-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 12px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: width 0.6s ease;
+        }
+
+        .level-bar-fill.level-b2 {
+            background: linear-gradient(90deg, #2ecc71 0%, #27ae60 100%);
+        }
+
+        .level-bar-fill.level-c1 {
+            background: linear-gradient(90deg, #f39c12 0%, #e67e22 100%);
+        }
+
+        .level-bar-fill.level-c2 {
+            background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        #recent-videos-table {
+            margin-top: 16px;
+        }
     </style>
 </head>
 <body>
@@ -347,6 +449,7 @@
         <div class="tabs">
             <button class="tab active" onclick="switchTab('videos')">Vidéos</button>
             <button class="tab" onclick="switchTab('tags')">Tags</button>
+            <button class="tab" onclick="switchTab('stats')">📊 Statistiques</button>
         </div>
 
         <!-- TAB VIDÉOS -->
@@ -442,6 +545,79 @@
                 </table>
             </div>
         </div>
+
+        <!-- TAB STATISTIQUES -->
+        <div id="tab-stats" class="tab-content">
+            <div class="stats-grid">
+                <!-- Cartes de statistiques -->
+                <div class="stat-card">
+                    <div class="stat-icon">📹</div>
+                    <div class="stat-info">
+                        <div class="stat-label">Total Vidéos</div>
+                        <div class="stat-value" id="stat-total-videos">0</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-info">
+                        <div class="stat-label">Utilisateurs</div>
+                        <div class="stat-value" id="stat-total-users">0</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">🏷️</div>
+                    <div class="stat-info">
+                        <div class="stat-label">Tags</div>
+                        <div class="stat-value" id="stat-total-tags">0</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">⏱️</div>
+                    <div class="stat-info">
+                        <div class="stat-label">Durée Totale</div>
+                        <div class="stat-value" id="stat-total-duration">0:00</div>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-info">
+                        <div class="stat-label">Durée Moyenne</div>
+                        <div class="stat-value" id="stat-avg-duration">0:00</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vidéos par niveau -->
+            <div class="panel">
+                <h2>📈 Répartition par Niveau CECRL</h2>
+                <div class="level-stats" id="level-stats"></div>
+            </div>
+
+            <!-- Tags les plus utilisés -->
+            <div class="panel">
+                <h2>🏆 Tags les Plus Utilisés</h2>
+                <div class="tag-stats" id="tag-stats"></div>
+            </div>
+
+            <!-- Vidéos récentes -->
+            <div class="panel">
+                <h2>🆕 Vidéos Récentes</h2>
+                <table id="recent-videos-table">
+                    <thead>
+                        <tr>
+                            <th>Titre</th>
+                            <th>Niveau</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <script src="utils.js"></script>
@@ -488,6 +664,11 @@
 
             event.target.classList.add('active');
             document.getElementById(`tab-${tab}`).classList.add('active');
+
+            // Charger les statistiques quand on passe à l'onglet stats
+            if (tab === 'stats') {
+                loadStats();
+            }
         }
 
         /**
@@ -891,6 +1072,141 @@
             } catch (error) {
                 showMessage('Erreur lors de la suppression', 'error');
             }
+        }
+
+        // ============================================
+        // STATISTIQUES
+        // ============================================
+
+        /**
+         * Charge et affiche les statistiques
+         */
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_URL}/admin/stats`, {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erreur de chargement des stats');
+                }
+
+                const stats = await response.json();
+
+                // Afficher les cartes principales
+                document.getElementById('stat-total-videos').textContent = stats.overview.totalVideos;
+                document.getElementById('stat-total-users').textContent = stats.overview.totalUsers;
+                document.getElementById('stat-total-tags').textContent = stats.overview.totalTags;
+
+                // Formater les durées
+                const totalDurationFormatted = formatDurationMinutes(stats.overview.totalDuration);
+                const avgDurationFormatted = formatDurationMinutes(stats.overview.avgDuration);
+                document.getElementById('stat-total-duration').textContent = totalDurationFormatted;
+                document.getElementById('stat-avg-duration').textContent = avgDurationFormatted;
+
+                // Afficher les vidéos par niveau
+                displayLevelStats(stats.videosByLevel, stats.overview.totalVideos);
+
+                // Afficher les tags les plus utilisés
+                displayTagStats(stats.tagUsage);
+
+                // Afficher les vidéos récentes
+                displayRecentVideos(stats.recentVideos);
+
+            } catch (error) {
+                console.error('Erreur chargement stats:', error);
+                showMessage('Erreur lors du chargement des statistiques', 'error');
+            }
+        }
+
+        /**
+         * Formate une durée en secondes vers format lisible
+         */
+        function formatDurationMinutes(seconds) {
+            if (!seconds) return '0:00';
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            if (hours > 0) {
+                return `${hours}h ${minutes}m`;
+            }
+            return `${minutes}m`;
+        }
+
+        /**
+         * Affiche les barres de statistiques par niveau
+         */
+        function displayLevelStats(videosByLevel, total) {
+            const container = document.getElementById('level-stats');
+            const levels = ['B2', 'C1', 'C2'];
+
+            container.innerHTML = levels.map(level => {
+                const count = videosByLevel[level] || 0;
+                const percentage = total > 0 ? (count / total * 100).toFixed(1) : 0;
+
+                return `
+                    <div class="level-bar">
+                        <div class="level-bar-label">${level}</div>
+                        <div class="level-bar-bg">
+                            <div class="level-bar-fill level-${level.toLowerCase()}" style="width: ${percentage}%">
+                                ${count} vidéo${count > 1 ? 's' : ''} (${percentage}%)
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        /**
+         * Affiche les tags les plus utilisés
+         */
+        function displayTagStats(tagUsage) {
+            const container = document.getElementById('tag-stats');
+            const tagEntries = Object.entries(tagUsage).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+            if (tagEntries.length === 0) {
+                container.innerHTML = '<p style="color: #666;">Aucun tag utilisé</p>';
+                return;
+            }
+
+            const maxCount = tagEntries[0][1];
+
+            container.innerHTML = tagEntries.map(([name, count]) => {
+                const percentage = (count / maxCount * 100).toFixed(1);
+
+                return `
+                    <div class="tag-bar">
+                        <div class="tag-bar-label">${name}</div>
+                        <div class="tag-bar-bg">
+                            <div class="tag-bar-fill" style="width: ${percentage}%">
+                                ${count} vidéo${count > 1 ? 's' : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        /**
+         * Affiche les vidéos récentes
+         */
+        function displayRecentVideos(videos) {
+            const tbody = document.querySelector('#recent-videos-table tbody');
+
+            if (videos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #666;">Aucune vidéo</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = videos.map(v => {
+                const date = new Date(v.created_at).toLocaleDateString('fr-FR');
+                return `
+                    <tr>
+                        <td>${v.title}</td>
+                        <td><span class="level-badge level-${v.level.toLowerCase()}">${v.level}</span></td>
+                        <td>${date}</td>
+                    </tr>
+                `;
+            }).join('');
         }
     </script>
 </body>

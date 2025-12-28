@@ -372,10 +372,6 @@
                         <input type="text" id="subtitle-url" placeholder="videos/ma_video.vtt">
                     </div>
                     <div class="form-group">
-                        <label for="video-duration">Durée (en secondes)</label>
-                        <input type="number" id="video-duration" placeholder="Ex: 120 pour 2 minutes" min="0">
-                    </div>
-                    <div class="form-group">
                         <label>Tags</label>
                         <div id="tag-selector" class="tag-selector"></div>
                     </div>
@@ -602,14 +598,13 @@
 
             const id = document.getElementById('video-id').value;
             const selectedLevel = document.querySelector('.level-btn.active');
-            const duration = document.getElementById('video-duration').value;
             const videoData = {
                 title: document.getElementById('video-title').value,
                 description: document.getElementById('video-description').value,
                 video_url: document.getElementById('video-url').value,
                 subtitle_url: document.getElementById('subtitle-url').value,
                 level: selectedLevel ? selectedLevel.getAttribute('data-level') : 'B2',
-                duration: duration ? parseInt(duration) : null,
+                // La durée est maintenant détectée automatiquement par le backend
                 is_paid: document.getElementById('is-paid').checked,
                 tagIds: Array.from(document.querySelectorAll('#tag-selector .tag-button.selected')).map(btn => parseInt(btn.dataset.tagId))
             };
@@ -656,7 +651,7 @@
                 document.getElementById('video-description').value = video.description || '';
                 document.getElementById('video-url').value = video.video_url;
                 document.getElementById('subtitle-url').value = video.subtitle_url || '';
-                document.getElementById('video-duration').value = video.duration || '';
+                // La durée est détectée automatiquement, pas besoin de la remplir
                 document.getElementById('is-paid').checked = video.is_paid === 1;
 
                 // Sélectionner le niveau

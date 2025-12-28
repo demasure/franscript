@@ -11,6 +11,7 @@ const {
     updateTag,
     deleteTag
 } = require('./database');
+const { detectVideoDuration } = require('./videoUtils');
 
 const router = express.Router();
 
@@ -64,9 +65,9 @@ router.get('/videos/:id', (req, res) => {
  *   tagIds: number[] (IDs des tags)
  * }
  */
-router.post('/videos', (req, res) => {
+router.post('/videos', async (req, res) => {
     try {
-        const { title, description, video_url, subtitle_url, level, duration, is_paid, tagIds } = req.body;
+        const { title, description, video_url, subtitle_url, level, is_paid, tagIds } = req.body;
 
         // Validation
         if (!title || !video_url) {
@@ -75,13 +76,17 @@ router.post('/videos', (req, res) => {
             });
         }
 
+        // Détecter automatiquement la durée de la vidéo
+        const detectedDuration = await detectVideoDuration(video_url);
+        console.log(`📹 Durée détectée pour "${title}": ${detectedDuration ? detectedDuration + 's' : 'Non détectée'}`);
+
         const video = createVideo({
             title,
             description: description || '',
             video_url,
             subtitle_url,
             level: level || 'B2',
-            duration: duration || null,
+            duration: detectedDuration,
             is_paid: is_paid || false,
             tagIds: tagIds || []
         });
@@ -111,10 +116,10 @@ router.post('/videos', (req, res) => {
  *   tagIds: number[]
  * }
  */
-router.put('/videos/:id', (req, res) => {
+router.put('/videos/:id', async (req, res) => {
     try {
         const id = parseInt(req.params.id);
-        const { title, description, video_url, subtitle_url, level, duration, is_paid, tagIds } = req.body;
+        const { title, description, video_url, subtitle_url, level, is_paid, tagIds } = req.body;
 
         // Vérifier que la vidéo existe
         const existingVideo = getVideoById(id);
@@ -129,13 +134,20 @@ router.put('/videos/:id', (req, res) => {
             });
         }
 
+        // Détecter automatiquement la durée de la vidéo si l'URL a changé
+        let detectedDuration = existingVideo.duration;
+        if (video_url !== existingVideo.video_url) {
+            detectedDuration = await detectVideoDuration(video_url);
+            console.log(`📹 Durée détectée pour "${title}": ${detectedDuration ? detectedDuration + 's' : 'Non détectée'}`);
+        }
+
         const video = updateVideo(id, {
             title,
             description: description || '',
             video_url,
             subtitle_url,
             level: level || 'B2',
-            duration: duration || null,
+            duration: detectedDuration,
             is_paid: is_paid || false,
             tagIds: tagIds || []
         });

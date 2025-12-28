@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // CHARGEMENT DE LA VIDÉO
 // ========================================
 
-function loadVideoFromURL() {
+async function loadVideoFromURL() {
     const params = new URLSearchParams(window.location.search);
     const videoSrc = params.get('video') || 'videos/ma_video.mp4';
     const subtitleSrc = params.get('subtitle') || 'videos/ma_video.vtt';
@@ -67,12 +67,82 @@ function loadVideoFromURL() {
     trackElement.src = subtitleSrc;
     videoElement.load();
 
-    // Mettre à jour les informations
+    // Mettre à jour les informations de base
     document.getElementById('video-title').textContent = title;
     document.querySelector('.video-level-badge').textContent = level;
     document.querySelector('.video-level-badge').className = `video-level-badge level-${level.toLowerCase()}`;
 
+    // Si on a un ID, charger les infos complètes depuis la base de données
+    if (currentVideoId) {
+        await loadVideoMetadata(currentVideoId);
+    }
+
     console.log(`📹 Vidéo chargée : ${title} (${level})`);
+}
+
+/**
+ * Charge les métadonnées complètes de la vidéo depuis la base de données
+ */
+async function loadVideoMetadata(videoId) {
+    try {
+        const response = await fetch(`http://localhost:3000/api/videos/${videoId}`);
+        if (response.ok) {
+            const data = await response.json();
+            const video = data.video;
+
+            // Afficher la description
+            if (video.description) {
+                document.getElementById('video-description').textContent = video.description;
+            }
+
+            // Afficher les tags
+            if (video.tags && video.tags.length > 0) {
+                const tagsHTML = video.tags.map(tag => {
+                    const rgb = hexToRgb(tag.color);
+                    return `<span class="video-tag" style="background-color: rgba(${rgb}, 0.2); color: ${tag.color}; border: 2px solid ${tag.color}; padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 500; margin-right: 8px;">${tag.name.toUpperCase()}</span>`;
+                }).join('');
+
+                // Ajouter les tags après le niveau
+                const metaTags = document.querySelector('.video-meta-tags');
+                metaTags.innerHTML += tagsHTML;
+            }
+
+            // Afficher la durée
+            if (video.duration) {
+                const durationFormatted = formatDuration(video.duration);
+                const durationHTML = `<span class="video-duration-badge" style="padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 500; background-color: rgba(255, 255, 255, 0.1); color: var(--color-text-secondary); border: 1px solid rgba(255, 255, 255, 0.2); margin-right: 8px;">⏱️ ${durationFormatted}</span>`;
+
+                const metaTags = document.querySelector('.video-meta-tags');
+                metaTags.innerHTML += durationHTML;
+            }
+        }
+    } catch (error) {
+        console.error('Erreur chargement métadonnées:', error);
+    }
+}
+
+/**
+ * Convertit une couleur hex en RGB
+ */
+function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    if (result) {
+        const r = parseInt(result[1], 16);
+        const g = parseInt(result[2], 16);
+        const b = parseInt(result[3], 16);
+        return `${r}, ${g}, ${b}`;
+    }
+    return '52, 152, 219'; // Bleu par défaut
+}
+
+/**
+ * Formate la durée en secondes vers MM:SS
+ */
+function formatDuration(seconds) {
+    if (!seconds) return null;
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
 }
 
 // ========================================

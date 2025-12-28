@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FranScript - Panel Admin</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>FranScript - Panel Admin v2.0</title>
     <style>
         * {
             margin: 0;
@@ -275,10 +278,42 @@
         .logout-btn:hover {
             background: #c82333;
         }
+
+        .debug-panel {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        .debug-panel h3 {
+            margin-bottom: 10px;
+            color: #856404;
+        }
+
+        .debug-status {
+            margin: 5px 0;
+        }
+
+        .status-ok { color: #28a745; font-weight: bold; }
+        .status-error { color: #dc3545; font-weight: bold; }
+        .status-pending { color: #6c757d; }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- DEBUG PANEL - VERSION 2.0 -->
+        <div class="debug-panel">
+            <h3>🔍 DEBUG MODE - VERSION 2.0 (28/12/2025)</h3>
+            <div class="debug-status" id="debug-version">✅ Page chargée: v2.0 avec cache-busting</div>
+            <div class="debug-status" id="debug-cookies">⏳ Cookies: Vérification...</div>
+            <div class="debug-status" id="debug-auth">⏳ Auth: Vérification...</div>
+            <div class="debug-status" id="debug-role">⏳ Rôle: Vérification...</div>
+        </div>
+
         <header>
             <button class="logout-btn" onclick="logout()">Se déconnecter</button>
             <h1>👑 Panel Admin FranScript</h1>
@@ -406,38 +441,91 @@
 
         // Vérifier l'authentification admin
         async function checkAuth() {
+            const debugCookies = document.getElementById('debug-cookies');
+            const debugAuth = document.getElementById('debug-auth');
+            const debugRole = document.getElementById('debug-role');
+
             try {
-                console.log('[DEBUG] Checking auth...');
+                // Étape 1: Vérifier les cookies
+                console.log('[v2.0] Étape 1: Vérification des cookies');
+                const cookies = document.cookie;
+                console.log('[v2.0] Cookies présents:', cookies ? 'OUI' : 'NON');
+                console.log('[v2.0] Cookies:', cookies);
+
+                if (cookies) {
+                    debugCookies.innerHTML = `✅ Cookies détectés: ${cookies.substring(0, 50)}...`;
+                    debugCookies.className = 'debug-status status-ok';
+                } else {
+                    debugCookies.innerHTML = '❌ Aucun cookie détecté';
+                    debugCookies.className = 'debug-status status-error';
+                }
+
+                // Étape 2: Appeler /auth/me
+                console.log('[v2.0] Étape 2: Appel à /auth/me');
+                debugAuth.innerHTML = '⏳ Appel à /auth/me...';
+
                 const response = await fetch(`${API_URL}/auth/me`, {
                     credentials: 'include'
                 });
 
-                console.log('[DEBUG] Response status:', response.status);
-                console.log('[DEBUG] Response ok:', response.ok);
+                console.log('[v2.0] Status:', response.status);
+                console.log('[v2.0] Headers:', [...response.headers.entries()]);
 
                 if (!response.ok) {
-                    console.error('[DEBUG] Auth failed - not ok. Status:', response.status);
-                    alert(`Erreur auth: ${response.status} - Vérifiez la console`);
-                    // window.location.href = 'auth-demo.html';
+                    console.error('[v2.0] Réponse non-OK:', response.status);
+                    debugAuth.innerHTML = `❌ Auth échouée: HTTP ${response.status}`;
+                    debugAuth.className = 'debug-status status-error';
+                    debugRole.innerHTML = '❌ Non vérifié (auth failed)';
+                    debugRole.className = 'debug-status status-error';
+
+                    setTimeout(() => {
+                        alert(`Auth échouée (${response.status}). Redirection vers login...`);
+                        window.location.href = 'auth-demo.html';
+                    }, 3000);
                     return;
                 }
 
+                // Étape 3: Parser la réponse
+                console.log('[v2.0] Étape 3: Parsing de la réponse');
                 const data = await response.json();
-                console.log('[DEBUG] User data:', data);
+                console.log('[v2.0] User data:', data);
+
+                debugAuth.innerHTML = `✅ Authentifié: ${data.user.email}`;
+                debugAuth.className = 'debug-status status-ok';
+
+                // Étape 4: Vérifier le rôle
+                console.log('[v2.0] Étape 4: Vérification du rôle');
+                console.log('[v2.0] Rôle:', data.user.role);
 
                 if (data.user.role !== 'admin') {
-                    console.error('[DEBUG] Not admin. Role:', data.user.role);
-                    alert('Accès refusé : Admin uniquement. Role: ' + data.user.role);
-                    // window.location.href = 'auth-demo.html';
+                    console.error('[v2.0] Rôle insuffisant:', data.user.role);
+                    debugRole.innerHTML = `❌ Rôle insuffisant: ${data.user.role} (admin requis)`;
+                    debugRole.className = 'debug-status status-error';
+
+                    setTimeout(() => {
+                        alert(`Accès refusé: rôle "${data.user.role}" au lieu de "admin"`);
+                        window.location.href = 'auth-demo.html';
+                    }, 3000);
                     return;
                 }
 
-                console.log('[DEBUG] Auth success! Email:', data.user.email);
+                // Succès !
+                console.log('[v2.0] ✅ SUCCÈS - Accès admin autorisé');
+                debugRole.innerHTML = `✅ Rôle: ${data.user.role}`;
+                debugRole.className = 'debug-status status-ok';
                 document.getElementById('admin-email').textContent = data.user.email;
+
             } catch (error) {
-                console.error('[DEBUG] Exception in checkAuth:', error);
-                alert('Exception: ' + error.message);
-                // window.location.href = 'auth-demo.html';
+                console.error('[v2.0] Exception:', error);
+                debugAuth.innerHTML = `❌ Exception: ${error.message}`;
+                debugAuth.className = 'debug-status status-error';
+                debugRole.innerHTML = '❌ Non vérifié (exception)';
+                debugRole.className = 'debug-status status-error';
+
+                setTimeout(() => {
+                    alert(`Erreur: ${error.message}`);
+                    window.location.href = 'auth-demo.html';
+                }, 3000);
             }
         }
 

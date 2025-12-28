@@ -134,9 +134,14 @@ function createVideoCard(video) {
     const durationFormatted = formatDuration(video.duration);
     const durationHTML = durationFormatted ? `<span class="video-duration">${durationFormatted}</span>` : '';
 
+    // Utiliser le thumbnail réel si disponible, sinon placeholder
+    const thumbnailSrc = video.thumbnail_url
+        ? video.thumbnail_url
+        : `https://via.placeholder.com/400x225/2ecc71/ffffff?text=${encodeURIComponent(video.title)}`;
+
     article.innerHTML = `
         <div class="video-thumbnail">
-            <img src="https://via.placeholder.com/400x225/2ecc71/ffffff?text=${encodeURIComponent(video.title)}" alt="${video.title}">
+            <img src="${thumbnailSrc}" alt="${video.title}">
             <div class="video-overlay">
                 <button class="play-btn">▶ Lire</button>
             </div>

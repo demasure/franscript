@@ -11,7 +11,7 @@ const {
     updateTag,
     deleteTag
 } = require('./database');
-const { detectVideoDuration } = require('./videoUtils');
+const { detectVideoDuration, extractThumbnail } = require('./videoUtils');
 
 const router = express.Router();
 
@@ -76,7 +76,7 @@ router.post('/videos', async (req, res) => {
             });
         }
 
-        // Détecter automatiquement la durée de la vidéo
+        // Détecter automatiquement la durée et créer la vidéo d'abord
         const detectedDuration = await detectVideoDuration(video_url);
         console.log(`📹 Durée détectée pour "${title}": ${detectedDuration ? detectedDuration + 's' : 'Non détectée'}`);
 
@@ -85,10 +85,22 @@ router.post('/videos', async (req, res) => {
             description: description || '',
             video_url,
             subtitle_url,
+            thumbnail_url: null, // Sera mis à jour juste après
             level: level || 'B2',
             duration: detectedDuration,
             is_paid: is_paid || false,
             tagIds: tagIds || []
+        });
+
+        // Extraire le thumbnail après création (en arrière-plan)
+        extractThumbnail(video_url, video.id).then(thumbnailPath => {
+            if (thumbnailPath) {
+                updateVideo(video.id, {
+                    ...video,
+                    thumbnail_url: thumbnailPath,
+                    tagIds: video.tags.map(t => t.id)
+                });
+            }
         });
 
         res.status(201).json({
@@ -136,9 +148,28 @@ router.put('/videos/:id', async (req, res) => {
 
         // Détecter automatiquement la durée de la vidéo si l'URL a changé
         let detectedDuration = existingVideo.duration;
+        let thumbnailUrl = existingVideo.thumbnail_url;
+
         if (video_url !== existingVideo.video_url) {
             detectedDuration = await detectVideoDuration(video_url);
             console.log(`📹 Durée détectée pour "${title}": ${detectedDuration ? detectedDuration + 's' : 'Non détectée'}`);
+
+            // Extraire nouveau thumbnail en arrière-plan
+            extractThumbnail(video_url, id).then(thumbnailPath => {
+                if (thumbnailPath) {
+                    updateVideo(id, {
+                        title,
+                        description: description || '',
+                        video_url,
+                        subtitle_url,
+                        thumbnail_url: thumbnailPath,
+                        level: level || 'B2',
+                        duration: detectedDuration,
+                        is_paid: is_paid || false,
+                        tagIds: tagIds || []
+                    });
+                }
+            });
         }
 
         const video = updateVideo(id, {
@@ -146,6 +177,7 @@ router.put('/videos/:id', async (req, res) => {
             description: description || '',
             video_url,
             subtitle_url,
+            thumbnail_url: thumbnailUrl,
             level: level || 'B2',
             duration: detectedDuration,
             is_paid: is_paid || false,

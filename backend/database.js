@@ -31,6 +31,7 @@ function initDatabase() {
             description TEXT,
             video_url TEXT NOT NULL,
             subtitle_url TEXT,
+            thumbnail_url TEXT,
             level TEXT DEFAULT 'B2',
             duration INTEGER,
             is_paid INTEGER DEFAULT 0,
@@ -83,6 +84,14 @@ function initDatabase() {
     try {
         db.exec(`ALTER TABLE videos ADD COLUMN duration INTEGER`);
         console.log('✅ Colonne "duration" ajoutée à la table videos');
+    } catch (error) {
+        // La colonne existe déjà, ignorer l'erreur
+    }
+
+    // Migration : ajouter la colonne thumbnail_url si elle n'existe pas
+    try {
+        db.exec(`ALTER TABLE videos ADD COLUMN thumbnail_url TEXT`);
+        console.log('✅ Colonne "thumbnail_url" ajoutée à la table videos');
     } catch (error) {
         // La colonne existe déjà, ignorer l'erreur
     }
@@ -185,18 +194,18 @@ function getVideoById(id) {
 
 /**
  * Crée une nouvelle vidéo
- * @param {object} videoData - { title, description, video_url, subtitle_url, level, duration, is_paid, tagIds }
+ * @param {object} videoData - { title, description, video_url, subtitle_url, thumbnail_url, level, duration, is_paid, tagIds }
  * @returns {object} La vidéo créée
  */
 function createVideo(videoData) {
-    const { title, description, video_url, subtitle_url, level, duration, is_paid, tagIds } = videoData;
+    const { title, description, video_url, subtitle_url, thumbnail_url, level, duration, is_paid, tagIds } = videoData;
 
     const stmt = db.prepare(`
-        INSERT INTO videos (title, description, video_url, subtitle_url, level, duration, is_paid)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO videos (title, description, video_url, subtitle_url, thumbnail_url, level, duration, is_paid)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
-    const result = stmt.run(title, description, video_url, subtitle_url || null, level || 'B2', duration || null, is_paid ? 1 : 0);
+    const result = stmt.run(title, description, video_url, subtitle_url || null, thumbnail_url || null, level || 'B2', duration || null, is_paid ? 1 : 0);
     const videoId = result.lastInsertRowid;
 
     // Associer les tags
@@ -211,19 +220,19 @@ function createVideo(videoData) {
 /**
  * Met à jour une vidéo
  * @param {number} id - ID de la vidéo
- * @param {object} videoData - { title, description, video_url, subtitle_url, level, duration, is_paid, tagIds }
+ * @param {object} videoData - { title, description, video_url, subtitle_url, thumbnail_url, level, duration, is_paid, tagIds }
  * @returns {object} La vidéo mise à jour
  */
 function updateVideo(id, videoData) {
-    const { title, description, video_url, subtitle_url, level, duration, is_paid, tagIds } = videoData;
+    const { title, description, video_url, subtitle_url, thumbnail_url, level, duration, is_paid, tagIds } = videoData;
 
     const stmt = db.prepare(`
         UPDATE videos
-        SET title = ?, description = ?, video_url = ?, subtitle_url = ?, level = ?, duration = ?, is_paid = ?
+        SET title = ?, description = ?, video_url = ?, subtitle_url = ?, thumbnail_url = ?, level = ?, duration = ?, is_paid = ?
         WHERE id = ?
     `);
 
-    stmt.run(title, description, video_url, subtitle_url || null, level || 'B2', duration || null, is_paid ? 1 : 0, id);
+    stmt.run(title, description, video_url, subtitle_url || null, thumbnail_url || null, level || 'B2', duration || null, is_paid ? 1 : 0, id);
 
     // Mettre à jour les tags
     db.prepare('DELETE FROM video_tags WHERE video_id = ?').run(id);

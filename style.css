@@ -1638,109 +1638,134 @@ img {
    NOTES PERSONNELLES SUR SOUS-TITRES
    ======================================== */
 
-/* Bouton toggle pour basculer entre modes inline/panel */
-.notes-toggle-btn {
+/* Bouton pour voir toutes les notes */
+.all-notes-btn {
     display: inline-block;
-    padding: 10px 18px;
+    padding: 8px 16px;
     background: linear-gradient(135deg, var(--color-primary), #2a5298);
     color: white;
     border: none;
-    border-radius: 8px;
-    font-size: 0.9rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 8px rgba(30, 60, 114, 0.3);
+    margin-bottom: 15px;
+    box-shadow: 0 2px 6px rgba(30, 60, 114, 0.25);
     transition: all 0.3s ease;
 }
 
-.notes-toggle-btn:hover {
+.all-notes-btn:hover {
     background: linear-gradient(135deg, #2a5298, var(--color-primary));
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(30, 60, 114, 0.4);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(30, 60, 114, 0.35);
 }
 
-/* Container de notes sous un sous-titre (mode inline) */
-.subtitle-notes-container {
-    margin: 12px 0;
-    padding: 12px;
-    background: rgba(52, 152, 219, 0.05);
+/* Bandeau de notes compact sous le sous-titre */
+.notes-bar {
+    margin: 8px 0;
+    padding: 8px 12px;
+    background: rgba(52, 152, 219, 0.08);
     border-left: 3px solid var(--color-primary);
-    border-radius: 6px;
+    border-radius: 4px;
 }
 
-/* Bouton pour ajouter une note */
-.add-note-btn {
-    display: inline-flex;
+/* En-tête du bandeau */
+.notes-bar-header {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
+    margin-bottom: 8px;
+}
+
+.notes-indicator {
+    font-size: 0.85rem;
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+/* Bouton ajouter compact */
+.add-note-btn-compact {
+    width: 100%;
+    padding: 8px;
+    background: rgba(52, 152, 219, 0.1);
+    color: var(--color-primary);
+    border: 1px dashed var(--color-primary);
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.add-note-btn-compact:hover {
+    background: var(--color-primary);
+    color: white;
+    border-style: solid;
+}
+
+.add-note-btn-small {
+    padding: 4px 10px;
     background: var(--color-primary);
     color: white;
     border: none;
-    border-radius: 6px;
-    font-size: 0.85rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
 }
 
-.add-note-btn:hover {
+.add-note-btn-small:hover {
     background: #2a5298;
-    transform: scale(1.05);
 }
 
-/* Note inline individuelle */
-.inline-note {
+/* Liste des notes dans le bandeau */
+.notes-bar-list {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-top: 10px;
-    padding: 10px 12px;
-    background: white;
-    border: 1px solid #e0e0e0;
-    border-radius: 6px;
-    transition: all 0.3s ease;
-}
-
-.inline-note:hover {
-    border-color: var(--color-primary);
-    box-shadow: 0 2px 8px rgba(30, 60, 114, 0.15);
-}
-
-.inline-note-text {
-    flex: 1;
-    font-size: 0.9rem;
-    color: #555;
-    line-height: 1.5;
-}
-
-.inline-note-actions {
-    display: flex;
+    flex-direction: column;
     gap: 6px;
 }
 
-.inline-note-edit,
-.inline-note-delete {
+/* Item de note dans le bandeau */
+.note-bar-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
     padding: 6px 10px;
-    background: none;
-    border: 1px solid #ddd;
+    background: white;
+    border: 1px solid rgba(52, 152, 219, 0.2);
     border-radius: 4px;
     font-size: 0.85rem;
+}
+
+.note-bar-text {
+    flex: 1;
+    color: #444;
+    line-height: 1.4;
+}
+
+.note-bar-actions {
+    display: flex;
+    gap: 4px;
+}
+
+.note-bar-edit,
+.note-bar-delete {
+    padding: 4px 8px;
+    background: none;
+    border: none;
+    border-radius: 3px;
+    font-size: 0.9rem;
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
-.inline-note-edit:hover {
-    background: #f0f8ff;
-    border-color: var(--color-primary);
+.note-bar-edit:hover {
+    background: rgba(52, 152, 219, 0.15);
 }
 
-.inline-note-delete:hover {
-    background: #fff5f5;
-    border-color: #e74c3c;
-    color: #e74c3c;
+.note-bar-delete:hover {
+    background: rgba(231, 76, 60, 0.15);
 }
 
 /* Panneau de toutes les notes (mode panel) */

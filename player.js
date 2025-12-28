@@ -21,7 +21,6 @@ let editedSubtitles = {};  // Sous-titres modifiés {index: newText}
 let currentVideoId = null;  // ID de la vidéo courante
 let isAdmin = false;  // Utilisateur admin ou non
 let userNotes = [];  // Notes personnelles de l'utilisateur pour cette vidéo
-let notesDisplayMode = 'inline';  // 'inline' ou 'panel' - mode d'affichage des notes
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🎬 Player initialisé');
@@ -230,8 +229,8 @@ function displayInteractiveSubtitle(text, startTime, endTime) {
     subtitleElement.dataset.end = endTime;
     subtitleElement.dataset.index = index;  // Stocker l'index pour l'édition
 
-    // Supprimer uniquement les anciens sous-titres et hints (SANS effacer le toolbar admin et le bouton toggle notes)
-    const oldSubtitles = subtitlesDisplay.querySelectorAll('.subtitle-item, .subtitle-hint, .subtitle-notes-container');
+    // Supprimer uniquement les anciens sous-titres et hints (SANS effacer le toolbar admin et le bouton notes)
+    const oldSubtitles = subtitlesDisplay.querySelectorAll('.subtitle-item, .subtitle-hint, .notes-bar');
     oldSubtitles.forEach(el => el.remove());
 
     // Ajouter le nouveau sous-titre
@@ -254,18 +253,18 @@ function displayInteractiveSubtitle(text, startTime, endTime) {
         });
     }
 
-    // Afficher les notes en mode inline si utilisateur connecté
-    if (currentUser && notesDisplayMode === 'inline') {
-        displaySubtitleNotes(startTime);
+    // Afficher le bandeau de notes si utilisateur connecté
+    if (currentUser) {
+        displayNotesBar(startTime);
     }
 
     console.log('✅ Sous-titre affiché:', text.substring(0, 30) + '...');
 }
 
 /**
- * Affiche les notes pour un sous-titre en mode inline
+ * Affiche le bandeau de notes compact sous le sous-titre
  */
-function displaySubtitleNotes(startTime) {
+function displayNotesBar(startTime) {
     const subtitlesDisplay = document.getElementById('subtitles-display');
 
     // Chercher les notes pour ce timecode (avec tolérance de 0.5s)
@@ -273,39 +272,39 @@ function displaySubtitleNotes(startTime) {
         Math.abs(note.start_time - startTime) < 0.5
     );
 
-    // Créer le conteneur de notes
-    const notesContainer = document.createElement('div');
-    notesContainer.className = 'subtitle-notes-container';
+    // Créer le bandeau de notes
+    const notesBar = document.createElement('div');
+    notesBar.className = 'notes-bar';
 
-    // Bouton pour ajouter une note
-    const addNoteBtn = document.createElement('button');
-    addNoteBtn.className = 'add-note-btn';
-    addNoteBtn.textContent = '+ Note';
-    addNoteBtn.onclick = () => addNoteToSubtitle(startTime);
-
-    notesContainer.appendChild(addNoteBtn);
-
-    // Afficher les notes existantes
     if (notesForSubtitle.length > 0) {
-        notesForSubtitle.forEach(note => {
-            const noteElement = document.createElement('div');
-            noteElement.className = 'inline-note';
-            noteElement.innerHTML = `
-                <div class="inline-note-text">📝 ${escapeHtml(note.text)}</div>
-                <div class="inline-note-actions">
-                    <button class="inline-note-edit" onclick="editNoteText(${note.id}, '${escapeHtml(note.text).replace(/'/g, "\\'")}')">
-                        ✏️
-                    </button>
-                    <button class="inline-note-delete" onclick="deleteNoteById(${note.id})">
-                        🗑️
-                    </button>
-                </div>
-            `;
-            notesContainer.appendChild(noteElement);
-        });
+        // Afficher un indicateur + les notes
+        notesBar.innerHTML = `
+            <div class="notes-bar-header">
+                <span class="notes-indicator">📝 ${notesForSubtitle.length} note${notesForSubtitle.length > 1 ? 's' : ''}</span>
+                <button class="add-note-btn-small" onclick="addNoteToSubtitle(${startTime})">+ Ajouter</button>
+            </div>
+            <div class="notes-bar-list">
+                ${notesForSubtitle.map(note => `
+                    <div class="note-bar-item">
+                        <div class="note-bar-text">${escapeHtml(note.text)}</div>
+                        <div class="note-bar-actions">
+                            <button class="note-bar-edit" onclick="editNoteText(${note.id}, '${escapeHtml(note.text).replace(/'/g, "\\'")}')">✏️</button>
+                            <button class="note-bar-delete" onclick="deleteNoteById(${note.id})">🗑️</button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    } else {
+        // Juste le bouton pour ajouter une note
+        notesBar.innerHTML = `
+            <button class="add-note-btn-compact" onclick="addNoteToSubtitle(${startTime})">
+                📝 Ajouter une note personnelle
+            </button>
+        `;
     }
 
-    subtitlesDisplay.appendChild(notesContainer);
+    subtitlesDisplay.appendChild(notesBar);
 }
 
 function handleSubtitleSelection() {
@@ -1185,8 +1184,9 @@ async function loadUserNotes() {
             userNotes = await response.json();
             console.log(`📝 ${userNotes.length} notes chargées`);
 
-            // Rafraîchir l'affichage des notes si en mode panel
-            if (notesDisplayMode === 'panel') {
+            // Rafraîchir le panel s'il est ouvert
+            const existingPanel = document.getElementById('notes-panel');
+            if (existingPanel) {
                 displayNotesPanel();
             }
         }
@@ -1368,18 +1368,19 @@ function formatTimecode(seconds) {
 }
 
 /**
- * Bascule entre le mode inline et le mode panel
+ * Ouvre/ferme le panel de toutes les notes
  */
-function toggleNotesDisplay() {
-    if (notesDisplayMode === 'inline') {
-        notesDisplayMode = 'panel';
-        displayNotesPanel();
-        document.getElementById('notes-toggle-btn').textContent = '📝 Mode Notes Inline';
+function toggleAllNotesPanel() {
+    const existingPanel = document.getElementById('notes-panel');
+
+    if (existingPanel) {
+        // Fermer le panel
+        existingPanel.remove();
+        document.getElementById('all-notes-btn').textContent = '📋 Voir toutes mes notes';
     } else {
-        notesDisplayMode = 'inline';
-        const panel = document.getElementById('notes-panel');
-        if (panel) panel.remove();
-        document.getElementById('notes-toggle-btn').textContent = '📋 Voir Toutes Mes Notes';
+        // Ouvrir le panel
+        displayNotesPanel();
+        document.getElementById('all-notes-btn').textContent = '✖️ Fermer';
     }
 }
 
@@ -1397,19 +1398,19 @@ async function initNotes() {
     // Charger les notes
     await loadUserNotes();
 
-    // Ajouter le bouton de toggle dans la zone des sous-titres
+    // Ajouter le bouton "Voir toutes mes notes" dans la zone des sous-titres
     const subtitlesDisplay = document.getElementById('subtitles-display');
 
-    // Créer le bouton toggle s'il n'existe pas déjà
-    if (!document.getElementById('notes-toggle-btn')) {
-        const toggleBtn = document.createElement('button');
-        toggleBtn.id = 'notes-toggle-btn';
-        toggleBtn.className = 'notes-toggle-btn';
-        toggleBtn.textContent = '📋 Voir Toutes Mes Notes';
-        toggleBtn.onclick = toggleNotesDisplay;
+    // Créer le bouton s'il n'existe pas déjà
+    if (!document.getElementById('all-notes-btn')) {
+        const allNotesBtn = document.createElement('button');
+        allNotesBtn.id = 'all-notes-btn';
+        allNotesBtn.className = 'all-notes-btn';
+        allNotesBtn.textContent = '📋 Voir toutes mes notes';
+        allNotesBtn.onclick = toggleAllNotesPanel;
 
         // Insérer au début de la zone sous-titres
-        subtitlesDisplay.insertBefore(toggleBtn, subtitlesDisplay.firstChild);
+        subtitlesDisplay.insertBefore(allNotesBtn, subtitlesDisplay.firstChild);
     }
 
     console.log('📝 Système de notes initialisé');

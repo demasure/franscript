@@ -15,7 +15,7 @@
  */
 
 // ========================================
-// UTILITAIRE - Conversion hex vers RGB
+// UTILITAIRES
 // ========================================
 function hexToRgb(hex) {
     // Supprimer le # si présent
@@ -27,6 +27,18 @@ function hexToRgb(hex) {
     const b = parseInt(hex.substring(4, 6), 16);
 
     return `${r}, ${g}, ${b}`;
+}
+
+/**
+ * Formate une durée en secondes en format MM:SS
+ * @param {number} seconds - Durée en secondes
+ * @returns {string} Durée formatée (ex: "2:30")
+ */
+function formatDuration(seconds) {
+    if (!seconds) return null;
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
 }
 
 // ========================================
@@ -118,24 +130,26 @@ function createVideoCard(video) {
     const level = video.level || 'B2';
     const levelClass = `level-${level.toLowerCase()}`;
 
+    // Formater la durée si elle existe
+    const durationFormatted = formatDuration(video.duration);
+    const durationHTML = durationFormatted ? `<span class="video-duration">${durationFormatted}</span>` : '';
+
     article.innerHTML = `
         <div class="video-thumbnail">
             <img src="https://via.placeholder.com/400x225/2ecc71/ffffff?text=${encodeURIComponent(video.title)}" alt="${video.title}">
             <div class="video-overlay">
                 <button class="play-btn">▶ Lire</button>
             </div>
-            <span class="badge badge-real" style="position: absolute; top: 8px; left: 8px; background: #2ecc71; color: white; padding: 4px 12px; border-radius: 4px; font-size: 0.75rem; font-weight: 700;">Vidéo Réelle</span>
         </div>
         <div class="video-info">
             <h3 class="video-title">${video.title}</h3>
             <p class="video-description">${video.description || ''}</p>
             <div class="video-meta">
-                <span class="video-duration">40 sec</span>
+                ${durationHTML}
                 <span class="video-level level-badge ${levelClass}">${level}</span>
             </div>
             <div class="video-tags">
                 ${tagsHTML}
-                ${video.is_paid ? '<span class="tag tag-culte">⭐ CULTE</span>' : ''}
             </div>
         </div>
     `;

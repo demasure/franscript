@@ -15,12 +15,34 @@ function parseWebVTT(vttContent) {
     const cues = [];
     let currentCue = null;
     let inCue = false;
+    let inNote = false;
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
 
-        // Ignorer les lignes vides et l'entête WEBVTT
-        if (!line || line === 'WEBVTT') continue;
+        // Ignorer les lignes vides
+        if (!line) {
+            // Ligne vide = fin du cue ou fin de NOTE
+            if (inCue && currentCue) {
+                cues.push(currentCue);
+                currentCue = null;
+                inCue = false;
+            }
+            inNote = false;
+            continue;
+        }
+
+        // Ignorer l'entête WEBVTT (peut contenir du texte après)
+        if (line.startsWith('WEBVTT')) continue;
+
+        // Ignorer les blocs NOTE
+        if (line === 'NOTE' || line.startsWith('NOTE ')) {
+            inNote = true;
+            continue;
+        }
+
+        // Si on est dans un bloc NOTE, ignorer la ligne
+        if (inNote) continue;
 
         // Détecter un timestamp (format: 00:00:00.000 --> 00:00:05.000)
         if (line.includes('-->')) {
@@ -40,12 +62,6 @@ function parseWebVTT(vttContent) {
             } else {
                 currentCue.text = line;
             }
-        }
-        // Ligne vide = fin du cue
-        else if (inCue && !line && currentCue) {
-            cues.push(currentCue);
-            currentCue = null;
-            inCue = false;
         }
     }
 

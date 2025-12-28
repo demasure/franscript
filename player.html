@@ -74,10 +74,29 @@
                         </div>
                     </div>
 
-                    <!-- Bandeau Notes Personnelles -->
+                    <!-- Bandeau Notes Personnelles - Toujours visible pour utilisateurs connectés -->
                     <div id="notes-banner" class="notes-banner" style="display: none;">
-                        <div class="notes-banner-content">
-                            <!-- Contenu dynamique des notes -->
+                        <div class="notes-banner-header">
+                            <h3 class="notes-banner-title">📝 Mes notes personnelles</h3>
+                        </div>
+
+                        <!-- Formulaire d'ajout de note -->
+                        <div class="note-form-container">
+                            <textarea id="note-text-input"
+                                      class="note-textarea"
+                                      placeholder="Écrivez une note... Elle sera automatiquement timestampée au moment de la sauvegarde."
+                                      maxlength="500"></textarea>
+                            <div class="note-form-actions">
+                                <span id="note-char-counter" class="char-counter">0/500</span>
+                                <button id="save-note-btn" class="btn-primary">
+                                    💾 Sauvegarder (au temps actuel)
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Liste des notes existantes -->
+                        <div id="notes-list-container" class="notes-list-container">
+                            <!-- Contenu dynamique: liste des notes triées par timecode -->
                         </div>
                     </div>
 

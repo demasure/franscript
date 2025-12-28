@@ -21,7 +21,6 @@ let editedSubtitles = {};  // Sous-titres modifiés {index: newText}
 let currentVideoId = null;  // ID de la vidéo courante
 let isAdmin = false;  // Utilisateur admin ou non
 let userNotes = [];  // Notes personnelles de l'utilisateur pour cette vidéo
-let currentSubtitleStartTime = null;  // Timecode du sous-titre actuellement affiché
 
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🎬 Player initialisé');
@@ -249,67 +248,7 @@ function displayInteractiveSubtitle(text, startTime, endTime) {
         });
     }
 
-    // Mettre à jour le bandeau de notes si utilisateur connecté
-    if (currentUser) {
-        currentSubtitleStartTime = startTime;  // Stocker le timecode actuel
-        updateNotesBanner(startTime);
-    }
-
     console.log('✅ Sous-titre affiché:', text.substring(0, 30) + '...');
-}
-
-/**
- * Met à jour le bandeau de notes pour le sous-titre actuel
- */
-function updateNotesBanner(startTime) {
-    const notesBanner = document.getElementById('notes-banner');
-    if (!notesBanner) {
-        console.error('❌ Bandeau de notes introuvable dans le DOM');
-        return;
-    }
-
-    const bannerContent = notesBanner.querySelector('.notes-banner-content');
-    if (!bannerContent) {
-        console.error('❌ Contenu du bandeau de notes introuvable');
-        return;
-    }
-
-    // Afficher le bandeau
-    notesBanner.style.display = 'block';
-    console.log(`📝 Bandeau de notes affiché pour t=${startTime}s`);
-
-    // Chercher les notes pour ce timecode (avec tolérance de 0.5s)
-    const notesForSubtitle = userNotes.filter(note =>
-        Math.abs(note.start_time - startTime) < 0.5
-    );
-
-    if (notesForSubtitle.length > 0) {
-        // Afficher les notes existantes
-        bannerContent.innerHTML = `
-            <div class="notes-banner-header">
-                <h4 class="notes-banner-title">📝 Mes notes (${notesForSubtitle.length})</h4>
-                <button class="add-note-btn-small" onclick="addNoteToSubtitle(${startTime})">+ Ajouter</button>
-            </div>
-            <div class="notes-banner-list">
-                ${notesForSubtitle.map(note => `
-                    <div class="note-banner-item">
-                        <div class="note-banner-text">${escapeHtml(note.text)}</div>
-                        <div class="note-banner-actions">
-                            <button class="note-banner-edit" onclick="editNoteText(${note.id}, '${escapeHtml(note.text).replace(/'/g, "\\'")}')">✏️</button>
-                            <button class="note-banner-delete" onclick="deleteNoteById(${note.id})">🗑️</button>
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-        `;
-    } else {
-        // Pas de notes: afficher le bouton pour en ajouter
-        bannerContent.innerHTML = `
-            <button class="add-note-btn-banner" onclick="addNoteToSubtitle(${startTime})">
-                📝 Ajouter une note personnelle sur ce sous-titre
-            </button>
-        `;
-    }
 }
 
 function handleSubtitleSelection() {
@@ -1189,12 +1128,10 @@ async function loadUserNotes() {
             userNotes = await response.json();
             console.log(`📝 ${userNotes.length} notes chargées`);
 
-            // Rafraîchir le bandeau de notes si un sous-titre est affiché
-            if (currentSubtitleStartTime !== null) {
-                updateNotesBanner(currentSubtitleStartTime);
-            }
+            // Rafraîchir la liste des notes dans le bandeau principal
+            refreshNotesList();
 
-            // Rafraîchir le panel s'il est ouvert
+            // Rafraîchir le panel s'il est ouvert (pour compatibilité)
             const existingPanel = document.getElementById('notes-panel');
             if (existingPanel) {
                 displayNotesPanel();
@@ -1408,10 +1345,148 @@ async function initNotes() {
 
     console.log(`✅ Utilisateur connecté: ${currentUser.username || currentUser.email}`);
 
-    // Charger les notes
+    // Afficher le bandeau de notes
+    const notesBanner = document.getElementById('notes-banner');
+    if (notesBanner) {
+        notesBanner.style.display = 'block';
+    }
+
+    // Initialiser le formulaire de notes
+    initializeNotesForm();
+
+    // Charger les notes existantes
     await loadUserNotes();
 
     console.log('✅ Système de notes initialisé');
+}
+
+/**
+ * Initialise le formulaire de prise de notes
+ */
+function initializeNotesForm() {
+    const textarea = document.getElementById('note-text-input');
+    const saveBtn = document.getElementById('save-note-btn');
+    const charCounter = document.getElementById('note-char-counter');
+
+    if (!textarea || !saveBtn || !charCounter) {
+        console.error('❌ Éléments du formulaire de notes introuvables');
+        return;
+    }
+
+    // Compteur de caractères
+    textarea.addEventListener('input', () => {
+        charCounter.textContent = `${textarea.value.length}/500`;
+    });
+
+    // Sauvegarder la note
+    saveBtn.addEventListener('click', saveCurrentNote);
+
+    // Raccourci Ctrl+Enter pour sauvegarder
+    textarea.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'Enter') {
+            saveCurrentNote();
+        }
+    });
+
+    console.log('📝 Formulaire de notes initialisé');
+}
+
+/**
+ * Sauvegarde une note au timecode actuel de la vidéo
+ */
+async function saveCurrentNote() {
+    const textarea = document.getElementById('note-text-input');
+    const text = textarea.value.trim();
+
+    if (!text) {
+        showNotification('La note ne peut pas être vide', 'warning');
+        return;
+    }
+
+    if (text.length > 500) {
+        showNotification('Note trop longue (max 500 caractères)', 'error');
+        return;
+    }
+
+    // Récupérer le temps actuel de la vidéo
+    const video = document.getElementById('video-player');
+    const currentTime = video.currentTime;
+
+    try {
+        const response = await fetch('http://localhost:3000/notes', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                video_id: currentVideoId,
+                start_time: currentTime,
+                text: text
+            })
+        });
+
+        if (response.ok) {
+            showNotification(`Note ajoutée au timecode ${formatTimecode(currentTime)}!`, 'success');
+            textarea.value = '';
+            document.getElementById('note-char-counter').textContent = '0/500';
+            await loadUserNotes();
+        } else {
+            const data = await response.json();
+            showNotification(data.error || 'Erreur lors de l\'ajout', 'error');
+        }
+    } catch (error) {
+        console.error('Erreur sauvegarde note:', error);
+        showNotification('Erreur de connexion au serveur', 'error');
+    }
+}
+
+/**
+ * Rafraîchit l'affichage de toutes les notes (triées par timecode)
+ */
+function refreshNotesList() {
+    const notesListContainer = document.getElementById('notes-list-container');
+    if (!notesListContainer) {
+        console.error('❌ Conteneur de la liste des notes introuvable');
+        return;
+    }
+
+    // Si aucune note
+    if (userNotes.length === 0) {
+        notesListContainer.innerHTML = `
+            <div class="no-notes-message">
+                📝 Aucune note pour cette vidéo. Écrivez votre première note ci-dessus!
+            </div>
+        `;
+        return;
+    }
+
+    // Trier les notes par timecode croissant
+    const sortedNotes = [...userNotes].sort((a, b) => a.start_time - b.start_time);
+
+    // Générer le HTML pour chaque note
+    const notesHTML = sortedNotes.map(note => {
+        const formattedTime = formatTimecode(note.start_time);
+        return `
+            <div class="note-banner-item">
+                <div class="note-banner-timecode" onclick="jumpToTime(${note.start_time})">
+                    🕒 ${formattedTime}
+                </div>
+                <div class="note-banner-text">${escapeHtml(note.text)}</div>
+                <div class="note-banner-actions">
+                    <button class="note-banner-edit" onclick="editNoteText(${note.id}, '${escapeHtml(note.text).replace(/'/g, "\\'")}')">
+                        ✏️ Modifier
+                    </button>
+                    <button class="note-banner-delete" onclick="deleteNoteById(${note.id})">
+                        🗑️ Supprimer
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    notesListContainer.innerHTML = notesHTML;
+    console.log(`📝 Affichage de ${userNotes.length} notes triées par timecode`);
 }
 
 console.log('🎥 Player ready!');

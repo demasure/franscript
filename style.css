@@ -1665,6 +1665,55 @@ img {
     font-weight: 600;
 }
 
+/* Formulaire de création de note */
+.note-form-container {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: var(--color-bg-elevated);
+    border-radius: 8px;
+    border: 2px solid rgba(52, 152, 219, 0.2);
+}
+
+.note-textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 12px;
+    border: 2px solid var(--color-bg-hover);
+    border-radius: 8px;
+    background-color: var(--color-bg-card);
+    color: var(--color-text-primary);
+    font-family: inherit;
+    font-size: 0.95rem;
+    resize: vertical;
+    margin-bottom: 10px;
+    transition: border-color 0.3s;
+}
+
+.note-textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.note-form-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Conteneur de la liste des notes */
+.notes-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.no-notes-message {
+    text-align: center;
+    padding: 20px;
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
 /* Bouton ajouter dans le bandeau */
 .add-note-btn-banner {
     width: 100%;
@@ -1711,9 +1760,8 @@ img {
 /* Item de note dans le bandeau */
 .note-banner-item {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 15px;
+    flex-direction: column;
+    gap: 10px;
     padding: 12px 15px;
     background: var(--color-bg-elevated);
     border: 1px solid rgba(52, 152, 219, 0.2);
@@ -1726,11 +1774,30 @@ img {
     box-shadow: 0 2px 8px rgba(30, 60, 114, 0.15);
 }
 
+.note-banner-timecode {
+    display: inline-block;
+    padding: 4px 10px;
+    background: var(--color-primary);
+    color: white;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: fit-content;
+}
+
+.note-banner-timecode:hover {
+    background: #2a5298;
+    transform: scale(1.05);
+}
+
 .note-banner-text {
     flex: 1;
-    color: #333;
+    color: var(--color-text-primary);
     line-height: 1.6;
     font-size: 0.95rem;
+    white-space: pre-wrap;
 }
 
 .note-banner-actions {

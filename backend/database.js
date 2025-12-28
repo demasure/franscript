@@ -254,6 +254,32 @@ function createTag(name, color = '#3498db') {
 }
 
 /**
+ * Met à jour un tag
+ * @param {number} id - ID du tag
+ * @param {string} name - Nouveau nom
+ * @param {string} color - Nouvelle couleur
+ * @returns {object} Le tag mis à jour
+ */
+function updateTag(id, name, color) {
+    const stmt = db.prepare('UPDATE tags SET name = ?, color = ? WHERE id = ?');
+    stmt.run(name, color, id);
+    return {
+        id,
+        name,
+        color
+    };
+}
+
+/**
+ * Récupère un tag par son ID
+ * @param {number} id - ID du tag
+ * @returns {object|null} Le tag ou null
+ */
+function getTagById(id) {
+    return db.prepare('SELECT * FROM tags WHERE id = ?').get(id);
+}
+
+/**
  * Supprime un tag
  * @param {number} id - ID du tag
  */
@@ -276,6 +302,8 @@ module.exports = {
     deleteVideo,
     // Tags
     getAllTags,
+    getTagById,
     createTag,
+    updateTag,
     deleteTag
 };

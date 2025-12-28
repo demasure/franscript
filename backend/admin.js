@@ -6,7 +6,9 @@ const {
     updateVideo,
     deleteVideo,
     getAllTags,
+    getTagById,
     createTag,
+    updateTag,
     deleteTag
 } = require('./database');
 
@@ -211,6 +213,44 @@ router.post('/tags', (req, res) => {
 
         console.error('Erreur création tag:', error);
         res.status(500).json({ error: 'Erreur lors de la création du tag' });
+    }
+});
+
+/**
+ * PUT /admin/tags/:id
+ * Met à jour un tag
+ *
+ * Body: { name: string, color: string }
+ */
+router.put('/tags/:id', (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const { name, color } = req.body;
+
+        // Vérifier que le tag existe
+        const existingTag = getTagById(id);
+        if (!existingTag) {
+            return res.status(404).json({ error: 'Tag non trouvé' });
+        }
+
+        if (!name || !name.trim()) {
+            return res.status(400).json({ error: 'Le nom du tag est requis' });
+        }
+
+        const tag = updateTag(id, name.trim(), color || '#3498db');
+
+        res.json({
+            message: 'Tag mis à jour avec succès',
+            tag
+        });
+    } catch (error) {
+        // Erreur de contrainte unique (tag déjà existant)
+        if (error.code === 'SQLITE_CONSTRAINT') {
+            return res.status(400).json({ error: 'Ce nom de tag existe déjà' });
+        }
+
+        console.error('Erreur mise à jour tag:', error);
+        res.status(500).json({ error: 'Erreur lors de la mise à jour du tag' });
     }
 });
 

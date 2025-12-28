@@ -364,8 +364,9 @@
         <!-- TAB TAGS -->
         <div id="tab-tags" class="tab-content">
             <div class="panel">
-                <h2>➕ Ajouter un tag</h2>
+                <h2 id="tag-form-title">➕ Ajouter un tag</h2>
                 <form id="tag-form">
+                    <input type="hidden" id="tag-id">
                     <div class="form-group">
                         <label for="tag-name">Nom du tag *</label>
                         <input type="text" id="tag-name" placeholder="Ex: Comédie, Drame, Education" required>
@@ -374,7 +375,8 @@
                         <label for="tag-color">Couleur du tag *</label>
                         <input type="color" id="tag-color" value="#3498db" required>
                     </div>
-                    <button type="submit">Créer le tag</button>
+                    <button type="submit" id="tag-submit-btn">Créer le tag</button>
+                    <button type="button" class="secondary" onclick="resetTagForm()" style="margin-left: 10px;">Annuler</button>
                 </form>
             </div>
 
@@ -517,14 +519,14 @@
         }
 
         /**
-         * Affiche la liste des vidéos dans le tableau
+         * Affiche la liste des vidéos dans le tableau avec tags semi-transparents
          */
         function displayVideos(videos) {
             const tbody = document.querySelector('#videos-table tbody');
             tbody.innerHTML = videos.map(v => `
                 <tr>
                     <td>${v.title}</td>
-                    <td>${(v.tags || []).map(t => `<span class="tag-badge">${t.name}</span>`).join('')}</td>
+                    <td>${(v.tags || []).map(t => `<span class="tag-badge" style="background-color: rgba(${hexToRgb(t.color)}, 0.2); color: ${t.color}; border: 2px solid ${t.color}; padding: 4px 10px; border-radius: 12px; display: inline-block; font-weight: 600; font-size: 11px; margin-right: 4px;">${t.name}</span>`).join('')}</td>
                     <td>${v.is_paid ? '<span class="paid-badge">Payante</span>' : '<span class="free-badge">Gratuite</span>'}</td>
                     <td class="actions">
                         <button class="secondary" onclick="editVideo(${v.id})">Modifier</button>
@@ -680,6 +682,7 @@
                         </span>
                     </td>
                     <td class="actions">
+                        <button class="secondary" onclick="editTag(${t.id})">Modifier</button>
                         <button class="danger" onclick="deleteTag(${t.id})">Supprimer</button>
                     </td>
                 </tr>
@@ -710,17 +713,21 @@
         }
 
         /**
-         * Gère la création d'un nouveau tag
+         * Gère la création ou modification d'un tag
          */
         async function handleTagSubmit(e) {
             e.preventDefault();
 
+            const id = document.getElementById('tag-id').value;
             const name = document.getElementById('tag-name').value;
             const color = document.getElementById('tag-color').value;
 
             try {
-                const response = await fetch(`${API_URL}/admin/tags`, {
-                    method: 'POST',
+                const url = id ? `${API_URL}/admin/tags/${id}` : `${API_URL}/admin/tags`;
+                const method = id ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method,
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({ name, color })
@@ -730,14 +737,48 @@
 
                 if (response.ok) {
                     showMessage(data.message, 'success');
-                    document.getElementById('tag-form').reset();
+                    resetTagForm();
                     loadTags();
                 } else {
                     showMessage(data.error, 'error');
                 }
             } catch (error) {
-                showMessage('Erreur lors de la création', 'error');
+                showMessage('Erreur lors de la sauvegarde', 'error');
             }
+        }
+
+        /**
+         * Charge un tag pour modification
+         */
+        function editTag(id) {
+            const tag = allTags.find(t => t.id === id);
+            if (!tag) {
+                showMessage('Tag non trouvé', 'error');
+                return;
+            }
+
+            // Remplir le formulaire
+            document.getElementById('tag-id').value = tag.id;
+            document.getElementById('tag-name').value = tag.name;
+            document.getElementById('tag-color').value = tag.color;
+
+            // Changer le titre et le bouton
+            document.getElementById('tag-form-title').textContent = '✏️ Modifier un tag';
+            document.getElementById('tag-submit-btn').textContent = 'Mettre à jour';
+
+            // Scroll vers le formulaire
+            document.getElementById('tag-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        /**
+         * Réinitialise le formulaire de tag
+         */
+        function resetTagForm() {
+            document.getElementById('tag-form').reset();
+            document.getElementById('tag-id').value = '';
+            document.getElementById('tag-color').value = '#3498db';
+            document.getElementById('tag-form-title').textContent = '➕ Ajouter un tag';
+            document.getElementById('tag-submit-btn').textContent = 'Créer le tag';
         }
 
         /**

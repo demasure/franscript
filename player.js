@@ -21,6 +21,7 @@ let editedSubtitles = {};  // Sous-titres modifiés {index: newText}
 let currentVideoId = null;  // ID de la vidéo courante
 let isAdmin = false;  // Utilisateur admin ou non
 let userNotes = [];  // Notes personnelles de l'utilisateur pour cette vidéo
+let currentSubtitleStartTime = null;  // Timecode du sous-titre actuellement affiché
 
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🎬 Player initialisé');
@@ -31,7 +32,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Vérifier si l'utilisateur est admin
     checkAdminStatus();
 
-    // Initialiser le lecteur vidéo
+    // IMPORTANT: Initialiser auth et charger données AVANT d'afficher les sous-titres
+    await initComments();
+    await initNotes();
+
+    // Initialiser le lecteur vidéo (lance l'affichage des sous-titres)
     initializePlayer();
 
     // Initialiser les sous-titres interactifs
@@ -45,12 +50,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Charger les vidéos suggérées
     loadSuggestedVideos();
-
-    // Initialiser les commentaires (après que currentVideoId soit défini)
-    initComments();
-
-    // Initialiser les notes (après que currentVideoId soit défini)
-    initNotes();
 });
 
 // ========================================
@@ -252,6 +251,7 @@ function displayInteractiveSubtitle(text, startTime, endTime) {
 
     // Mettre à jour le bandeau de notes si utilisateur connecté
     if (currentUser) {
+        currentSubtitleStartTime = startTime;  // Stocker le timecode actuel
         updateNotesBanner(startTime);
     }
 
@@ -263,10 +263,20 @@ function displayInteractiveSubtitle(text, startTime, endTime) {
  */
 function updateNotesBanner(startTime) {
     const notesBanner = document.getElementById('notes-banner');
+    if (!notesBanner) {
+        console.error('❌ Bandeau de notes introuvable dans le DOM');
+        return;
+    }
+
     const bannerContent = notesBanner.querySelector('.notes-banner-content');
+    if (!bannerContent) {
+        console.error('❌ Contenu du bandeau de notes introuvable');
+        return;
+    }
 
     // Afficher le bandeau
     notesBanner.style.display = 'block';
+    console.log(`📝 Bandeau de notes affiché pour t=${startTime}s`);
 
     // Chercher les notes pour ce timecode (avec tolérance de 0.5s)
     const notesForSubtitle = userNotes.filter(note =>
@@ -1179,6 +1189,11 @@ async function loadUserNotes() {
             userNotes = await response.json();
             console.log(`📝 ${userNotes.length} notes chargées`);
 
+            // Rafraîchir le bandeau de notes si un sous-titre est affiché
+            if (currentSubtitleStartTime !== null) {
+                updateNotesBanner(currentSubtitleStartTime);
+            }
+
             // Rafraîchir le panel s'il est ouvert
             const existingPanel = document.getElementById('notes-panel');
             if (existingPanel) {
@@ -1383,6 +1398,7 @@ function toggleAllNotesPanel() {
  * Initialise le système de notes
  */
 async function initNotes() {
+    console.log('🔄 Initialisation du système de notes...');
     const isAuth = await checkUserAuth();
 
     if (!isAuth || !currentUser) {
@@ -1390,10 +1406,12 @@ async function initNotes() {
         return;
     }
 
+    console.log(`✅ Utilisateur connecté: ${currentUser.username || currentUser.email}`);
+
     // Charger les notes
     await loadUserNotes();
 
-    console.log('📝 Système de notes initialisé');
+    console.log('✅ Système de notes initialisé');
 }
 
 console.log('🎥 Player ready!');

@@ -22,23 +22,20 @@ let currentVideoId = null;  // ID de la vidéo courante
 let isAdmin = false;  // Utilisateur admin ou non
 let userNotes = [];  // Notes personnelles de l'utilisateur pour cette vidéo
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('🎬 Player initialisé');
+
+    // Charger la vidéo depuis les paramètres URL (DOIT être fait en premier)
+    await loadVideoFromURL();
 
     // Vérifier si l'utilisateur est admin
     checkAdminStatus();
-
-    // Charger la vidéo depuis les paramètres URL
-    loadVideoFromURL();
 
     // Initialiser le lecteur vidéo
     initializePlayer();
 
     // Initialiser les sous-titres interactifs
     initializeSubtitles();
-
-    // Initialiser les commentaires
-    loadComments();
 
     // Initialiser le formulaire de signalement
     initializeReportForm();
@@ -49,10 +46,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Charger les vidéos suggérées
     loadSuggestedVideos();
 
-    // Initialiser les commentaires
+    // Initialiser les commentaires (après que currentVideoId soit défini)
     initComments();
 
-    // Initialiser les notes
+    // Initialiser les notes (après que currentVideoId soit défini)
     initNotes();
 });
 

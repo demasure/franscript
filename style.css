@@ -1440,8 +1440,7 @@ img {
    ======================================== */
 
 .comments-section {
-    max-width: 900px;
-    margin: 60px auto;
+    margin-top: 30px;
     padding: 30px;
     background: var(--color-bg-card);
     border-radius: 12px;
@@ -1640,8 +1639,7 @@ img {
 
 /* Bandeau de notes au même niveau que Description */
 .notes-banner {
-    max-width: 900px;
-    margin: 30px auto;
+    margin-top: 30px;
     padding: 20px;
     background: var(--color-bg-card);
     border-radius: 12px;

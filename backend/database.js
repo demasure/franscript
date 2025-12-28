@@ -8,8 +8,8 @@ const db = new Database(path.join(__dirname, 'franscript.db'));
 db.pragma('foreign_keys = ON');
 
 /**
- * Initialise la base de données avec la table users
- * Crée la table uniquement si elle n'existe pas déjà
+ * Initialise la base de données avec toutes les tables
+ * Crée les tables uniquement si elles n'existent pas déjà
  */
 function initDatabase() {
     // Table des utilisateurs
@@ -23,7 +23,42 @@ function initDatabase() {
         )
     `;
 
+    // Table des vidéos
+    const createVideosTable = `
+        CREATE TABLE IF NOT EXISTS videos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT,
+            video_url TEXT NOT NULL,
+            subtitle_url TEXT,
+            is_paid INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `;
+
+    // Table des tags
+    const createTagsTable = `
+        CREATE TABLE IF NOT EXISTS tags (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL
+        )
+    `;
+
+    // Table de relation videos-tags
+    const createVideoTagsTable = `
+        CREATE TABLE IF NOT EXISTS video_tags (
+            video_id INTEGER NOT NULL,
+            tag_id INTEGER NOT NULL,
+            PRIMARY KEY (video_id, tag_id),
+            FOREIGN KEY (video_id) REFERENCES videos(id) ON DELETE CASCADE,
+            FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+        )
+    `;
+
     db.exec(createUsersTable);
+    db.exec(createVideosTable);
+    db.exec(createTagsTable);
+    db.exec(createVideoTagsTable);
     console.log('✅ Base de données initialisée');
 }
 
@@ -77,11 +112,158 @@ function countUsers() {
     return stmt.get().count;
 }
 
+// ============================================
+// GESTION DES VIDÉOS
+// ============================================
+
+/**
+ * Récupère toutes les vidéos avec leurs tags
+ * @returns {Array} Liste des vidéos
+ */
+function getAllVideos() {
+    const videos = db.prepare('SELECT * FROM videos ORDER BY created_at DESC').all();
+
+    // Pour chaque vidéo, récupérer ses tags
+    videos.forEach(video => {
+        const tags = db.prepare(`
+            SELECT t.* FROM tags t
+            JOIN video_tags vt ON t.id = vt.tag_id
+            WHERE vt.video_id = ?
+        `).all(video.id);
+        video.tags = tags;
+    });
+
+    return videos;
+}
+
+/**
+ * Récupère une vidéo par son ID
+ * @param {number} id - ID de la vidéo
+ * @returns {object|null} La vidéo ou null
+ */
+function getVideoById(id) {
+    const video = db.prepare('SELECT * FROM videos WHERE id = ?').get(id);
+    if (!video) return null;
+
+    const tags = db.prepare(`
+        SELECT t.* FROM tags t
+        JOIN video_tags vt ON t.id = vt.tag_id
+        WHERE vt.video_id = ?
+    `).all(id);
+    video.tags = tags;
+
+    return video;
+}
+
+/**
+ * Crée une nouvelle vidéo
+ * @param {object} videoData - { title, description, video_url, subtitle_url, is_paid, tagIds }
+ * @returns {object} La vidéo créée
+ */
+function createVideo(videoData) {
+    const { title, description, video_url, subtitle_url, is_paid, tagIds } = videoData;
+
+    const stmt = db.prepare(`
+        INSERT INTO videos (title, description, video_url, subtitle_url, is_paid)
+        VALUES (?, ?, ?, ?, ?)
+    `);
+
+    const result = stmt.run(title, description, video_url, subtitle_url || null, is_paid ? 1 : 0);
+    const videoId = result.lastInsertRowid;
+
+    // Associer les tags
+    if (tagIds && tagIds.length > 0) {
+        const insertTag = db.prepare('INSERT INTO video_tags (video_id, tag_id) VALUES (?, ?)');
+        tagIds.forEach(tagId => insertTag.run(videoId, tagId));
+    }
+
+    return getVideoById(videoId);
+}
+
+/**
+ * Met à jour une vidéo
+ * @param {number} id - ID de la vidéo
+ * @param {object} videoData - { title, description, video_url, subtitle_url, is_paid, tagIds }
+ * @returns {object} La vidéo mise à jour
+ */
+function updateVideo(id, videoData) {
+    const { title, description, video_url, subtitle_url, is_paid, tagIds } = videoData;
+
+    const stmt = db.prepare(`
+        UPDATE videos
+        SET title = ?, description = ?, video_url = ?, subtitle_url = ?, is_paid = ?
+        WHERE id = ?
+    `);
+
+    stmt.run(title, description, video_url, subtitle_url || null, is_paid ? 1 : 0, id);
+
+    // Mettre à jour les tags
+    db.prepare('DELETE FROM video_tags WHERE video_id = ?').run(id);
+    if (tagIds && tagIds.length > 0) {
+        const insertTag = db.prepare('INSERT INTO video_tags (video_id, tag_id) VALUES (?, ?)');
+        tagIds.forEach(tagId => insertTag.run(id, tagId));
+    }
+
+    return getVideoById(id);
+}
+
+/**
+ * Supprime une vidéo
+ * @param {number} id - ID de la vidéo
+ */
+function deleteVideo(id) {
+    db.prepare('DELETE FROM videos WHERE id = ?').run(id);
+}
+
+// ============================================
+// GESTION DES TAGS
+// ============================================
+
+/**
+ * Récupère tous les tags
+ * @returns {Array} Liste des tags
+ */
+function getAllTags() {
+    return db.prepare('SELECT * FROM tags ORDER BY name').all();
+}
+
+/**
+ * Crée un nouveau tag
+ * @param {string} name - Nom du tag
+ * @returns {object} Le tag créé
+ */
+function createTag(name) {
+    const stmt = db.prepare('INSERT INTO tags (name) VALUES (?)');
+    const result = stmt.run(name);
+    return {
+        id: result.lastInsertRowid,
+        name
+    };
+}
+
+/**
+ * Supprime un tag
+ * @param {number} id - ID du tag
+ */
+function deleteTag(id) {
+    db.prepare('DELETE FROM tags WHERE id = ?').run(id);
+}
+
 module.exports = {
     db,
     initDatabase,
     createUser,
     findUserByEmail,
     findUserById,
-    countUsers
+    countUsers,
+    // Vidéos
+    getAllVideos,
+    getVideoById,
+    createVideo,
+    updateVideo,
+    deleteVideo,
+    // Tags
+    getAllTags,
+    createTag,
+    deleteTag
 };

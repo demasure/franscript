@@ -3,6 +3,7 @@ const cors = require('cors');
 const session = require('express-session');
 const { initDatabase } = require('./database');
 const authRoutes = require('./auth');
+const adminRoutes = require('./admin');
 const { requireAuth, requireAdmin } = require('./middleware');
 
 const app = express();
@@ -36,6 +37,9 @@ app.use(session({
 
 // Routes d'authentification
 app.use('/auth', authRoutes);
+
+// Routes admin - Protégées par requireAuth et requireAdmin
+app.use('/admin', requireAuth, requireAdmin, adminRoutes);
 
 // Fonction pour appeler Ollama avec système prompt
 async function callOllama(prompt, systemPrompt = null, model = 'llama3.1:8b') {
@@ -194,6 +198,14 @@ app.listen(PORT, () => {
     console.log(`   POST /auth/login - Connexion`);
     console.log(`   POST /auth/logout - Déconnexion`);
     console.log(`   GET  /auth/me - Info utilisateur connecté`);
+    console.log(`\n👑 Admin (admin uniquement):`);
+    console.log(`   GET    /admin/videos - Liste des vidéos`);
+    console.log(`   POST   /admin/videos - Créer une vidéo`);
+    console.log(`   PUT    /admin/videos/:id - Modifier une vidéo`);
+    console.log(`   DELETE /admin/videos/:id - Supprimer une vidéo`);
+    console.log(`   GET    /admin/tags - Liste des tags`);
+    console.log(`   POST   /admin/tags - Créer un tag`);
+    console.log(`   DELETE /admin/tags/:id - Supprimer un tag`);
     console.log(`\n🤖 IA (Ollama):`);
     console.log(`   POST /explain - Explication en français`);
     console.log(`   POST /translate - Traduction en anglais`);

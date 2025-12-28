@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FranScript - Panel Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #1e3c72;
+            margin-bottom: 10px;
+        }
+
+        .admin-badge {
+            display: inline-block;
+            background: #ffc107;
+            color: #000;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .tab.active {
+            background: #1e3c72;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            color: #1e3c72;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        input[type="url"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: #1e3c72;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #1e3c72;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #2a5298;
+        }
+
+        button.danger {
+            background: #dc3545;
+        }
+
+        button.danger:hover {
+            background: #c82333;
+        }
+
+        button.secondary {
+            background: #6c757d;
+        }
+
+        button.secondary:hover {
+            background: #5a6268;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .actions button {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .tag-badge {
+            display: inline-block;
+            background: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 4px;
+        }
+
+        .paid-badge {
+            background: #ffc107;
+            color: #000;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .free-badge {
+            background: #28a745;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .tag-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .tag-option {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .tag-option input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
+
+        .logout-btn {
+            float: right;
+            background: #dc3545;
+        }
+
+        .logout-btn:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <button class="logout-btn" onclick="logout()">Se déconnecter</button>
+            <h1>👑 Panel Admin FranScript</h1>
+            <p><span class="admin-badge">Admin</span> <span id="admin-email"></span></p>
+        </header>
+
+        <div id="message" class="message"></div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('videos')">Vidéos</button>
+            <button class="tab" onclick="switchTab('tags')">Tags</button>
+        </div>
+
+        <!-- TAB VIDÉOS -->
+        <div id="tab-videos" class="tab-content active">
+            <div class="panel">
+                <h2>➕ Ajouter une vidéo</h2>
+                <form id="video-form">
+                    <input type="hidden" id="video-id">
+                    <div class="form-group">
+                        <label for="video-title">Titre *</label>
+                        <input type="text" id="video-title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="video-description">Description</label>
+                        <textarea id="video-description"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="video-url">URL de la vidéo *</label>
+                        <input type="url" id="video-url" placeholder="videos/ma_video.mp4" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="subtitle-url">URL des sous-titres</label>
+                        <input type="url" id="subtitle-url" placeholder="videos/ma_video.vtt">
+                    </div>
+                    <div class="form-group">
+                        <label>Tags</label>
+                        <div id="tag-selector" class="tag-selector"></div>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="is-paid">
+                            <label for="is-paid">Vidéo payante</label>
+                        </div>
+                    </div>
+                    <button type="submit" id="submit-btn">Créer la vidéo</button>
+                    <button type="button" class="secondary" onclick="resetVideoForm()" style="margin-left: 10px;">Annuler</button>
+                </form>
+            </div>
+
+            <div class="panel">
+                <h2>📋 Liste des vidéos</h2>
+                <table id="videos-table">
+                    <thead>
+                        <tr>
+                            <th>Titre</th>
+                            <th>Tags</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB TAGS -->
+        <div id="tab-tags" class="tab-content">
+            <div class="panel">
+                <h2>➕ Ajouter un tag</h2>
+                <form id="tag-form">
+                    <div class="form-group">
+                        <label for="tag-name">Nom du tag *</label>
+                        <input type="text" id="tag-name" placeholder="Ex: Comédie, Drame, Education" required>
+                    </div>
+                    <button type="submit">Créer le tag</button>
+                </form>
+            </div>
+
+            <div class="panel">
+                <h2>📋 Liste des tags</h2>
+                <table id="tags-table">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+        let allTags = [];
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            loadVideos();
+            loadTags();
+
+            document.getElementById('video-form').addEventListener('submit', handleVideoSubmit);
+            document.getElementById('tag-form').addEventListener('submit', handleTagSubmit);
+        });
+
+        // Basculer entre les onglets
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(`tab-${tab}`).classList.add('active');
+        }
+
+        // Afficher un message
+        function showMessage(text, type = 'success') {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = `message ${type} show`;
+            setTimeout(() => msg.classList.remove('show'), 5000);
+        }
+
+        // Vérifier l'authentification admin
+        async function checkAuth() {
+            try {
+                const response = await fetch(`${API_URL}/auth/me`, {
+                    credentials: 'include'
+                });
+
+                if (!response.ok || !(await response.json()).user.role === 'admin') {
+                    window.location.href = 'auth-demo.html';
+                    return;
+                }
+
+                const data = await response.json();
+                if (data.user.role !== 'admin') {
+                    alert('Accès refusé : Admin uniquement');
+                    window.location.href = 'auth-demo.html';
+                    return;
+                }
+
+                document.getElementById('admin-email').textContent = data.user.email;
+            } catch (error) {
+                window.location.href = 'auth-demo.html';
+            }
+        }
+
+        // Déconnexion
+        async function logout() {
+            await fetch(`${API_URL}/auth/logout`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+            window.location.href = 'auth-demo.html';
+        }
+
+        // ============================================
+        // GESTION DES VIDÉOS
+        // ============================================
+
+        async function loadVideos() {
+            try {
+                const response = await fetch(`${API_URL}/admin/videos`, {
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+                displayVideos(data.videos || []);
+            } catch (error) {
+                showMessage('Erreur chargement vidéos', 'error');
+            }
+        }
+
+        function displayVideos(videos) {
+            const tbody = document.querySelector('#videos-table tbody');
+            tbody.innerHTML = videos.map(v => `
+                <tr>
+                    <td>${v.title}</td>
+                    <td>${(v.tags || []).map(t => `<span class="tag-badge">${t.name}</span>`).join('')}</td>
+                    <td>${v.is_paid ? '<span class="paid-badge">Payante</span>' : '<span class="free-badge">Gratuite</span>'}</td>
+                    <td class="actions">
+                        <button class="secondary" onclick="editVideo(${v.id})">Modifier</button>
+                        <button class="danger" onclick="deleteVideo(${v.id})">Supprimer</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function handleVideoSubmit(e) {
+            e.preventDefault();
+
+            const id = document.getElementById('video-id').value;
+            const videoData = {
+                title: document.getElementById('video-title').value,
+                description: document.getElementById('video-description').value,
+                video_url: document.getElementById('video-url').value,
+                subtitle_url: document.getElementById('subtitle-url').value,
+                is_paid: document.getElementById('is-paid').checked,
+                tagIds: Array.from(document.querySelectorAll('#tag-selector input:checked')).map(cb => parseInt(cb.value))
+            };
+
+            try {
+                const url = id ? `${API_URL}/admin/videos/${id}` : `${API_URL}/admin/videos`;
+                const method = id ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(videoData)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage(data.message, 'success');
+                    resetVideoForm();
+                    loadVideos();
+                } else {
+                    showMessage(data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Erreur lors de la sauvegarde', 'error');
+            }
+        }
+
+        async function editVideo(id) {
+            try {
+                const response = await fetch(`${API_URL}/admin/videos/${id}`, {
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+                const video = data.video;
+
+                document.getElementById('video-id').value = video.id;
+                document.getElementById('video-title').value = video.title;
+                document.getElementById('video-description').value = video.description || '';
+                document.getElementById('video-url').value = video.video_url;
+                document.getElementById('subtitle-url').value = video.subtitle_url || '';
+                document.getElementById('is-paid').checked = video.is_paid === 1;
+
+                // Cocher les tags
+                const videoTagIds = video.tags.map(t => t.id);
+                document.querySelectorAll('#tag-selector input[type="checkbox"]').forEach(cb => {
+                    cb.checked = videoTagIds.includes(parseInt(cb.value));
+                });
+
+                document.getElementById('submit-btn').textContent = 'Mettre à jour';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (error) {
+                showMessage('Erreur lors du chargement de la vidéo', 'error');
+            }
+        }
+
+        async function deleteVideo(id) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cette vidéo ?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/admin/videos/${id}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage(data.message, 'success');
+                    loadVideos();
+                } else {
+                    showMessage(data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Erreur lors de la suppression', 'error');
+            }
+        }
+
+        function resetVideoForm() {
+            document.getElementById('video-form').reset();
+            document.getElementById('video-id').value = '';
+            document.getElementById('submit-btn').textContent = 'Créer la vidéo';
+            document.querySelectorAll('#tag-selector input[type="checkbox"]').forEach(cb => cb.checked = false);
+        }
+
+        // ============================================
+        // GESTION DES TAGS
+        // ============================================
+
+        async function loadTags() {
+            try {
+                const response = await fetch(`${API_URL}/admin/tags`, {
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+                allTags = data.tags || [];
+                displayTags(allTags);
+                renderTagSelector(allTags);
+            } catch (error) {
+                showMessage('Erreur chargement tags', 'error');
+            }
+        }
+
+        function displayTags(tags) {
+            const tbody = document.querySelector('#tags-table tbody');
+            tbody.innerHTML = tags.map(t => `
+                <tr>
+                    <td>${t.name}</td>
+                    <td class="actions">
+                        <button class="danger" onclick="deleteTag(${t.id})">Supprimer</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderTagSelector(tags) {
+            const selector = document.getElementById('tag-selector');
+            selector.innerHTML = tags.map(t => `
+                <div class="tag-option">
+                    <input type="checkbox" id="tag-${t.id}" value="${t.id}">
+                    <label for="tag-${t.id}">${t.name}</label>
+                </div>
+            `).join('');
+        }
+
+        async function handleTagSubmit(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('tag-name').value;
+
+            try {
+                const response = await fetch(`${API_URL}/admin/tags`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ name })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage(data.message, 'success');
+                    document.getElementById('tag-form').reset();
+                    loadTags();
+                } else {
+                    showMessage(data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Erreur lors de la création', 'error');
+            }
+        }
+
+        async function deleteTag(id) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer ce tag ?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/admin/tags/${id}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage(data.message, 'success');
+                    loadTags();
+                } else {
+                    showMessage(data.error, 'error');
+                }
+            } catch (error) {
+                showMessage('Erreur lors de la suppression', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

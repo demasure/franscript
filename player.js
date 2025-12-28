@@ -113,10 +113,12 @@ function initializePlayer() {
                 displayInteractiveSubtitle(currentCue.text, currentCue.startTime, currentCue.endTime);
             }
         } else {
-            // Effacer si plus de sous-titre actif
+            // Effacer si plus de sous-titre actif (SANS effacer le toolbar admin)
             if (lastDisplayedCueText !== '') {
                 lastDisplayedCueText = '';
-                document.getElementById('subtitles-display').innerHTML = '';
+                const subtitlesDisplay = document.getElementById('subtitles-display');
+                const oldSubtitles = subtitlesDisplay.querySelectorAll('.subtitle-item, .subtitle-hint');
+                oldSubtitles.forEach(el => el.remove());
             }
         }
     });
@@ -147,8 +149,11 @@ function displayInteractiveSubtitle(text, startTime, endTime) {
     subtitleElement.dataset.end = endTime;
     subtitleElement.dataset.index = index;  // Stocker l'index pour l'édition
 
-    // Remplacer le contenu (on garde seulement le sous-titre actuel)
-    subtitlesDisplay.innerHTML = '';
+    // Supprimer uniquement les anciens sous-titres et hints (SANS effacer le toolbar admin)
+    const oldSubtitles = subtitlesDisplay.querySelectorAll('.subtitle-item, .subtitle-hint');
+    oldSubtitles.forEach(el => el.remove());
+
+    // Ajouter le nouveau sous-titre
     subtitlesDisplay.appendChild(subtitleElement);
 
     // Gérer le mode édition si admin

@@ -449,23 +449,29 @@ function initializeSubtitleNavigation() {
 
     console.log('🔧 Initialisation navigation - Boutons trouvés:', {
         prevBtn: !!prevBtn,
-        nextBtn: !!nextBtn,
-        prevDisabled: prevBtn?.disabled,
-        nextDisabled: nextBtn?.disabled
+        nextBtn: !!nextBtn
     });
 
     if (prevBtn && nextBtn) {
-        // Initialiser l'état des boutons au départ
-        updateNavigationButtons();
+        // NE PAS appeler updateNavigationButtons() ici car allSubtitles est encore vide
+        // Les boutons seront mis à jour automatiquement par displayInteractiveSubtitle()
 
         prevBtn.addEventListener('click', (e) => {
-            console.log('🎯 Event click détecté sur bouton PRÉCÉDENT, disabled:', prevBtn.disabled);
-            goToPreviousSubtitle();
+            console.log('🎯 CLICK bouton PRÉCÉDENT détecté!');
+            if (!prevBtn.disabled) {
+                goToPreviousSubtitle();
+            } else {
+                console.log('❌ Bouton précédent désactivé');
+            }
         });
 
         nextBtn.addEventListener('click', (e) => {
-            console.log('🎯 Event click détecté sur bouton SUIVANT, disabled:', nextBtn.disabled);
-            goToNextSubtitle();
+            console.log('🎯 CLICK bouton SUIVANT détecté!');
+            if (!nextBtn.disabled) {
+                goToNextSubtitle();
+            } else {
+                console.log('❌ Bouton suivant désactivé');
+            }
         });
 
         // Raccourcis clavier: flèches gauche/droite
@@ -482,7 +488,7 @@ function initializeSubtitleNavigation() {
             }
         });
 
-        console.log('✅ Event listeners attachés - Navigation sous-titres prête');
+        console.log('✅ Event listeners attachés - Les boutons seront activés au 1er sous-titre');
     } else {
         console.error('❌ Boutons de navigation non trouvés!');
     }

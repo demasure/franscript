@@ -55,8 +55,12 @@ async function loadProfile() {
         }
 
         // Avatar
+        const avatarPreview = document.getElementById('avatar-preview');
         if (profile.profile_picture) {
-            document.getElementById('avatar-preview').src = `${API_URL}${profile.profile_picture}`;
+            avatarPreview.src = `${API_URL}${profile.profile_picture}`;
+        } else {
+            // Utiliser le même avatar par défaut que la navbar pour cohérence
+            avatarPreview.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default';
         }
 
         // Badge premium

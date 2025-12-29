@@ -340,6 +340,29 @@ function countUsers() {
     return stmt.get().count;
 }
 
+/**
+ * Récupère tous les utilisateurs (admin uniquement)
+ * @returns {Array} Liste de tous les utilisateurs (sans les mots de passe)
+ */
+function getAllUsers() {
+    const stmt = db.prepare(`
+        SELECT id, email, username, username_confirmed, profile_picture, role, is_premium, created_at
+        FROM users
+        ORDER BY created_at DESC
+    `);
+    return stmt.all();
+}
+
+/**
+ * Supprime un utilisateur par son ID
+ * @param {number} id - ID de l'utilisateur à supprimer
+ */
+function deleteUser(id) {
+    const stmt = db.prepare('DELETE FROM users WHERE id = ?');
+    const result = stmt.run(id);
+    return result.changes > 0;
+}
+
 // ============================================
 // GESTION DES VIDÉOS
 // ============================================
@@ -801,6 +824,8 @@ module.exports = {
     findUserByUsername,
     findUserById,
     updateUser,
+    getAllUsers,
+    deleteUser,
     countUsers,
     // Vidéos
     getAllVideos,

@@ -1,4 +1,5 @@
 const express = require('express');
+const bcrypt = require('bcrypt');
 const {
     getAllVideos,
     getVideoById,
@@ -10,6 +11,11 @@ const {
     createTag,
     updateTag,
     deleteTag,
+    getAllUsers,
+    findUserById,
+    createUser,
+    updateUser,
+    deleteUser,
     countUsers,
     db
 } = require('./database');
@@ -323,6 +329,138 @@ router.delete('/tags/:id', (req, res) => {
     } catch (error) {
         console.error('Erreur suppression tag:', error);
         res.status(500).json({ error: 'Erreur lors de la suppression du tag' });
+    }
+});
+
+// ============================================
+// ROUTES UTILISATEURS - Admin uniquement
+// ============================================
+
+/**
+ * GET /admin/users
+ * Récupère tous les utilisateurs
+ */
+router.get('/users', (req, res) => {
+    try {
+        const users = getAllUsers();
+        res.json({ users });
+    } catch (error) {
+        console.error('Erreur récupération utilisateurs:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des utilisateurs' });
+    }
+});
+
+/**
+ * POST /admin/users
+ * Crée un nouvel utilisateur
+ */
+router.post('/users', async (req, res) => {
+    try {
+        const { email, password, username, role, is_premium } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ error: 'L\'email et le mot de passe sont requis' });
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ error: 'Format d\'email invalide' });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères' });
+        }
+
+        const password_hash = await bcrypt.hash(password, 10);
+        const user = createUser({
+            email,
+            password_hash,
+            username: username || null,
+            role: role || 'user',
+            is_premium: is_premium ? 1 : 0
+        });
+
+        const { password_hash: _, ...userWithoutPassword } = user;
+        res.status(201).json({ message: 'Utilisateur créé avec succès', user: userWithoutPassword });
+    } catch (error) {
+        if (error.code === 'SQLITE_CONSTRAINT') {
+            return res.status(400).json({ error: 'Cet email est déjà utilisé' });
+        }
+        console.error('Erreur création utilisateur:', error);
+        res.status(500).json({ error: 'Erreur lors de la création de l\'utilisateur' });
+    }
+});
+
+/**
+ * PUT /admin/users/:id
+ * Met à jour un utilisateur
+ */
+router.put('/users/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const { email, username, role, is_premium, password } = req.body;
+
+        const existingUser = findUserById(id);
+        if (!existingUser) {
+            return res.status(404).json({ error: 'Utilisateur non trouvé' });
+        }
+
+        const updateData = {};
+        if (email !== undefined) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                return res.status(400).json({ error: 'Format d\'email invalide' });
+            }
+            updateData.email = email;
+        }
+        if (username !== undefined) updateData.username = username;
+        if (role !== undefined) updateData.role = role;
+        if (is_premium !== undefined) updateData.is_premium = is_premium ? 1 : 0;
+
+        if (password) {
+            if (password.length < 6) {
+                return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères' });
+            }
+            updateData.password_hash = await bcrypt.hash(password, 10);
+        }
+
+        const user = updateUser(id, updateData);
+        const { password_hash: _, ...userWithoutPassword } = user;
+        res.json({ message: 'Utilisateur mis à jour avec succès', user: userWithoutPassword });
+    } catch (error) {
+        if (error.code === 'SQLITE_CONSTRAINT') {
+            return res.status(400).json({ error: 'Cet email est déjà utilisé' });
+        }
+        console.error('Erreur mise à jour utilisateur:', error);
+        res.status(500).json({ error: 'Erreur lors de la mise à jour de l\'utilisateur' });
+    }
+});
+
+/**
+ * DELETE /admin/users/:id
+ * Supprime un utilisateur
+ */
+router.delete('/users/:id', (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const user = findUserById(id);
+        if (!user) {
+            return res.status(404).json({ error: 'Utilisateur non trouvé' });
+        }
+
+        if (req.session.userId === id) {
+            return res.status(400).json({ error: 'Vous ne pouvez pas supprimer votre propre compte' });
+        }
+
+        const deleted = deleteUser(id);
+        if (deleted) {
+            res.json({ message: 'Utilisateur supprimé avec succès' });
+        } else {
+            res.status(404).json({ error: 'Utilisateur non trouvé' });
+        }
+    } catch (error) {
+        console.error('Erreur suppression utilisateur:', error);
+        res.status(500).json({ error: 'Erreur lors de la suppression de l\'utilisateur' });
     }
 });
 

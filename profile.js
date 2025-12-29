@@ -9,7 +9,7 @@
  * - Déconnexion
  */
 
-const API_URL = 'http://localhost:3000';
+// Note: API_URL est déjà déclaré dans navbar.js (chargé avant ce fichier)
 
 // ========================================
 // INITIALISATION

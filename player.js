@@ -388,11 +388,20 @@ function updateNavigationButtons() {
 
     if (!prevBtn || !nextBtn) return;
 
-    // Désactiver bouton précédent si on est au premier sous-titre
+    // Si pas de sous-titres chargés, tout désactiver
+    if (allSubtitles.length === 0) {
+        prevBtn.disabled = true;
+        nextBtn.disabled = true;
+        return;
+    }
+
+    // Désactiver bouton précédent si on est au premier sous-titre OU avant
     prevBtn.disabled = currentSubtitleIndex <= 0;
 
-    // Désactiver bouton suivant si on est au dernier sous-titre
-    nextBtn.disabled = currentSubtitleIndex >= allSubtitles.length - 1;
+    // Désactiver bouton suivant si on est au dernier sous-titre OU après
+    nextBtn.disabled = currentSubtitleIndex >= allSubtitles.length - 1 || currentSubtitleIndex < 0;
+
+    console.log(`🔘 Navigation buttons: prev=${!prevBtn.disabled}, next=${!nextBtn.disabled} (index: ${currentSubtitleIndex}/${allSubtitles.length - 1})`);
 }
 
 /**
@@ -429,6 +438,9 @@ function initializeSubtitleNavigation() {
     const nextBtn = document.getElementById('next-subtitle-btn');
 
     if (prevBtn && nextBtn) {
+        // Initialiser l'état des boutons au départ
+        updateNavigationButtons();
+
         prevBtn.addEventListener('click', goToPreviousSubtitle);
         nextBtn.addEventListener('click', goToNextSubtitle);
 

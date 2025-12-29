@@ -1503,14 +1503,21 @@
 
         /**
          * Rend une ligne de nœud dans l'explorateur
+         * @param {Object} node - Le nœud à afficher
+         * @param {number} level - Niveau de profondeur dans l'arbre
+         * @param {Array} parentPath - Chemin des parents (titres)
          */
-        function renderNodeRow(node, level = 0) {
+        function renderNodeRow(node, level = 0, parentPath = []) {
             const isFolder = node.type === 'folder';
             const hasChildren = isFolder && node.children && node.children.length > 0;
             const icon = isFolder ? '📁' : '🎬';
             const statusBadge = node.is_premium
                 ? '<span class="paid-badge">Premium</span>'
                 : '<span class="free-badge">Gratuit</span>';
+
+            // Construire le chemin complet pour ce nœud
+            const currentPath = [...parentPath, node.title];
+            const fullPath = currentPath.join('/');
 
             // Indentation selon le niveau d'arborescence
             const indent = '&nbsp;&nbsp;&nbsp;&nbsp;'.repeat(level);
@@ -1544,8 +1551,8 @@
                         ${statusBadge}
                     </td>
                     <td style="padding: 12px;">
-                        <div class="actions">
-                            ${isFolder ? `<button onclick="showCreateNodeModal('video', ${node.id}, '${escapeHtml(node.title).replace(/'/g, "\\'")}' )" style="font-size: 12px; padding: 6px 12px; background: var(--color-primary); color: white; border: none; cursor: pointer; border-radius: 6px;">+ Vidéo</button>` : ''}
+                        <div class="actions" style="display: flex; gap: 8px; justify-content: flex-end;">
+                            ${isFolder ? `<button onclick="showCreateNodeModal('video', ${node.id}, '${escapeHtml(fullPath).replace(/'/g, "\\'")}' )" style="font-size: 12px; padding: 6px 12px; background: var(--color-primary); color: white; border: none; cursor: pointer; border-radius: 6px;">+ Vidéo</button>` : ''}
                             <button class="secondary" onclick="editNode(${node.id})" style="font-size: 12px; padding: 6px 12px;">Modifier</button>
                             <button class="danger" onclick="deleteNode(${node.id})" style="font-size: 12px; padding: 6px 12px;">Supprimer</button>
                         </div>
@@ -1556,7 +1563,7 @@
             // Si c'est un dossier et qu'il a des enfants, les afficher récursivement
             if (hasChildren) {
                 rows += node.children.map(child => {
-                    const childRow = renderNodeRow(child, level + 1);
+                    const childRow = renderNodeRow(child, level + 1, currentPath);
                     // Ajouter une classe pour identifier les enfants de ce dossier
                     return childRow.replace('<tr ', `<tr class="child-of-${node.id}" `);
                 }).join('');
@@ -1688,9 +1695,11 @@
             folderFields.style.display = type === 'folder' ? 'block' : 'none';
 
             // Titre du modal
-            let modalTitle = type === 'folder' ? '📁 Créer un Dossier' : '🎬 Créer une Vidéo';
-            if (parentTitle) {
-                modalTitle += ` dans "${parentTitle}"`;
+            let modalTitle;
+            if (type === 'folder') {
+                modalTitle = parentTitle ? `📁 Créer un Dossier dans "${parentTitle}"` : '📁 Créer un Dossier';
+            } else {
+                modalTitle = parentTitle ? `🎬 Ajout de vidéo dans "${parentTitle}"` : '🎬 Créer une Vidéo';
             }
             document.getElementById('modal-title').textContent = modalTitle;
 

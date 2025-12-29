@@ -218,6 +218,71 @@ function initDatabase() {
 
     db.exec(createReportsTable);
 
+    // ============================================
+    // NOUVEAU MODÈLE : SAGA → SAISON → EPISODE
+    // ============================================
+
+    // Table des sagas (séries / films uniques)
+    const createSagasTable = `
+        CREATE TABLE IF NOT EXISTS sagas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT,
+            cover_image TEXT,
+            is_premium INTEGER DEFAULT 0,
+            type TEXT DEFAULT 'serie',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `;
+
+    // Table de relation saga-tags (many-to-many)
+    const createSagaTagsTable = `
+        CREATE TABLE IF NOT EXISTS saga_tags (
+            saga_id INTEGER NOT NULL,
+            tag_id INTEGER NOT NULL,
+            PRIMARY KEY (saga_id, tag_id),
+            FOREIGN KEY (saga_id) REFERENCES sagas(id) ON DELETE CASCADE,
+            FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+        )
+    `;
+
+    // Table des saisons
+    const createSaisonsTable = `
+        CREATE TABLE IF NOT EXISTS saisons (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            saga_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            order_index INTEGER NOT NULL DEFAULT 1,
+            description TEXT,
+            is_premium INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (saga_id) REFERENCES sagas(id) ON DELETE CASCADE
+        )
+    `;
+
+    // Table des épisodes
+    const createEpisodesTable = `
+        CREATE TABLE IF NOT EXISTS episodes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            saison_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            episode_number INTEGER NOT NULL,
+            video_url TEXT NOT NULL,
+            subtitle_url TEXT,
+            thumbnail_url TEXT,
+            duration INTEGER,
+            is_premium INTEGER DEFAULT 0,
+            free_preview_seconds INTEGER,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (saison_id) REFERENCES saisons(id) ON DELETE CASCADE
+        )
+    `;
+
+    db.exec(createSagasTable);
+    db.exec(createSagaTagsTable);
+    db.exec(createSaisonsTable);
+    db.exec(createEpisodesTable);
+
     console.log('✅ Base de données initialisée');
 }
 
@@ -947,6 +1012,321 @@ function updateReportStatus(reportId, status) {
     return result.changes > 0;
 }
 
+// ============================================
+// GESTION DES SAGAS
+// ============================================
+
+/**
+ * Récupère toutes les sagas avec leurs tags
+ * @returns {Array} Liste des sagas
+ */
+function getAllSagas() {
+    const sagas = db.prepare('SELECT * FROM sagas ORDER BY created_at DESC').all();
+
+    // Pour chaque saga, récupérer ses tags
+    sagas.forEach(saga => {
+        const tags = db.prepare(`
+            SELECT t.* FROM tags t
+            JOIN saga_tags st ON t.id = st.tag_id
+            WHERE st.saga_id = ?
+        `).all(saga.id);
+        saga.tags = tags;
+    });
+
+    return sagas;
+}
+
+/**
+ * Récupère une saga par son ID avec ses tags
+ * @param {number} id - ID de la saga
+ * @returns {object|null} La saga ou null
+ */
+function getSagaById(id) {
+    const saga = db.prepare('SELECT * FROM sagas WHERE id = ?').get(id);
+    if (!saga) return null;
+
+    const tags = db.prepare(`
+        SELECT t.* FROM tags t
+        JOIN saga_tags st ON t.id = st.tag_id
+        WHERE st.saga_id = ?
+    `).all(id);
+    saga.tags = tags;
+
+    return saga;
+}
+
+/**
+ * Crée une nouvelle saga
+ * @param {object} sagaData - { title, description, cover_image, is_premium, type, tagIds }
+ * @returns {object} La saga créée
+ */
+function createSaga(sagaData) {
+    const { title, description, cover_image, is_premium, type, tagIds } = sagaData;
+
+    const stmt = db.prepare(`
+        INSERT INTO sagas (title, description, cover_image, is_premium, type)
+        VALUES (?, ?, ?, ?, ?)
+    `);
+
+    const result = stmt.run(
+        title,
+        description || null,
+        cover_image || null,
+        is_premium ? 1 : 0,
+        type || 'serie'
+    );
+    const sagaId = result.lastInsertRowid;
+
+    // Associer les tags
+    if (tagIds && tagIds.length > 0) {
+        const insertTag = db.prepare('INSERT INTO saga_tags (saga_id, tag_id) VALUES (?, ?)');
+        tagIds.forEach(tagId => insertTag.run(sagaId, tagId));
+    }
+
+    return getSagaById(sagaId);
+}
+
+/**
+ * Met à jour une saga
+ * @param {number} id - ID de la saga
+ * @param {object} sagaData - { title, description, cover_image, is_premium, type, tagIds }
+ * @returns {object} La saga mise à jour
+ */
+function updateSaga(id, sagaData) {
+    const { title, description, cover_image, is_premium, type, tagIds } = sagaData;
+
+    const stmt = db.prepare(`
+        UPDATE sagas
+        SET title = ?, description = ?, cover_image = ?, is_premium = ?, type = ?
+        WHERE id = ?
+    `);
+
+    stmt.run(
+        title,
+        description || null,
+        cover_image || null,
+        is_premium ? 1 : 0,
+        type || 'serie',
+        id
+    );
+
+    // Mettre à jour les tags
+    db.prepare('DELETE FROM saga_tags WHERE saga_id = ?').run(id);
+    if (tagIds && tagIds.length > 0) {
+        const insertTag = db.prepare('INSERT INTO saga_tags (saga_id, tag_id) VALUES (?, ?)');
+        tagIds.forEach(tagId => insertTag.run(id, tagId));
+    }
+
+    return getSagaById(id);
+}
+
+/**
+ * Supprime une saga (cascade vers saisons et épisodes)
+ * @param {number} id - ID de la saga
+ */
+function deleteSaga(id) {
+    db.prepare('DELETE FROM sagas WHERE id = ?').run(id);
+}
+
+// ============================================
+// GESTION DES SAISONS
+// ============================================
+
+/**
+ * Récupère toutes les saisons d'une saga
+ * @param {number} sagaId - ID de la saga
+ * @returns {Array} Liste des saisons
+ */
+function getSaisonsBySaga(sagaId) {
+    return db.prepare(`
+        SELECT * FROM saisons
+        WHERE saga_id = ?
+        ORDER BY order_index ASC
+    `).all(sagaId);
+}
+
+/**
+ * Récupère une saison par son ID
+ * @param {number} id - ID de la saison
+ * @returns {object|null} La saison ou null
+ */
+function getSaisonById(id) {
+    return db.prepare('SELECT * FROM saisons WHERE id = ?').get(id);
+}
+
+/**
+ * Crée une nouvelle saison
+ * @param {object} saisonData - { saga_id, title, order_index, description, is_premium }
+ * @returns {object} La saison créée
+ */
+function createSaison(saisonData) {
+    const { saga_id, title, order_index, description, is_premium } = saisonData;
+
+    const stmt = db.prepare(`
+        INSERT INTO saisons (saga_id, title, order_index, description, is_premium)
+        VALUES (?, ?, ?, ?, ?)
+    `);
+
+    const result = stmt.run(
+        saga_id,
+        title,
+        order_index || 1,
+        description || null,
+        is_premium ? 1 : 0
+    );
+
+    return getSaisonById(result.lastInsertRowid);
+}
+
+/**
+ * Met à jour une saison
+ * @param {number} id - ID de la saison
+ * @param {object} saisonData - { title, order_index, description, is_premium }
+ * @returns {object} La saison mise à jour
+ */
+function updateSaison(id, saisonData) {
+    const { title, order_index, description, is_premium } = saisonData;
+
+    const stmt = db.prepare(`
+        UPDATE saisons
+        SET title = ?, order_index = ?, description = ?, is_premium = ?
+        WHERE id = ?
+    `);
+
+    stmt.run(
+        title,
+        order_index || 1,
+        description || null,
+        is_premium ? 1 : 0,
+        id
+    );
+
+    return getSaisonById(id);
+}
+
+/**
+ * Supprime une saison (cascade vers épisodes)
+ * @param {number} id - ID de la saison
+ */
+function deleteSaison(id) {
+    db.prepare('DELETE FROM saisons WHERE id = ?').run(id);
+}
+
+// ============================================
+// GESTION DES EPISODES
+// ============================================
+
+/**
+ * Récupère tous les épisodes d'une saison
+ * @param {number} saisonId - ID de la saison
+ * @returns {Array} Liste des épisodes
+ */
+function getEpisodesBySaison(saisonId) {
+    return db.prepare(`
+        SELECT * FROM episodes
+        WHERE saison_id = ?
+        ORDER BY episode_number ASC
+    `).all(saisonId);
+}
+
+/**
+ * Récupère un épisode par son ID
+ * @param {number} id - ID de l'épisode
+ * @returns {object|null} L'épisode ou null
+ */
+function getEpisodeById(id) {
+    return db.prepare('SELECT * FROM episodes WHERE id = ?').get(id);
+}
+
+/**
+ * Crée un nouvel épisode
+ * @param {object} episodeData - { saison_id, title, episode_number, video_url, subtitle_url, thumbnail_url, duration, is_premium }
+ * @returns {object} L'épisode créé
+ */
+function createEpisode(episodeData) {
+    const {
+        saison_id,
+        title,
+        episode_number,
+        video_url,
+        subtitle_url,
+        thumbnail_url,
+        duration,
+        is_premium,
+        free_preview_seconds
+    } = episodeData;
+
+    const stmt = db.prepare(`
+        INSERT INTO episodes (
+            saison_id, title, episode_number, video_url, subtitle_url,
+            thumbnail_url, duration, is_premium, free_preview_seconds
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    const result = stmt.run(
+        saison_id,
+        title,
+        episode_number,
+        video_url,
+        subtitle_url || null,
+        thumbnail_url || null,
+        duration || null,
+        is_premium ? 1 : 0,
+        free_preview_seconds || null
+    );
+
+    return getEpisodeById(result.lastInsertRowid);
+}
+
+/**
+ * Met à jour un épisode
+ * @param {number} id - ID de l'épisode
+ * @param {object} episodeData - { title, episode_number, video_url, subtitle_url, thumbnail_url, duration, is_premium }
+ * @returns {object} L'épisode mis à jour
+ */
+function updateEpisode(id, episodeData) {
+    const {
+        title,
+        episode_number,
+        video_url,
+        subtitle_url,
+        thumbnail_url,
+        duration,
+        is_premium,
+        free_preview_seconds
+    } = episodeData;
+
+    const stmt = db.prepare(`
+        UPDATE episodes
+        SET title = ?, episode_number = ?, video_url = ?, subtitle_url = ?,
+            thumbnail_url = ?, duration = ?, is_premium = ?, free_preview_seconds = ?
+        WHERE id = ?
+    `);
+
+    stmt.run(
+        title,
+        episode_number,
+        video_url,
+        subtitle_url || null,
+        thumbnail_url || null,
+        duration || null,
+        is_premium ? 1 : 0,
+        free_preview_seconds || null,
+        id
+    );
+
+    return getEpisodeById(id);
+}
+
+/**
+ * Supprime un épisode
+ * @param {number} id - ID de l'épisode
+ */
+function deleteEpisode(id) {
+    db.prepare('DELETE FROM episodes WHERE id = ?').run(id);
+}
+
 module.exports = {
     db,
     initDatabase,
@@ -960,7 +1340,7 @@ module.exports = {
     countUsersFiltered,
     deleteUser,
     countUsers,
-    // Vidéos
+    // Vidéos (ancien système - garder pour compatibilité)
     getAllVideos,
     getVideoById,
     getVideoByUrl,
@@ -989,5 +1369,23 @@ module.exports = {
     // Signalements
     createReport,
     getAllReports,
-    updateReportStatus
+    updateReportStatus,
+    // Sagas
+    getAllSagas,
+    getSagaById,
+    createSaga,
+    updateSaga,
+    deleteSaga,
+    // Saisons
+    getSaisonsBySaga,
+    getSaisonById,
+    createSaison,
+    updateSaison,
+    deleteSaison,
+    // Episodes
+    getEpisodesBySaison,
+    getEpisodeById,
+    createEpisode,
+    updateEpisode,
+    deleteEpisode
 };

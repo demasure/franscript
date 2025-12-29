@@ -19,6 +19,22 @@ const {
     updateUser,
     deleteUser,
     countUsers,
+    // Nouveau modèle Saga/Saison/Episode
+    getAllSagas,
+    getSagaById,
+    createSaga,
+    updateSaga,
+    deleteSaga,
+    getSaisonsBySaga,
+    getSaisonById,
+    createSaison,
+    updateSaison,
+    deleteSaison,
+    getEpisodesBySaison,
+    getEpisodeById,
+    createEpisode,
+    updateEpisode,
+    deleteEpisode,
     db
 } = require('./database');
 const { detectVideoDuration, extractThumbnail } = require('./videoUtils');
@@ -583,6 +599,442 @@ router.get('/stats', (req, res) => {
     } catch (error) {
         console.error('Erreur récupération stats:', error);
         res.status(500).json({ error: 'Erreur lors de la récupération des statistiques' });
+    }
+});
+
+// ============================================
+// ROUTES SAGAS - Admin uniquement
+// ============================================
+
+/**
+ * GET /admin/sagas
+ * Récupère toutes les sagas
+ */
+router.get('/sagas', (req, res) => {
+    try {
+        const sagas = getAllSagas();
+        res.json({ sagas });
+    } catch (error) {
+        console.error('Erreur récupération sagas:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des sagas' });
+    }
+});
+
+/**
+ * GET /admin/sagas/:id
+ * Récupère une saga par son ID
+ */
+router.get('/sagas/:id', (req, res) => {
+    try {
+        const saga = getSagaById(parseInt(req.params.id));
+        if (!saga) {
+            return res.status(404).json({ error: 'Saga non trouvée' });
+        }
+        res.json({ saga });
+    } catch (error) {
+        console.error('Erreur récupération saga:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération de la saga' });
+    }
+});
+
+/**
+ * POST /admin/sagas
+ * Crée une nouvelle saga
+ */
+router.post('/sagas', (req, res) => {
+    try {
+        const { title, description, cover_image, is_premium, type, tagIds } = req.body;
+
+        if (!title) {
+            return res.status(400).json({ error: 'Le titre est requis' });
+        }
+
+        const saga = createSaga({
+            title,
+            description,
+            cover_image,
+            is_premium: is_premium || false,
+            type: type || 'serie',
+            tagIds: tagIds || []
+        });
+
+        res.status(201).json({
+            message: 'Saga créée avec succès',
+            saga
+        });
+    } catch (error) {
+        console.error('Erreur création saga:', error);
+        res.status(500).json({ error: 'Erreur lors de la création de la saga' });
+    }
+});
+
+/**
+ * PUT /admin/sagas/:id
+ * Met à jour une saga
+ */
+router.put('/sagas/:id', (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const { title, description, cover_image, is_premium, type, tagIds } = req.body;
+
+        const existingSaga = getSagaById(id);
+        if (!existingSaga) {
+            return res.status(404).json({ error: 'Saga non trouvée' });
+        }
+
+        if (!title) {
+            return res.status(400).json({ error: 'Le titre est requis' });
+        }
+
+        const saga = updateSaga(id, {
+            title,
+            description,
+            cover_image,
+            is_premium: is_premium || false,
+            type: type || 'serie',
+            tagIds: tagIds || []
+        });
+
+        res.json({
+            message: 'Saga mise à jour avec succès',
+            saga
+        });
+    } catch (error) {
+        console.error('Erreur mise à jour saga:', error);
+        res.status(500).json({ error: 'Erreur lors de la mise à jour de la saga' });
+    }
+});
+
+/**
+ * DELETE /admin/sagas/:id
+ * Supprime une saga
+ */
+router.delete('/sagas/:id', (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const saga = getSagaById(id);
+        if (!saga) {
+            return res.status(404).json({ error: 'Saga non trouvée' });
+        }
+
+        deleteSaga(id);
+        res.json({ message: 'Saga supprimée avec succès' });
+    } catch (error) {
+        console.error('Erreur suppression saga:', error);
+        res.status(500).json({ error: 'Erreur lors de la suppression de la saga' });
+    }
+});
+
+// ============================================
+// ROUTES SAISONS - Admin uniquement
+// ============================================
+
+/**
+ * GET /admin/saisons/saga/:sagaId
+ * Récupère toutes les saisons d'une saga
+ */
+router.get('/saisons/saga/:sagaId', (req, res) => {
+    try {
+        const sagaId = parseInt(req.params.sagaId);
+        const saisons = getSaisonsBySaga(sagaId);
+        res.json({ saisons });
+    } catch (error) {
+        console.error('Erreur récupération saisons:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des saisons' });
+    }
+});
+
+/**
+ * GET /admin/saisons/:id
+ * Récupère une saison par son ID
+ */
+router.get('/saisons/:id', (req, res) => {
+    try {
+        const saison = getSaisonById(parseInt(req.params.id));
+        if (!saison) {
+            return res.status(404).json({ error: 'Saison non trouvée' });
+        }
+        res.json({ saison });
+    } catch (error) {
+        console.error('Erreur récupération saison:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération de la saison' });
+    }
+});
+
+/**
+ * POST /admin/saisons
+ * Crée une nouvelle saison
+ */
+router.post('/saisons', (req, res) => {
+    try {
+        const { saga_id, title, order_index, description, is_premium } = req.body;
+
+        if (!saga_id || !title) {
+            return res.status(400).json({ error: 'La saga et le titre sont requis' });
+        }
+
+        // Vérifier que la saga existe
+        const saga = getSagaById(saga_id);
+        if (!saga) {
+            return res.status(404).json({ error: 'Saga non trouvée' });
+        }
+
+        const saison = createSaison({
+            saga_id,
+            title,
+            order_index: order_index || 1,
+            description,
+            is_premium: is_premium || false
+        });
+
+        res.status(201).json({
+            message: 'Saison créée avec succès',
+            saison
+        });
+    } catch (error) {
+        console.error('Erreur création saison:', error);
+        res.status(500).json({ error: 'Erreur lors de la création de la saison' });
+    }
+});
+
+/**
+ * PUT /admin/saisons/:id
+ * Met à jour une saison
+ */
+router.put('/saisons/:id', (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const { title, order_index, description, is_premium } = req.body;
+
+        const existingSaison = getSaisonById(id);
+        if (!existingSaison) {
+            return res.status(404).json({ error: 'Saison non trouvée' });
+        }
+
+        if (!title) {
+            return res.status(400).json({ error: 'Le titre est requis' });
+        }
+
+        const saison = updateSaison(id, {
+            title,
+            order_index: order_index || 1,
+            description,
+            is_premium: is_premium || false
+        });
+
+        res.json({
+            message: 'Saison mise à jour avec succès',
+            saison
+        });
+    } catch (error) {
+        console.error('Erreur mise à jour saison:', error);
+        res.status(500).json({ error: 'Erreur lors de la mise à jour de la saison' });
+    }
+});
+
+/**
+ * DELETE /admin/saisons/:id
+ * Supprime une saison
+ */
+router.delete('/saisons/:id', (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const saison = getSaisonById(id);
+        if (!saison) {
+            return res.status(404).json({ error: 'Saison non trouvée' });
+        }
+
+        deleteSaison(id);
+        res.json({ message: 'Saison supprimée avec succès' });
+    } catch (error) {
+        console.error('Erreur suppression saison:', error);
+        res.status(500).json({ error: 'Erreur lors de la suppression de la saison' });
+    }
+});
+
+// ============================================
+// ROUTES EPISODES - Admin uniquement
+// ============================================
+
+/**
+ * GET /admin/episodes/saison/:saisonId
+ * Récupère tous les épisodes d'une saison
+ */
+router.get('/episodes/saison/:saisonId', (req, res) => {
+    try {
+        const saisonId = parseInt(req.params.saisonId);
+        const episodes = getEpisodesBySaison(saisonId);
+        res.json({ episodes });
+    } catch (error) {
+        console.error('Erreur récupération épisodes:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des épisodes' });
+    }
+});
+
+/**
+ * GET /admin/episodes/:id
+ * Récupère un épisode par son ID
+ */
+router.get('/episodes/:id', (req, res) => {
+    try {
+        const episode = getEpisodeById(parseInt(req.params.id));
+        if (!episode) {
+            return res.status(404).json({ error: 'Épisode non trouvé' });
+        }
+        res.json({ episode });
+    } catch (error) {
+        console.error('Erreur récupération épisode:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération de l\'épisode' });
+    }
+});
+
+/**
+ * POST /admin/episodes
+ * Crée un nouvel épisode
+ */
+router.post('/episodes', async (req, res) => {
+    try {
+        const {
+            saison_id,
+            title,
+            episode_number,
+            video_url,
+            subtitle_url,
+            is_premium
+        } = req.body;
+
+        if (!saison_id || !title || !video_url) {
+            return res.status(400).json({
+                error: 'La saison, le titre et l\'URL vidéo sont requis'
+            });
+        }
+
+        // Vérifier que la saison existe
+        const saison = getSaisonById(saison_id);
+        if (!saison) {
+            return res.status(404).json({ error: 'Saison non trouvée' });
+        }
+
+        // Détecter automatiquement la durée
+        const detectedDuration = await detectVideoDuration(video_url);
+
+        const episode = createEpisode({
+            saison_id,
+            title,
+            episode_number: episode_number || 1,
+            video_url,
+            subtitle_url,
+            thumbnail_url: null,
+            duration: detectedDuration,
+            is_premium: is_premium || false
+        });
+
+        // Extraire le thumbnail en arrière-plan
+        extractThumbnail(video_url, episode.id, 'episodes').then(thumbnailPath => {
+            if (thumbnailPath) {
+                updateEpisode(episode.id, {
+                    ...episode,
+                    thumbnail_url: thumbnailPath
+                });
+            }
+        });
+
+        res.status(201).json({
+            message: 'Épisode créé avec succès',
+            episode
+        });
+    } catch (error) {
+        console.error('Erreur création épisode:', error);
+        res.status(500).json({ error: 'Erreur lors de la création de l\'épisode' });
+    }
+});
+
+/**
+ * PUT /admin/episodes/:id
+ * Met à jour un épisode
+ */
+router.put('/episodes/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const {
+            title,
+            episode_number,
+            video_url,
+            subtitle_url,
+            is_premium
+        } = req.body;
+
+        const existingEpisode = getEpisodeById(id);
+        if (!existingEpisode) {
+            return res.status(404).json({ error: 'Épisode non trouvé' });
+        }
+
+        if (!title || !video_url) {
+            return res.status(400).json({
+                error: 'Le titre et l\'URL vidéo sont requis'
+            });
+        }
+
+        // Détecter la durée si l'URL a changé
+        let detectedDuration = existingEpisode.duration;
+        let thumbnailUrl = existingEpisode.thumbnail_url;
+
+        if (video_url !== existingEpisode.video_url) {
+            detectedDuration = await detectVideoDuration(video_url);
+
+            // Extraire nouveau thumbnail en arrière-plan
+            extractThumbnail(video_url, id, 'episodes').then(thumbnailPath => {
+                if (thumbnailPath) {
+                    updateEpisode(id, {
+                        title,
+                        episode_number: episode_number || 1,
+                        video_url,
+                        subtitle_url,
+                        thumbnail_url: thumbnailPath,
+                        duration: detectedDuration,
+                        is_premium: is_premium || false
+                    });
+                }
+            });
+        }
+
+        const episode = updateEpisode(id, {
+            title,
+            episode_number: episode_number || 1,
+            video_url,
+            subtitle_url,
+            thumbnail_url: thumbnailUrl,
+            duration: detectedDuration,
+            is_premium: is_premium || false
+        });
+
+        res.json({
+            message: 'Épisode mis à jour avec succès',
+            episode
+        });
+    } catch (error) {
+        console.error('Erreur mise à jour épisode:', error);
+        res.status(500).json({ error: 'Erreur lors de la mise à jour de l\'épisode' });
+    }
+});
+
+/**
+ * DELETE /admin/episodes/:id
+ * Supprime un épisode
+ */
+router.delete('/episodes/:id', (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const episode = getEpisodeById(id);
+        if (!episode) {
+            return res.status(404).json({ error: 'Épisode non trouvé' });
+        }
+
+        deleteEpisode(id);
+        res.json({ message: 'Épisode supprimé avec succès' });
+    } catch (error) {
+        console.error('Erreur suppression épisode:', error);
+        res.status(500).json({ error: 'Erreur lors de la suppression de l\'épisode' });
     }
 });
 

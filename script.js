@@ -139,6 +139,9 @@ async function loadTags() {
     }
 }
 
+/**
+ * Charge les vidéos (ancien système)
+ */
 async function loadVideos() {
     try {
         const response = await fetch('http://localhost:3000/videos');
@@ -167,6 +170,37 @@ async function loadVideos() {
     }
 }
 
+/**
+ * Charge les sagas (nouveau système)
+ */
+async function loadSagas() {
+    try {
+        const response = await fetch('http://localhost:3000/api/sagas');
+        if (!response.ok) {
+            throw new Error('Erreur lors du chargement des sagas');
+        }
+
+        const { sagas } = await response.json();
+        const videoGrid = document.querySelector('.video-grid');
+
+        // Vider la grille actuelle
+        videoGrid.innerHTML = '';
+
+        // Créer une carte pour chaque saga
+        sagas.forEach(saga => {
+            const card = createSagaCard(saga);
+            videoGrid.appendChild(card);
+        });
+
+        console.log(`✅ ${sagas.length} saga(s) chargée(s)`);
+    } catch (error) {
+        console.error('Erreur chargement sagas:', error);
+    }
+}
+
+/**
+ * Crée une carte pour une vidéo (ancien système)
+ */
 function createVideoCard(video) {
     const article = document.createElement('article');
     article.className = 'video-card';
@@ -230,6 +264,73 @@ function createVideoCard(video) {
     return article;
 }
 
+/**
+ * Crée une carte pour une saga (nouveau système)
+ */
+function createSagaCard(saga) {
+    const article = document.createElement('article');
+    article.className = 'video-card'; // Réutiliser les mêmes styles
+
+    // Utiliser les vrais tags de la saga
+    const tagNames = saga.tags ? saga.tags.map(t => t.name.toLowerCase()).join(' ') : '';
+    article.setAttribute('data-categories', tagNames);
+    article.setAttribute('data-tag-ids', saga.tags ? saga.tags.map(t => t.id).join(',') : '');
+    article.setAttribute('data-saga-id', saga.id);
+    article.setAttribute('data-is-premium', saga.is_premium || 0);
+    article.setAttribute('data-type', saga.type || 'serie');
+
+    // Gérer les tags
+    const tagsHTML = saga.tags && saga.tags.length > 0
+        ? saga.tags.map(tag => `<span class="tag" style="background-color: rgba(${hexToRgb(tag.color)}, 0.2); color: ${tag.color}; border: 2px solid ${tag.color};">${tag.name.toUpperCase()}</span>`).join('')
+        : '';
+
+    // Thumbnail
+    const thumbnailSrc = saga.cover_image
+        ? saga.cover_image
+        : `https://via.placeholder.com/400x225/667eea/ffffff?text=${encodeURIComponent(saga.title)}`;
+
+    // Badge premium
+    const shouldShowLock = saga.is_premium === 1 && !currentUser.isPremium && !currentUser.isAdmin;
+    const premiumBadge = saga.is_premium === 1 ? '<span class="premium-video-badge">👑 Premium</span>' : '';
+    const lockOverlay = shouldShowLock ? '<div class="video-lock-overlay"><span class="lock-icon">🔒</span></div>' : '';
+
+    // Badge type (série/film)
+    const typeBadge = saga.type === 'serie' ? '📺 Série' : '🎬 Film';
+
+    article.innerHTML = `
+        <div class="video-thumbnail">
+            <img src="${thumbnailSrc}" alt="${saga.title}">
+            ${lockOverlay}
+            <div class="video-overlay">
+                <button class="play-btn">▶ Explorer</button>
+            </div>
+            ${premiumBadge}
+        </div>
+        <div class="video-info">
+            <h3 class="video-title">${saga.title}</h3>
+            <p class="video-description">${saga.description || ''}</p>
+            <div class="video-meta">
+                <span class="video-level level-badge">${typeBadge}</span>
+            </div>
+            <div class="video-tags">
+                ${tagsHTML}
+            </div>
+        </div>
+    `;
+
+    // Événement de clic pour ouvrir la saga
+    article.addEventListener('click', () => {
+        if (shouldShowLock) {
+            showNotification('🔒 Cette saga est réservée aux membres Premium\n\nPassez à Premium pour accéder à tout le contenu exclusif !', 'warning', 6000);
+            return;
+        }
+
+        window.location.href = `saga.html?id=${saga.id}`;
+    });
+
+    return article;
+}
+
 // ========================================
 // INITIALISATION AU CHARGEMENT DE LA PAGE
 // ========================================
@@ -237,12 +338,25 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('🎬 FranScript initialisé');
 
     // IMPORTANT: Récupérer le statut utilisateur EN PREMIER
-    // pour que currentUser soit disponible lors du rendu des vidéos
+    // pour que currentUser soit disponible lors du rendu des vidéos/sagas
     await getUserStatus();
 
-    // Charger les tags et vidéos depuis la base de données
+    // Charger les tags
     await loadTags();
-    await loadVideos();
+
+    // Détecter le mode (vidéos ou sagas) via paramètre URL
+    // Par défaut : vidéos (pour compatibilité)
+    // ?mode=sagas pour afficher les sagas
+    const urlParams = new URLSearchParams(window.location.search);
+    const displayMode = urlParams.get('mode') || 'videos';
+
+    if (displayMode === 'sagas') {
+        console.log('📚 Mode SAGAS activé');
+        await loadSagas();
+    } else {
+        console.log('📹 Mode VIDÉOS activé');
+        await loadVideos();
+    }
 
     // Initialiser les filtres de catégories
     initializeFilters();

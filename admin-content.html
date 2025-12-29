@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Gestion du Contenu | FranScript</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .admin-column {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .admin-column h2 {
+            margin-top: 0;
+            border-bottom: 3px solid #2ecc71;
+            padding-bottom: 0.5rem;
+        }
+
+        .item-list {
+            list-style: none;
+            padding: 0;
+            margin: 1rem 0;
+        }
+
+        .item-list li {
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .item-list li:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .item-list li.selected {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #27ae60;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin: 1rem 0;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-family: inherit;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .premium-badge {
+            background: #f39c12;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-left: 0.5rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="container" style="padding-top: 80px;">
+        <h1>Gestion du Contenu</h1>
+        <p style="color: #666; margin-bottom: 2rem;">
+            Interface de gestion hiérarchique : Saga → Saison → Épisode
+        </p>
+
+        <div class="admin-layout">
+            <!-- Colonne 1: Sagas -->
+            <div class="admin-column">
+                <h2>📚 Sagas</h2>
+                <button class="btn btn-primary" onclick="openSagaModal()">+ Nouvelle Saga</button>
+
+                <ul class="item-list" id="sagas-list">
+                    <!-- Chargé dynamiquement -->
+                </ul>
+            </div>
+
+            <!-- Colonne 2: Saisons -->
+            <div class="admin-column">
+                <h2>📖 Saisons</h2>
+                <button class="btn btn-primary" id="btn-new-saison" onclick="openSaisonModal()" disabled>
+                    + Nouvelle Saison
+                </button>
+
+                <div id="saisons-container">
+                    <div class="empty-state">
+                        Sélectionnez une saga
+                    </div>
+                </div>
+            </div>
+
+            <!-- Colonne 3: Épisodes -->
+            <div class="admin-column">
+                <h2>🎬 Épisodes</h2>
+                <button class="btn btn-primary" id="btn-new-episode" onclick="openEpisodeModal()" disabled>
+                    + Nouvel Épisode
+                </button>
+
+                <div id="episodes-container">
+                    <div class="empty-state">
+                        Sélectionnez une saison
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Saga -->
+    <div class="modal" id="saga-modal">
+        <div class="modal-content">
+            <h3 id="saga-modal-title">Nouvelle Saga</h3>
+            <form id="saga-form">
+                <input type="hidden" id="saga-id">
+
+                <div class="form-group">
+                    <label>Titre *</label>
+                    <input type="text" id="saga-title" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="saga-description"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Type</label>
+                    <select id="saga-type">
+                        <option value="serie">Série</option>
+                        <option value="film">Film</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="saga-premium">
+                        Premium
+                    </label>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    <button type="button" class="btn" onclick="closeSagaModal()">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Saison -->
+    <div class="modal" id="saison-modal">
+        <div class="modal-content">
+            <h3 id="saison-modal-title">Nouvelle Saison</h3>
+            <form id="saison-form">
+                <input type="hidden" id="saison-id">
+
+                <div class="form-group">
+                    <label>Titre *</label>
+                    <input type="text" id="saison-title" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Ordre</label>
+                    <input type="number" id="saison-order" value="1" min="1">
+                </div>
+
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="saison-description"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="saison-premium">
+                        Premium (override saga)
+                    </label>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    <button type="button" class="btn" onclick="closeSaisonModal()">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Épisode -->
+    <div class="modal" id="episode-modal">
+        <div class="modal-content">
+            <h3 id="episode-modal-title">Nouvel Épisode</h3>
+            <form id="episode-form">
+                <input type="hidden" id="episode-id">
+
+                <div class="form-group">
+                    <label>Titre *</label>
+                    <input type="text" id="episode-title" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Numéro</label>
+                    <input type="number" id="episode-number" value="1" min="1">
+                </div>
+
+                <div class="form-group">
+                    <label>URL Vidéo * (ex: videos/ma_video.mp4)</label>
+                    <input type="text" id="episode-video-url" required>
+                </div>
+
+                <div class="form-group">
+                    <label>URL Sous-titres (ex: videos/ma_video.vtt)</label>
+                    <input type="text" id="episode-subtitle-url">
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="episode-premium">
+                        Premium (override saison/saga)
+                    </label>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    <button type="button" class="btn" onclick="closeEpisodeModal()">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="navbar.js"></script>
+    <script src="admin-content.js"></script>
+</body>
+</html>

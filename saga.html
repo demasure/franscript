@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saga | FranScript</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .saga-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 2rem;
+            margin-bottom: 2rem;
+            border-radius: 12px;
+        }
+
+        .saga-header h1 {
+            margin: 0 0 1rem 0;
+        }
+
+        .saga-type {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-right: 1rem;
+        }
+
+        .saisons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .saison-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+
+        .saison-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+        }
+
+        .saison-card-header {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            color: white;
+            padding: 1.5rem;
+        }
+
+        .saison-card-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .saison-card-body {
+            padding: 1.5rem;
+        }
+
+        .episode-count {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .premium-badge {
+            display: inline-block;
+            background: #f39c12;
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            margin-left: 0.5rem;
+        }
+
+        .back-button {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            transition: background 0.3s;
+        }
+
+        .back-button:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <main class="container" style="padding-top: 80px;">
+        <a href="index.html" class="back-button">← Retour aux sagas</a>
+
+        <div class="saga-header">
+            <h1 id="saga-title">Chargement...</h1>
+            <span class="saga-type" id="saga-type"></span>
+            <span id="saga-premium-badge"></span>
+            <p id="saga-description" style="margin-top: 1rem; opacity: 0.9;"></p>
+        </div>
+
+        <h2>Saisons</h2>
+        <div class="saisons-grid" id="saisons-grid">
+            <!-- Chargé dynamiquement -->
+        </div>
+    </main>
+
+    <script src="navbar.js"></script>
+    <script>
+        const API_BASE = 'http://localhost:3000';
+        let currentUser = { isPremium: false, isAdmin: false, isLoggedIn: false };
+
+        // Récupérer l'ID de la saga depuis l'URL
+        const params = new URLSearchParams(window.location.search);
+        const sagaId = params.get('id');
+
+        if (!sagaId) {
+            document.body.innerHTML = '<div class="container"><h1>Saga introuvable</h1></div>';
+        }
+
+        // Récupérer le statut utilisateur
+        async function getUserStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/me`, {
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const user = data.user;
+                    currentUser = {
+                        isPremium: user.is_premium === 1,
+                        isAdmin: user.role === 'admin',
+                        isLoggedIn: true
+                    };
+                }
+            } catch (error) {
+                console.error('Erreur récupération statut:', error);
+            }
+        }
+
+        // Charger la saga et ses saisons
+        async function loadSaga() {
+            try {
+                const response = await fetch(`${API_BASE}/api/sagas/${sagaId}`);
+
+                if (!response.ok) {
+                    throw new Error('Saga introuvable');
+                }
+
+                const data = await response.json();
+                const { saga, saisons } = data;
+
+                // Afficher les informations de la saga
+                document.getElementById('saga-title').textContent = saga.title;
+                document.getElementById('saga-type').textContent = saga.type === 'serie' ? '📺 Série' : '🎬 Film';
+                document.getElementById('saga-description').textContent = saga.description || '';
+
+                if (saga.is_premium && !currentUser.isPremium && !currentUser.isAdmin) {
+                    document.getElementById('saga-premium-badge').innerHTML = '<span class="premium-badge">👑 Premium</span>';
+                }
+
+                // Afficher les saisons
+                renderSaisons(saisons, saga.is_premium);
+
+            } catch (error) {
+                console.error('Erreur:', error);
+                document.body.innerHTML = '<div class="container"><h1>Erreur lors du chargement</h1></div>';
+            }
+        }
+
+        function renderSaisons(saisons, sagaPremium) {
+            const grid = document.getElementById('saisons-grid');
+
+            if (saisons.length === 0) {
+                grid.innerHTML = '<p>Aucune saison disponible.</p>';
+                return;
+            }
+
+            grid.innerHTML = saisons.map(saison => {
+                const isPremium = saison.is_premium || sagaPremium;
+                const canAccess = !isPremium || currentUser.isPremium || currentUser.isAdmin;
+
+                return `
+                    <div class="saison-card" onclick="openSaison(${saison.id}, ${canAccess})">
+                        <div class="saison-card-header">
+                            <h2>${saison.title}</h2>
+                            ${isPremium && !canAccess ? '<span class="premium-badge">🔒 Premium</span>' : ''}
+                        </div>
+                        <div class="saison-card-body">
+                            <p>${saison.description || 'Aucune description'}</p>
+                            <p class="episode-count">📺 Episodes disponibles</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openSaison(saisonId, canAccess) {
+            if (!canAccess) {
+                alert('🔒 Cette saison est réservée aux membres Premium\n\nPassez à Premium pour accéder à tout le contenu exclusif !');
+                return;
+            }
+
+            window.location.href = `saison.html?id=${saisonId}`;
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', async () => {
+            await getUserStatus();
+            await loadSaga();
+        });
+    </script>
+</body>
+</html>

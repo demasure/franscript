@@ -69,7 +69,13 @@ async function updateNavbar() {
 
         const profilePic = document.createElement('img');
         profilePic.className = 'nav-profile-pic';
-        profilePic.src = user.profile_picture || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default';
+        // Construire l'URL complète si c'est un chemin relatif
+        const avatarUrl = user.profile_picture
+            ? (user.profile_picture.startsWith('http')
+                ? user.profile_picture
+                : `${API_URL}${user.profile_picture}`)
+            : 'https://api.dicebear.com/7.x/avataaars/svg?seed=default';
+        profilePic.src = avatarUrl;
         profilePic.alt = user.username || 'Profil';
         profilePic.onerror = function() {
             this.src = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default';

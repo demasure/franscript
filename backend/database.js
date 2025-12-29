@@ -223,24 +223,40 @@ function initDatabase() {
 
 /**
  * Crée un nouvel utilisateur
- * @param {object} userData - { email, passwordHash, username, profile_picture, role }
+ * @param {object} userData - { email, password_hash, username, profile_picture, role, is_premium }
  * @returns {object} L'utilisateur créé
  */
 function createUser(userData) {
-    const { email, passwordHash, username, profile_picture, role = 'user' } = userData;
+    const {
+        email,
+        password_hash,
+        username,
+        profile_picture,
+        role = 'user',
+        is_premium = 0
+    } = userData;
 
     const stmt = db.prepare(`
-        INSERT INTO users (email, password_hash, username, profile_picture, role)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO users (email, password_hash, username, profile_picture, role, is_premium)
+        VALUES (?, ?, ?, ?, ?, ?)
     `);
 
-    const result = stmt.run(email, passwordHash, username || null, profile_picture || null, role);
+    const result = stmt.run(
+        email,
+        password_hash,
+        username || null,
+        profile_picture || null,
+        role,
+        is_premium
+    );
+
     return {
         id: result.lastInsertRowid,
         email,
         username,
         profile_picture,
-        role
+        role,
+        is_premium
     };
 }
 

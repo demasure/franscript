@@ -337,18 +337,27 @@ function hideCard(card) {
 // VÉRIFICATION D'ACCÈS PREMIUM
 // ========================================
 async function checkVideoAccess(isPaid) {
-    // Si la vidéo est gratuite, accès autorisé
-    if (isPaid !== 1 && isPaid !== '1') {
+    // Convertir isPaid en nombre pour éviter les problèmes de typage
+    const isPaidNum = parseInt(isPaid) || 0;
+
+    console.log(`🔍 Vérification accès - isPaid: "${isPaid}" → ${isPaidNum}`);
+
+    // Si la vidéo est gratuite (is_paid = 0 ou null), accès autorisé
+    if (isPaidNum !== 1) {
+        console.log('✅ Vidéo gratuite - accès autorisé');
         return { allowed: true };
     }
 
     // Vidéo payante : vérifier le statut de l'utilisateur
+    console.log('🔒 Vidéo payante - vérification du statut utilisateur...');
+
     try {
         const response = await fetch('http://localhost:3000/auth/me', {
             credentials: 'include'
         });
 
         if (!response.ok) {
+            console.log('❌ Utilisateur non connecté');
             return {
                 allowed: false,
                 message: 'Veuillez vous connecter pour accéder à cette vidéo premium'
@@ -358,28 +367,32 @@ async function checkVideoAccess(isPaid) {
         const data = await response.json();
         const user = data.user;
 
+        console.log(`👤 Utilisateur: ${user.email}, role: ${user.role}, premium: ${user.is_premium}`);
+
         // Admin a accès à tout
         if (user.role === 'admin') {
+            console.log('👑 Admin - accès autorisé');
             return { allowed: true };
         }
 
         // Utilisateur premium a accès
         if (user.is_premium === 1) {
+            console.log('💎 Premium - accès autorisé');
             return { allowed: true };
         }
 
         // Utilisateur non-premium
+        console.log('🚫 Non premium - accès refusé');
         return {
             allowed: false,
             message: '🔒 Cette vidéo est réservée aux membres Premium\n\nPassez à Premium pour accéder à tout le contenu exclusif !'
         };
 
     } catch (error) {
-        console.error('Erreur vérification accès:', error);
-        return {
-            allowed: false,
-            message: 'Erreur lors de la vérification de votre accès'
-        };
+        console.error('❌ Erreur vérification accès:', error);
+        // En cas d'erreur réseau, autoriser l'accès plutôt que de bloquer tout
+        console.warn('⚠️ Erreur réseau - accès autorisé par défaut');
+        return { allowed: true };
     }
 }
 

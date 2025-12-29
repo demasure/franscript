@@ -408,12 +408,17 @@ function updateNavigationButtons() {
  * Navigue au sous-titre précédent
  */
 function goToPreviousSubtitle() {
-    if (currentSubtitleIndex <= 0) return;
+    console.log('🖱️ CLIC BOUTON PRÉCÉDENT - currentIndex:', currentSubtitleIndex, 'total:', allSubtitles.length);
+
+    if (currentSubtitleIndex <= 0) {
+        console.log('❌ Impossible d\'aller au précédent (déjà au début)');
+        return;
+    }
 
     const prevSubtitle = allSubtitles[currentSubtitleIndex - 1];
     if (prevSubtitle && video) {
+        console.log('⏮️ Navigation vers sous-titre index', currentSubtitleIndex - 1, ':', prevSubtitle.text.substring(0, 30) + '...');
         video.currentTime = prevSubtitle.start;
-        console.log('⏮️ Sous-titre précédent:', prevSubtitle.text.substring(0, 30) + '...');
     }
 }
 
@@ -421,12 +426,17 @@ function goToPreviousSubtitle() {
  * Navigue au sous-titre suivant
  */
 function goToNextSubtitle() {
-    if (currentSubtitleIndex >= allSubtitles.length - 1) return;
+    console.log('🖱️ CLIC BOUTON SUIVANT - currentIndex:', currentSubtitleIndex, 'total:', allSubtitles.length);
+
+    if (currentSubtitleIndex >= allSubtitles.length - 1) {
+        console.log('❌ Impossible d\'aller au suivant (déjà à la fin)');
+        return;
+    }
 
     const nextSubtitle = allSubtitles[currentSubtitleIndex + 1];
     if (nextSubtitle && video) {
+        console.log('⏭️ Navigation vers sous-titre index', currentSubtitleIndex + 1, ':', nextSubtitle.text.substring(0, 30) + '...');
         video.currentTime = nextSubtitle.start;
-        console.log('⏭️ Sous-titre suivant:', nextSubtitle.text.substring(0, 30) + '...');
     }
 }
 
@@ -437,12 +447,26 @@ function initializeSubtitleNavigation() {
     const prevBtn = document.getElementById('prev-subtitle-btn');
     const nextBtn = document.getElementById('next-subtitle-btn');
 
+    console.log('🔧 Initialisation navigation - Boutons trouvés:', {
+        prevBtn: !!prevBtn,
+        nextBtn: !!nextBtn,
+        prevDisabled: prevBtn?.disabled,
+        nextDisabled: nextBtn?.disabled
+    });
+
     if (prevBtn && nextBtn) {
         // Initialiser l'état des boutons au départ
         updateNavigationButtons();
 
-        prevBtn.addEventListener('click', goToPreviousSubtitle);
-        nextBtn.addEventListener('click', goToNextSubtitle);
+        prevBtn.addEventListener('click', (e) => {
+            console.log('🎯 Event click détecté sur bouton PRÉCÉDENT, disabled:', prevBtn.disabled);
+            goToPreviousSubtitle();
+        });
+
+        nextBtn.addEventListener('click', (e) => {
+            console.log('🎯 Event click détecté sur bouton SUIVANT, disabled:', nextBtn.disabled);
+            goToNextSubtitle();
+        });
 
         // Raccourcis clavier: flèches gauche/droite
         document.addEventListener('keydown', (e) => {
@@ -458,7 +482,9 @@ function initializeSubtitleNavigation() {
             }
         });
 
-        console.log('✅ Navigation sous-titres initialisée (boutons + flèches)');
+        console.log('✅ Event listeners attachés - Navigation sous-titres prête');
+    } else {
+        console.error('❌ Boutons de navigation non trouvés!');
     }
 }
 

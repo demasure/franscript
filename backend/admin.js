@@ -12,6 +12,8 @@ const {
     updateTag,
     deleteTag,
     getAllUsers,
+    getUsersPaginated,
+    countUsersFiltered,
     findUserById,
     createUser,
     updateUser,
@@ -338,15 +340,76 @@ router.delete('/tags/:id', (req, res) => {
 
 /**
  * GET /admin/users
- * Récupère tous les utilisateurs
+ * Récupère les utilisateurs avec pagination et filtres optionnels
+ *
+ * Query params:
+ * - page: numéro de page (défaut: 1)
+ * - limit: nombre d'utilisateurs par page (défaut: 50, max: 100)
+ * - search: recherche dans email/username
+ * - role: filtrer par rôle (admin/user)
+ * - premium: filtrer par statut premium (true/false)
+ * - sortBy: champ de tri (created_at, email, username, role, is_premium)
+ * - sortOrder: ordre de tri (ASC/DESC)
+ *
+ * Exemple: GET /admin/users?page=2&limit=20&search=test&role=admin
  */
 router.get('/users', (req, res) => {
     try {
-        const users = getAllUsers();
-        res.json({ users });
+        // 1. Extraction et validation des paramètres de requête
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+        const search = req.query.search || '';
+        const role = req.query.role || null;
+        const sortBy = req.query.sortBy || 'created_at';
+        const sortOrder = req.query.sortOrder || 'DESC';
+
+        // Conversion du paramètre premium (string -> boolean ou null)
+        let premium = null;
+        if (req.query.premium === 'true') premium = true;
+        if (req.query.premium === 'false') premium = false;
+
+        // 2. Récupération des utilisateurs paginés
+        const users = getUsersPaginated({
+            page,
+            limit,
+            search,
+            role,
+            premium,
+            sortBy,
+            sortOrder
+        });
+
+        // 3. Comptage total pour la pagination
+        const totalUsers = countUsersFiltered({
+            search,
+            role,
+            premium
+        });
+
+        const totalPages = Math.ceil(totalUsers / limit);
+
+        // 4. Réponse structurée
+        res.json({
+            users,
+            pagination: {
+                page,
+                limit,
+                total: totalUsers,
+                totalPages,
+                hasNextPage: page < totalPages,
+                hasPrevPage: page > 1
+            }
+        });
+
+        // Log pour monitoring (utile en production)
+        console.log(`📊 GET /admin/users - Page ${page}/${totalPages} (${users.length}/${totalUsers} users)`);
+
     } catch (error) {
-        console.error('Erreur récupération utilisateurs:', error);
-        res.status(500).json({ error: 'Erreur lors de la récupération des utilisateurs' });
+        console.error('❌ Erreur récupération utilisateurs:', error);
+        res.status(500).json({
+            error: 'Erreur lors de la récupération des utilisateurs',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 

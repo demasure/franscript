@@ -377,15 +377,68 @@
             pointer-events: none;
         }
 
-        .empty-state {
+        /* États visuels */
+        .loading-state,
+        .empty-state,
+        .error-state {
             text-align: center;
             padding: 3rem;
             color: var(--color-text-secondary);
         }
 
-        .empty-state-icon {
+        .empty-state-icon,
+        .error-state-icon {
             font-size: 4rem;
             margin-bottom: 1rem;
+        }
+
+        .empty-state-hint {
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            opacity: 0.7;
+        }
+
+        .error-state {
+            color: var(--color-danger, #e74c3c);
+        }
+
+        /* Spinner de chargement */
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 1rem;
+            border: 4px solid var(--color-bg-elevated);
+            border-top: 4px solid var(--color-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Pagination */
+        .pagination-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            background: var(--color-bg-card);
+            border-radius: var(--border-radius);
+            margin-top: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .pagination-info {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .pagination-buttons {
+            display: flex;
+            gap: 0.5rem;
         }
 
         @media (max-width: 768px) {
@@ -489,9 +542,38 @@
                 </tbody>
             </table>
 
+            <!-- États visuels -->
+            <div id="loading-state" class="loading-state" style="display: none;">
+                <div class="loading-spinner"></div>
+                <p>Chargement des utilisateurs...</p>
+            </div>
+
             <div id="empty-state" class="empty-state" style="display: none;">
                 <div class="empty-state-icon">👤</div>
                 <p>Aucun utilisateur trouvé</p>
+                <p class="empty-state-hint">La base de données ne contient aucun utilisateur.</p>
+            </div>
+
+            <div id="error-state" class="error-state" style="display: none;">
+                <div class="error-state-icon">⚠️</div>
+                <p id="error-message">Erreur de chargement</p>
+                <button onclick="loadUsers()" class="btn btn-secondary">Réessayer</button>
+            </div>
+
+            <!-- Pagination -->
+            <div id="pagination-controls" class="pagination-controls" style="display: none;">
+                <div class="pagination-info">
+                    Page <span id="current-page">1</span> sur <span id="total-pages">1</span>
+                    (<span id="users-count-info">0</span> utilisateurs au total)
+                </div>
+                <div class="pagination-buttons">
+                    <button id="prev-page-btn" class="btn btn-secondary" onclick="changePage(-1)" disabled>
+                        ← Précédent
+                    </button>
+                    <button id="next-page-btn" class="btn btn-secondary" onclick="changePage(1)" disabled>
+                        Suivant →
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -551,6 +633,7 @@
 
     <!-- Scripts -->
     <script src="navbar.js"></script>
+    <script src="admin-api.js"></script>
     <script src="admin-users.js"></script>
 </body>
 </html>

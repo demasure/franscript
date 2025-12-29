@@ -354,6 +354,121 @@ function getAllUsers() {
 }
 
 /**
+ * Récupère les utilisateurs avec pagination et filtres (future-proof)
+ * @param {Object} options - Options de pagination et filtrage
+ * @param {number} options.page - Numéro de page (commence à 1)
+ * @param {number} options.limit - Nombre d'utilisateurs par page
+ * @param {string} [options.search] - Recherche dans email/username
+ * @param {string} [options.role] - Filtrer par rôle (admin/user)
+ * @param {boolean} [options.premium] - Filtrer par statut premium
+ * @param {string} [options.sortBy] - Champ de tri (created_at, email, username)
+ * @param {string} [options.sortOrder] - Ordre de tri (ASC, DESC)
+ * @returns {Array} Liste paginée des utilisateurs
+ */
+function getUsersPaginated(options = {}) {
+    const {
+        page = 1,
+        limit = 50,
+        search = '',
+        role = null,
+        premium = null,
+        sortBy = 'created_at',
+        sortOrder = 'DESC'
+    } = options;
+
+    // Construction dynamique de la requête WHERE
+    const whereClauses = [];
+    const params = [];
+
+    if (search) {
+        whereClauses.push('(email LIKE ? OR username LIKE ?)');
+        const searchPattern = `%${search}%`;
+        params.push(searchPattern, searchPattern);
+    }
+
+    if (role) {
+        whereClauses.push('role = ?');
+        params.push(role);
+    }
+
+    if (premium !== null) {
+        whereClauses.push('is_premium = ?');
+        params.push(premium ? 1 : 0);
+    }
+
+    const whereSQL = whereClauses.length > 0
+        ? 'WHERE ' + whereClauses.join(' AND ')
+        : '';
+
+    // Validation du tri pour éviter les injections SQL
+    const allowedSortFields = ['created_at', 'email', 'username', 'role', 'is_premium'];
+    const safeSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'created_at';
+    const safeSortOrder = sortOrder.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+    // Calcul de l'offset
+    const offset = (page - 1) * limit;
+
+    // Requête avec pagination
+    const query = `
+        SELECT id, email, username, username_confirmed, profile_picture, role, is_premium, created_at
+        FROM users
+        ${whereSQL}
+        ORDER BY ${safeSortBy} ${safeSortOrder}
+        LIMIT ? OFFSET ?
+    `;
+
+    params.push(limit, offset);
+
+    const stmt = db.prepare(query);
+    return stmt.all(...params);
+}
+
+/**
+ * Compte le nombre total d'utilisateurs avec filtres
+ * @param {Object} filters - Mêmes filtres que getUsersPaginated
+ * @param {string} [filters.search] - Recherche dans email/username
+ * @param {string} [filters.role] - Filtrer par rôle
+ * @param {boolean} [filters.premium] - Filtrer par statut premium
+ * @returns {number} Nombre total d'utilisateurs correspondants
+ */
+function countUsersFiltered(filters = {}) {
+    const {
+        search = '',
+        role = null,
+        premium = null
+    } = filters;
+
+    const whereClauses = [];
+    const params = [];
+
+    if (search) {
+        whereClauses.push('(email LIKE ? OR username LIKE ?)');
+        const searchPattern = `%${search}%`;
+        params.push(searchPattern, searchPattern);
+    }
+
+    if (role) {
+        whereClauses.push('role = ?');
+        params.push(role);
+    }
+
+    if (premium !== null) {
+        whereClauses.push('is_premium = ?');
+        params.push(premium ? 1 : 0);
+    }
+
+    const whereSQL = whereClauses.length > 0
+        ? 'WHERE ' + whereClauses.join(' AND ')
+        : '';
+
+    const query = `SELECT COUNT(*) as count FROM users ${whereSQL}`;
+    const stmt = db.prepare(query);
+    const result = stmt.get(...params);
+
+    return result.count;
+}
+
+/**
  * Supprime un utilisateur par son ID
  * @param {number} id - ID de l'utilisateur à supprimer
  */
@@ -825,6 +940,8 @@ module.exports = {
     findUserById,
     updateUser,
     getAllUsers,
+    getUsersPaginated,
+    countUsersFiltered,
     deleteUser,
     countUsers,
     // Vidéos

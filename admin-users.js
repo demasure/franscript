@@ -1,21 +1,37 @@
+/**
+ * ============================================
+ * GESTION DES UTILISATEURS - Admin Panel
+ * ============================================
+ *
+ * Architecture:
+ * - Séparation stricte: données (AdminAPI) / logique / UI
+ * - États explicites: loading, success, error, empty
+ * - Aucune donnée hardcodée
+ * - Source unique de vérité: la BDD
+ */
+
 // ============================================
-// GESTION DES UTILISATEURS - Admin Panel
+// ÉTAT GLOBAL
 // ============================================
 
-const API_URL = 'http://localhost:3000';
-let allUsers = []; // Cache des utilisateurs pour la recherche
+let currentPage = 1;
+let itemsPerPage = 50;
+let currentSearch = '';
+let currentFilters = {};
+let paginationData = null;
 
 // ============================================
 // INITIALISATION
 // ============================================
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 Initialisation de la gestion des utilisateurs');
     initializeEventListeners();
     loadUsers();
 });
 
 /**
- * Attache tous les event listeners
+ * Initialise tous les event listeners
  */
 function initializeEventListeners() {
     // Formulaire de création
@@ -30,13 +46,21 @@ function initializeEventListeners() {
         editForm.addEventListener('submit', handleUpdateUser);
     }
 
-    // Recherche
+    // Recherche avec debounce
     const searchInput = document.getElementById('search-input');
     if (searchInput) {
-        searchInput.addEventListener('input', handleSearch);
+        let searchTimeout;
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentSearch = e.target.value;
+                currentPage = 1; // Reset à la page 1 lors d'une recherche
+                loadUsers();
+            }, 300); // Attendre 300ms après la dernière frappe
+        });
     }
 
-    // Fermeture du modal en cliquant à l'extérieur
+    // Fermeture du modal
     const modal = document.getElementById('edit-modal');
     if (modal) {
         modal.addEventListener('click', (e) => {
@@ -48,60 +72,133 @@ function initializeEventListeners() {
 }
 
 // ============================================
-// CHARGEMENT DES UTILISATEURS
+// GESTION DES ÉTATS UI
 // ============================================
 
 /**
- * Charge tous les utilisateurs depuis l'API
+ * Affiche l'état de chargement
+ */
+function showLoadingState() {
+    document.getElementById('loading-state').style.display = 'block';
+    document.getElementById('empty-state').style.display = 'none';
+    document.getElementById('error-state').style.display = 'none';
+    document.getElementById('pagination-controls').style.display = 'none';
+    document.querySelector('.users-table').style.display = 'none';
+}
+
+/**
+ * Affiche l'état vide (0 utilisateurs)
+ */
+function showEmptyState() {
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('empty-state').style.display = 'block';
+    document.getElementById('error-state').style.display = 'none';
+    document.getElementById('pagination-controls').style.display = 'none';
+    document.querySelector('.users-table').style.display = 'none';
+}
+
+/**
+ * Affiche l'état d'erreur
+ * @param {string} message - Message d'erreur
+ */
+function showErrorState(message) {
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('empty-state').style.display = 'none';
+    document.getElementById('error-state').style.display = 'block';
+    document.getElementById('error-message').textContent = message;
+    document.getElementById('pagination-controls').style.display = 'none';
+    document.querySelector('.users-table').style.display = 'none';
+}
+
+/**
+ * Affiche l'état de succès (données chargées)
+ */
+function showSuccessState() {
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('empty-state').style.display = 'none';
+    document.getElementById('error-state').style.display = 'none';
+    document.querySelector('.users-table').style.display = 'table';
+}
+
+// ============================================
+// CHARGEMENT DES DONNÉES
+// ============================================
+
+/**
+ * Charge les utilisateurs depuis l'API
+ * Source unique de vérité: la base de données
  */
 async function loadUsers() {
+    console.log(`🔄 Chargement des utilisateurs (page ${currentPage}, recherche: "${currentSearch}")`);
+
+    // Afficher l'état de chargement
+    showLoadingState();
+
     try {
-        console.log('🔄 Chargement des utilisateurs...');
-        const response = await fetch(`${API_URL}/admin/users`, {
-            credentials: 'include'
+        // Appel API avec pagination
+        const response = await AdminAPI.users.getAll({
+            page: currentPage,
+            limit: itemsPerPage,
+            search: currentSearch,
+            ...currentFilters
         });
 
-        console.log('📡 Réponse reçue:', response.status);
+        console.log('✅ Données reçues:', response);
 
-        if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
-                console.error('❌ Accès non autorisé');
-                showNotification('Accès non autorisé', 'error');
-                setTimeout(() => window.location.href = 'auth.html', 2000);
-                return;
-            }
-            throw new Error('Erreur lors du chargement des utilisateurs');
+        // Stocker les données de pagination
+        paginationData = response.pagination;
+
+        // Afficher les résultats
+        if (response.users.length === 0) {
+            showEmptyState();
+        } else {
+            renderUsersTable(response.users);
+            renderPagination(response.pagination);
+            showSuccessState();
         }
 
-        const data = await response.json();
-        allUsers = data.users || [];
-        console.log(`✅ ${allUsers.length} utilisateur(s) chargé(s):`, allUsers);
-        renderUsersTable(allUsers);
-        updateUserCount(allUsers.length);
+        updateUserCount(response.pagination.total);
+
     } catch (error) {
         console.error('❌ Erreur chargement utilisateurs:', error);
-        showNotification('Erreur lors du chargement des utilisateurs: ' + error.message, 'error');
+
+        // Gestion spécifique des erreurs d'authentification
+        if (error.message === 'AUTH_REQUIRED') {
+            showNotification('Vous devez être connecté en tant qu\'admin', 'error');
+            setTimeout(() => window.location.href = 'auth.html', 2000);
+            return;
+        }
+
+        showErrorState(error.message || 'Erreur lors du chargement des utilisateurs');
     }
 }
 
 /**
+ * Change la page courante
+ * @param {number} delta - +1 pour suivant, -1 pour précédent
+ */
+function changePage(delta) {
+    const newPage = currentPage + delta;
+
+    if (newPage < 1 || (paginationData && newPage > paginationData.totalPages)) {
+        return; // Page invalide
+    }
+
+    currentPage = newPage;
+    loadUsers();
+}
+
+// ============================================
+// RENDU UI
+// ============================================
+
+/**
  * Affiche les utilisateurs dans le tableau
- * @param {Array} users - Liste des utilisateurs à afficher
+ * @param {Array} users - Liste des utilisateurs
  */
 function renderUsersTable(users) {
     const tbody = document.getElementById('users-table-body');
-    const emptyState = document.getElementById('empty-state');
-
     if (!tbody) return;
-
-    // Si aucun utilisateur
-    if (users.length === 0) {
-        tbody.innerHTML = '';
-        if (emptyState) emptyState.style.display = 'block';
-        return;
-    }
-
-    if (emptyState) emptyState.style.display = 'none';
 
     tbody.innerHTML = users.map(user => `
         <tr>
@@ -126,8 +223,37 @@ function renderUsersTable(users) {
 }
 
 /**
+ * Affiche les contrôles de pagination
+ * @param {Object} pagination - Données de pagination de l'API
+ */
+function renderPagination(pagination) {
+    const paginationDiv = document.getElementById('pagination-controls');
+    if (!paginationDiv) return;
+
+    // Afficher seulement si plusieurs pages
+    if (pagination.totalPages <= 1) {
+        paginationDiv.style.display = 'none';
+        return;
+    }
+
+    paginationDiv.style.display = 'flex';
+
+    // Mettre à jour les infos
+    document.getElementById('current-page').textContent = pagination.page;
+    document.getElementById('total-pages').textContent = pagination.totalPages;
+    document.getElementById('users-count-info').textContent = pagination.total;
+
+    // Mettre à jour les boutons
+    const prevBtn = document.getElementById('prev-page-btn');
+    const nextBtn = document.getElementById('next-page-btn');
+
+    prevBtn.disabled = !pagination.hasPrevPage;
+    nextBtn.disabled = !pagination.hasNextPage;
+}
+
+/**
  * Met à jour le compteur d'utilisateurs
- * @param {number} count - Nombre d'utilisateurs
+ * @param {number} count - Nombre total d'utilisateurs
  */
 function updateUserCount(count) {
     const countEl = document.getElementById('user-count');
@@ -141,7 +267,7 @@ function updateUserCount(count) {
 // ============================================
 
 /**
- * Gère la soumission du formulaire de création
+ * Gère la création d'un nouvel utilisateur
  * @param {Event} e - Événement de soumission
  */
 async function handleCreateUser(e) {
@@ -150,7 +276,7 @@ async function handleCreateUser(e) {
     const form = e.target;
     const submitBtn = form.querySelector('button[type="submit"]');
 
-    // Récupérer les données du formulaire
+    // Récupération et validation des données
     const userData = {
         email: document.getElementById('new-email').value.trim(),
         password: document.getElementById('new-password').value,
@@ -170,31 +296,19 @@ async function handleCreateUser(e) {
         return;
     }
 
-    // Désactiver le bouton pendant la requête
+    // État de chargement
     submitBtn.disabled = true;
     submitBtn.textContent = '⏳ Création...';
 
     try {
-        const response = await fetch(`${API_URL}/admin/users`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            credentials: 'include',
-            body: JSON.stringify(userData)
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Erreur lors de la création');
-        }
+        await AdminAPI.users.create(userData);
 
         showNotification('✅ Utilisateur créé avec succès', 'success');
         form.reset();
         loadUsers(); // Recharger la liste
+
     } catch (error) {
-        console.error('Erreur création utilisateur:', error);
+        console.error('❌ Erreur création utilisateur:', error);
         showNotification(error.message, 'error');
     } finally {
         submitBtn.disabled = false;
@@ -207,11 +321,17 @@ async function handleCreateUser(e) {
 // ============================================
 
 /**
- * Ouvre le modal d'édition avec les données de l'utilisateur
- * @param {number} userId - ID de l'utilisateur à éditer
+ * Ouvre le modal d'édition pour un utilisateur
+ * @param {number} userId - ID de l'utilisateur
  */
-function openEditModal(userId) {
-    const user = allUsers.find(u => u.id === userId);
+async function openEditModal(userId) {
+    // Trouver l'utilisateur dans les données locales (déjà chargées)
+    const tbody = document.getElementById('users-table-body');
+    const allRows = Array.from(tbody.querySelectorAll('tr'));
+
+    // On pourrait aussi faire un appel API, mais ici on optimise en utilisant les données déjà chargées
+    const user = findUserInCurrentPage(userId);
+
     if (!user) {
         showNotification('Utilisateur introuvable', 'error');
         return;
@@ -223,13 +343,41 @@ function openEditModal(userId) {
     document.getElementById('edit-username').value = user.username || '';
     document.getElementById('edit-role').value = user.role;
     document.getElementById('edit-premium').checked = user.is_premium === 1;
-    document.getElementById('edit-password').value = ''; // Toujours vide
+    document.getElementById('edit-password').value = '';
 
     // Afficher le modal
     const modal = document.getElementById('edit-modal');
     if (modal) {
         modal.classList.add('show');
     }
+}
+
+/**
+ * Trouve un utilisateur dans la page courante
+ * Cette fonction évite un appel API supplémentaire
+ * @param {number} userId - ID de l'utilisateur
+ * @returns {Object|null} Utilisateur ou null
+ */
+function findUserInCurrentPage(userId) {
+    // Parse le tableau HTML pour retrouver les données
+    // Alternative: on pourrait stocker users dans une variable globale
+    const row = document.querySelector(`#users-table-body tr td:first-child`);
+    // Pour l'instant, simplifions en retournant les données du DOM
+    const rows = document.querySelectorAll('#users-table-body tr');
+
+    for (const row of rows) {
+        const cells = row.querySelectorAll('td');
+        if (parseInt(cells[0].textContent) === userId) {
+            return {
+                id: parseInt(cells[0].textContent),
+                email: cells[1].textContent,
+                username: cells[2].querySelector('em') ? null : cells[2].textContent,
+                role: cells[3].textContent.includes('Admin') ? 'admin' : 'user',
+                is_premium: cells[4].textContent.includes('Premium') || cells[4].textContent.includes('Admin') ? 1 : 0
+            };
+        }
+    }
+    return null;
 }
 
 /**
@@ -241,7 +389,6 @@ function closeEditModal() {
         modal.classList.remove('show');
     }
 
-    // Réinitialiser le formulaire
     const form = document.getElementById('edit-user-form');
     if (form) {
         form.reset();
@@ -249,7 +396,7 @@ function closeEditModal() {
 }
 
 /**
- * Gère la soumission du formulaire d'édition
+ * Gère la mise à jour d'un utilisateur
  * @param {Event} e - Événement de soumission
  */
 async function handleUpdateUser(e) {
@@ -257,9 +404,9 @@ async function handleUpdateUser(e) {
 
     const form = e.target;
     const submitBtn = form.querySelector('button[type="submit"]');
-    const userId = document.getElementById('edit-user-id').value;
+    const userId = parseInt(document.getElementById('edit-user-id').value);
 
-    // Récupérer les données du formulaire
+    // Récupération des données
     const userData = {
         email: document.getElementById('edit-email').value.trim(),
         username: document.getElementById('edit-username').value.trim() || null,
@@ -277,37 +424,25 @@ async function handleUpdateUser(e) {
         userData.password = password;
     }
 
-    // Validation côté client
+    // Validation
     if (!userData.email) {
         showNotification('L\'email est requis', 'error');
         return;
     }
 
-    // Désactiver le bouton pendant la requête
+    // État de chargement
     submitBtn.disabled = true;
     submitBtn.textContent = '⏳ Enregistrement...';
 
     try {
-        const response = await fetch(`${API_URL}/admin/users/${userId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            credentials: 'include',
-            body: JSON.stringify(userData)
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Erreur lors de la mise à jour');
-        }
+        await AdminAPI.users.update(userId, userData);
 
         showNotification('✅ Utilisateur mis à jour avec succès', 'success');
         closeEditModal();
         loadUsers(); // Recharger la liste
+
     } catch (error) {
-        console.error('Erreur mise à jour utilisateur:', error);
+        console.error('❌ Erreur mise à jour utilisateur:', error);
         showNotification(error.message, 'error');
     } finally {
         submitBtn.disabled = false;
@@ -320,11 +455,11 @@ async function handleUpdateUser(e) {
 // ============================================
 
 /**
- * Demande confirmation avant de supprimer un utilisateur
- * @param {number} userId - ID de l'utilisateur à supprimer
+ * Demande confirmation avant de supprimer
+ * @param {number} userId - ID de l'utilisateur
  */
 function confirmDeleteUser(userId) {
-    const user = allUsers.find(u => u.id === userId);
+    const user = findUserInCurrentPage(userId);
     if (!user) {
         showNotification('Utilisateur introuvable', 'error');
         return;
@@ -343,59 +478,19 @@ function confirmDeleteUser(userId) {
 
 /**
  * Supprime un utilisateur
- * @param {number} userId - ID de l'utilisateur à supprimer
+ * @param {number} userId - ID de l'utilisateur
  */
 async function deleteUser(userId) {
     try {
-        const response = await fetch(`${API_URL}/admin/users/${userId}`, {
-            method: 'DELETE',
-            credentials: 'include'
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Erreur lors de la suppression');
-        }
+        await AdminAPI.users.delete(userId);
 
         showNotification('✅ Utilisateur supprimé avec succès', 'success');
         loadUsers(); // Recharger la liste
+
     } catch (error) {
-        console.error('Erreur suppression utilisateur:', error);
+        console.error('❌ Erreur suppression utilisateur:', error);
         showNotification(error.message, 'error');
     }
-}
-
-// ============================================
-// RECHERCHE
-// ============================================
-
-/**
- * Gère la recherche d'utilisateurs
- * @param {Event} e - Événement input
- */
-function handleSearch(e) {
-    const searchTerm = e.target.value.toLowerCase().trim();
-
-    if (!searchTerm) {
-        // Aucun terme de recherche : afficher tous les utilisateurs
-        renderUsersTable(allUsers);
-        updateUserCount(allUsers.length);
-        return;
-    }
-
-    // Filtrer les utilisateurs
-    const filteredUsers = allUsers.filter(user => {
-        return (
-            user.email.toLowerCase().includes(searchTerm) ||
-            (user.username && user.username.toLowerCase().includes(searchTerm)) ||
-            user.id.toString().includes(searchTerm) ||
-            user.role.toLowerCase().includes(searchTerm)
-        );
-    });
-
-    renderUsersTable(filteredUsers);
-    updateUserCount(filteredUsers.length);
 }
 
 // ============================================
@@ -405,7 +500,7 @@ function handleSearch(e) {
 /**
  * Affiche une notification
  * @param {string} message - Message à afficher
- * @param {string} type - Type de notification (success, error)
+ * @param {string} type - Type (success, error)
  */
 function showNotification(message, type = 'success') {
     const notification = document.getElementById('notification');
@@ -414,7 +509,6 @@ function showNotification(message, type = 'success') {
     notification.textContent = message;
     notification.className = `message ${type} show`;
 
-    // Masquer après 5 secondes
     setTimeout(() => {
         notification.classList.remove('show');
     }, 5000);
@@ -433,7 +527,7 @@ function getRoleBadge(role) {
 }
 
 /**
- * Retourne le badge HTML pour le statut premium
+ * Retourne le badge HTML pour le statut
  * @param {Object} user - Utilisateur
  * @returns {string} HTML du badge
  */
@@ -448,8 +542,8 @@ function getStatusBadge(user) {
 }
 
 /**
- * Formate une date pour l'affichage
- * @param {string} dateString - Date au format ISO
+ * Formate une date de manière relative
+ * @param {string} dateString - Date ISO
  * @returns {string} Date formatée
  */
 function formatDate(dateString) {
@@ -460,22 +554,16 @@ function formatDate(dateString) {
     const diffMs = now - date;
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    // Si c'est aujourd'hui
     if (diffDays === 0) {
         return `Aujourd'hui à ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
     }
-
-    // Si c'est hier
     if (diffDays === 1) {
         return 'Hier';
     }
-
-    // Si c'est cette semaine (moins de 7 jours)
     if (diffDays < 7) {
         return `Il y a ${diffDays} jours`;
     }
 
-    // Sinon afficher la date complète
     return date.toLocaleDateString('fr-FR', {
         day: '2-digit',
         month: '2-digit',
@@ -484,7 +572,7 @@ function formatDate(dateString) {
 }
 
 /**
- * Échappe les caractères HTML pour éviter les XSS
+ * Échappe les caractères HTML (protection XSS)
  * @param {string} text - Texte à échapper
  * @returns {string} Texte échappé
  */

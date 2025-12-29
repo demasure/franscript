@@ -16,6 +16,7 @@
 let currentSubtitles = [];
 let allSubtitles = [];  // Contexte complet pour l'IA
 let lastDisplayedCueText = '';  // Éviter de recréer le même sous-titre
+let currentSubtitleIndex = -1;  // Index du sous-titre actuellement affiché
 let isEditMode = false;  // Mode édition activé ou non
 let editedSubtitles = {};  // Sous-titres modifiés {index: newText}
 let currentVideoId = null;  // ID de la vidéo courante
@@ -322,6 +323,9 @@ function initializeSubtitles() {
 
     // Gérer la sélection de texte dans les sous-titres
     subtitlesDisplay.addEventListener('mouseup', handleSubtitleSelection);
+
+    // Initialiser la navigation entre sous-titres
+    initializeSubtitleNavigation();
 }
 
 function displayInteractiveSubtitle(text, startTime, endTime) {
@@ -329,6 +333,9 @@ function displayInteractiveSubtitle(text, startTime, endTime) {
 
     // Trouver l'index du sous-titre dans allSubtitles
     const index = allSubtitles.findIndex(sub => sub.start === startTime && sub.end === endTime);
+
+    // Mettre à jour l'index du sous-titre actuel
+    currentSubtitleIndex = index;
 
     // Créer un élément cliquable pour chaque sous-titre
     const subtitleElement = document.createElement('p');
@@ -362,7 +369,85 @@ function displayInteractiveSubtitle(text, startTime, endTime) {
         });
     }
 
+    // Mettre à jour les boutons de navigation
+    updateNavigationButtons();
+
     console.log('✅ Sous-titre affiché:', text.substring(0, 30) + '...');
+}
+
+// ========================================
+// NAVIGATION ENTRE SOUS-TITRES
+// ========================================
+
+/**
+ * Met à jour l'état des boutons de navigation (activé/désactivé)
+ */
+function updateNavigationButtons() {
+    const prevBtn = document.getElementById('prev-subtitle-btn');
+    const nextBtn = document.getElementById('next-subtitle-btn');
+
+    if (!prevBtn || !nextBtn) return;
+
+    // Désactiver bouton précédent si on est au premier sous-titre
+    prevBtn.disabled = currentSubtitleIndex <= 0;
+
+    // Désactiver bouton suivant si on est au dernier sous-titre
+    nextBtn.disabled = currentSubtitleIndex >= allSubtitles.length - 1;
+}
+
+/**
+ * Navigue au sous-titre précédent
+ */
+function goToPreviousSubtitle() {
+    if (currentSubtitleIndex <= 0) return;
+
+    const prevSubtitle = allSubtitles[currentSubtitleIndex - 1];
+    if (prevSubtitle && video) {
+        video.currentTime = prevSubtitle.start;
+        console.log('⏮️ Sous-titre précédent:', prevSubtitle.text.substring(0, 30) + '...');
+    }
+}
+
+/**
+ * Navigue au sous-titre suivant
+ */
+function goToNextSubtitle() {
+    if (currentSubtitleIndex >= allSubtitles.length - 1) return;
+
+    const nextSubtitle = allSubtitles[currentSubtitleIndex + 1];
+    if (nextSubtitle && video) {
+        video.currentTime = nextSubtitle.start;
+        console.log('⏭️ Sous-titre suivant:', nextSubtitle.text.substring(0, 30) + '...');
+    }
+}
+
+/**
+ * Initialise les event listeners pour la navigation
+ */
+function initializeSubtitleNavigation() {
+    const prevBtn = document.getElementById('prev-subtitle-btn');
+    const nextBtn = document.getElementById('next-subtitle-btn');
+
+    if (prevBtn && nextBtn) {
+        prevBtn.addEventListener('click', goToPreviousSubtitle);
+        nextBtn.addEventListener('click', goToNextSubtitle);
+
+        // Raccourcis clavier: flèches gauche/droite
+        document.addEventListener('keydown', (e) => {
+            // Ignorer si on est dans un input ou textarea
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                goToPreviousSubtitle();
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                goToNextSubtitle();
+            }
+        });
+
+        console.log('✅ Navigation sous-titres initialisée (boutons + flèches)');
+    }
 }
 
 function handleSubtitleSelection() {

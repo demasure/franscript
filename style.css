@@ -901,6 +901,62 @@ img {
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    position: relative;  /* Pour positionner les boutons de navigation */
+}
+
+/* Boutons de navigation sous-titres */
+.subtitle-navigation {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 0.5rem;
+    pointer-events: none;  /* Permet de cliquer sur le texte au centre */
+}
+
+.subtitle-nav-btn {
+    pointer-events: auto;  /* Réactive les clics sur les boutons */
+    background: var(--color-bg-elevated);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-bg-hover);
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    opacity: 0.7;
+}
+
+.subtitle-nav-btn:hover {
+    opacity: 1;
+    background: var(--color-primary);
+    color: white;
+    transform: scale(1.05);
+    box-shadow: 0 2px 6px rgba(0, 85, 164, 0.3);
+}
+
+.subtitle-nav-btn:active {
+    transform: scale(0.95);
+}
+
+.subtitle-nav-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    background: var(--color-bg-elevated);
+    color: var(--color-text-muted);
+}
+
+.subtitle-nav-btn:disabled:hover {
+    transform: none;
+    box-shadow: none;
 }
 
 .subtitle-item {

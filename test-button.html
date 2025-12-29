@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Button Click</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+            display: block;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .log {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #4CAF50;
+            padding-left: 10px;
+        }
+        h2 {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Test du mécanisme de clic</h1>
+        <p>Ce test vérifie que le pattern utilisé dans profile.js fonctionne correctement.</p>
+
+        <h2>Test 1: Bouton avec type="button"</h2>
+        <button type="button" id="test-btn-1">Cliquez-moi (type="button")</button>
+
+        <h2>Test 2: Bouton sans type</h2>
+        <button id="test-btn-2">Cliquez-moi (sans type)</button>
+
+        <h2>Test 3: Bouton disabled</h2>
+        <button type="button" id="test-btn-3" disabled>Cliquez-moi (disabled)</button>
+
+        <div class="log" id="log">
+            <div class="log-entry">📋 Logs d'événements apparaîtront ici...</div>
+        </div>
+    </div>
+
+    <script>
+        const logDiv = document.getElementById('log');
+
+        function addLog(message) {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        // Test du pattern exact utilisé dans profile.js
+        document.addEventListener('DOMContentLoaded', function() {
+            addLog('✅ DOMContentLoaded fired');
+
+            // Pattern 1: Button avec type="button"
+            const btn1 = document.getElementById('test-btn-1');
+            addLog(`🔘 Button 1 trouvé: ${btn1 ? 'OUI' : 'NON'}`);
+            addLog(`   disabled: ${btn1?.disabled}`);
+            addLog(`   type: ${btn1?.type}`);
+
+            if (btn1) {
+                btn1.addEventListener('click', function(e) {
+                    addLog('🖱️ CLICK EVENT - Button 1 clicked!');
+                    addLog(`   Event type: ${e.type}`);
+                    addLog(`   Target: ${e.target.id}`);
+                });
+                addLog('✅ Event listener attaché au Button 1');
+            }
+
+            // Pattern 2: Button sans type
+            const btn2 = document.getElementById('test-btn-2');
+            if (btn2) {
+                btn2.addEventListener('click', function(e) {
+                    addLog('🖱️ CLICK EVENT - Button 2 clicked!');
+                });
+                addLog('✅ Event listener attaché au Button 2');
+            }
+
+            // Pattern 3: Button disabled
+            const btn3 = document.getElementById('test-btn-3');
+            if (btn3) {
+                btn3.addEventListener('click', function(e) {
+                    addLog('🖱️ CLICK EVENT - Button 3 clicked! (Ce message ne devrait PAS apparaître car le bouton est disabled)');
+                });
+                addLog('✅ Event listener attaché au Button 3 (mais disabled = true)');
+            }
+
+            addLog('✅ Tous les événements initialisés');
+        });
+    </script>
+</body>
+</html>

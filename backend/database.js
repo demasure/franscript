@@ -1232,13 +1232,13 @@ function updateNode(id, nodeData) {
 
     stmt.run(
         title,
-        description || null,
-        node.type === 'video' ? video_url : null,
-        node.type === 'video' ? (subtitle_url || null) : null,
-        thumbnail_url || null,
-        cover_image || null,
-        duration || null,
-        is_premium ? 1 : 0,
+        description !== undefined ? (description || null) : node.description,
+        node.type === 'video' ? (video_url !== undefined ? video_url : node.video_url) : null,
+        node.type === 'video' ? (subtitle_url !== undefined ? (subtitle_url || null) : node.subtitle_url) : null,
+        thumbnail_url !== undefined ? (thumbnail_url || null) : node.thumbnail_url,
+        cover_image !== undefined ? (cover_image || null) : node.cover_image,
+        duration !== undefined ? (duration || null) : node.duration,
+        is_premium !== undefined ? (is_premium ? 1 : 0) : node.is_premium,
         order_index !== undefined ? order_index : node.order_index,
         id
     );

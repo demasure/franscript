@@ -323,6 +323,90 @@ app.get('/api/content/:id/children', (req, res) => {
     }
 });
 
+// ============================================
+// ROUTES ADMIN - GESTION CONTENT NODES (CRUD)
+// ============================================
+
+/**
+ * POST /admin/content
+ * Crée un nouveau nœud (dossier ou vidéo)
+ */
+app.post('/admin/content', requireAdmin, (req, res) => {
+    try {
+        const { createNode } = require('./database');
+        const node = createNode(req.body);
+        res.status(201).json({
+            message: 'Nœud créé avec succès',
+            node
+        });
+    } catch (error) {
+        console.error('Erreur création nœud:', error);
+        res.status(500).json({ error: 'Erreur lors de la création du nœud' });
+    }
+});
+
+/**
+ * GET /admin/content/:id
+ * Récupère un nœud pour l'édition (sans restrictions d'accès)
+ */
+app.get('/admin/content/:id', requireAdmin, (req, res) => {
+    try {
+        const { getNodeById } = require('./database');
+        const nodeId = parseInt(req.params.id);
+        const node = getNodeById(nodeId);
+
+        if (!node) {
+            return res.status(404).json({ error: 'Nœud introuvable' });
+        }
+
+        res.json({ node });
+    } catch (error) {
+        console.error('Erreur récupération nœud:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+/**
+ * PUT /admin/content/:id
+ * Met à jour un nœud existant
+ */
+app.put('/admin/content/:id', requireAdmin, (req, res) => {
+    try {
+        const { updateNode } = require('./database');
+        const nodeId = parseInt(req.params.id);
+        const updatedNode = updateNode(nodeId, req.body);
+
+        if (!updatedNode) {
+            return res.status(404).json({ error: 'Nœud introuvable' });
+        }
+
+        res.json({
+            message: 'Nœud mis à jour avec succès',
+            node: updatedNode
+        });
+    } catch (error) {
+        console.error('Erreur mise à jour nœud:', error);
+        res.status(500).json({ error: 'Erreur lors de la mise à jour du nœud' });
+    }
+});
+
+/**
+ * DELETE /admin/content/:id
+ * Supprime un nœud et ses enfants
+ */
+app.delete('/admin/content/:id', requireAdmin, (req, res) => {
+    try {
+        const { deleteNode } = require('./database');
+        const nodeId = parseInt(req.params.id);
+        deleteNode(nodeId);
+
+        res.json({ message: 'Nœud supprimé avec succès' });
+    } catch (error) {
+        console.error('Erreur suppression nœud:', error);
+        res.status(500).json({ error: 'Erreur lors de la suppression du nœud' });
+    }
+});
+
 // Endpoint health check
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', port: PORT });

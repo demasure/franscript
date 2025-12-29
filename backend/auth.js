@@ -210,7 +210,8 @@ router.get('/me', (req, res) => {
             email: user.email,
             username: user.username,
             profile_picture: user.profile_picture,
-            role: user.role
+            role: user.role,
+            is_premium: user.is_premium  // CRITIQUE: Nécessaire pour vérification accès Premium frontend
         }
     });
 });

@@ -1545,6 +1545,7 @@
                     </td>
                     <td style="padding: 12px;">
                         <div class="actions">
+                            ${isFolder ? `<button onclick="showCreateNodeModal('video', ${node.id}, '${escapeHtml(node.title).replace(/'/g, "\\'")}' )" style="font-size: 12px; padding: 6px 12px; background: var(--color-primary); color: white; border: none; cursor: pointer; border-radius: 6px;">+ Vidéo</button>` : ''}
                             <button class="secondary" onclick="editNode(${node.id})" style="font-size: 12px; padding: 6px 12px;">Modifier</button>
                             <button class="danger" onclick="deleteNode(${node.id})" style="font-size: 12px; padding: 6px 12px;">Supprimer</button>
                         </div>
@@ -1671,7 +1672,7 @@
         /**
          * Affiche le modal de création/édition
          */
-        function showCreateNodeModal(type) {
+        function showCreateNodeModal(type, parentId = null, parentTitle = null) {
             const modal = document.getElementById('node-modal');
             const videoFields = document.getElementById('video-fields');
             const folderFields = document.getElementById('folder-fields');
@@ -1680,16 +1681,18 @@
             document.getElementById('node-form').reset();
             document.getElementById('node-id').value = '';
             document.getElementById('node-type').value = type;
-            document.getElementById('node-parent-id').value = currentNodeId || '';
+            document.getElementById('node-parent-id').value = parentId !== null ? parentId : (currentNodeId || '');
 
             // Afficher/masquer les champs selon le type
             videoFields.style.display = type === 'video' ? 'block' : 'none';
             folderFields.style.display = type === 'folder' ? 'block' : 'none';
 
             // Titre du modal
-            document.getElementById('modal-title').textContent = type === 'folder'
-                ? '📁 Créer un Dossier'
-                : '🎬 Créer une Vidéo';
+            let modalTitle = type === 'folder' ? '📁 Créer un Dossier' : '🎬 Créer une Vidéo';
+            if (parentTitle) {
+                modalTitle += ` dans "${parentTitle}"`;
+            }
+            document.getElementById('modal-title').textContent = modalTitle;
 
             document.getElementById('node-submit-btn').textContent = 'Créer';
 
@@ -1809,8 +1812,8 @@
                 const data = await response.json();
                 showMessage(data.message || 'Nœud supprimé avec succès', 'success');
 
-                // Recharger la liste
-                loadContentNodes(currentNodeId);
+                // Recharger tout l'arbre
+                loadContentNodes();
 
             } catch (error) {
                 console.error('Erreur:', error);
@@ -1866,7 +1869,7 @@
                     if (response.ok) {
                         showMessage(data.message || 'Nœud enregistré avec succès', 'success');
                         closeNodeModal();
-                        loadContentNodes(currentNodeId);
+                        loadContentNodes(); // Recharger tout l'arbre
                     } else {
                         showMessage(data.error || 'Erreur lors de l\'enregistrement', 'error');
                     }

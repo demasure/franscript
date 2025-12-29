@@ -261,6 +261,21 @@ app.get('/api/content/roots', (req, res) => {
 });
 
 /**
+ * GET /api/admin/content/tree
+ * Récupère tout l'arbre de contenu avec tags (pour l'admin)
+ */
+app.get('/api/admin/content/tree', requireAdmin, (req, res) => {
+    try {
+        const { getAllNodesTree } = require('./database');
+        const tree = getAllNodesTree();
+        res.json({ nodes: tree });
+    } catch (error) {
+        console.error('Erreur récupération arbre de contenu:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération de l\'arbre de contenu' });
+    }
+});
+
+/**
  * GET /api/content/:id
  * Récupère un nœud par son ID avec contexte complet
  * Vérifie les permissions premium

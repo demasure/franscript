@@ -1032,6 +1032,43 @@ function getRootNodes() {
 }
 
 /**
+ * Récupère tout l'arbre de contenu de manière récursive avec tags
+ * @returns {Array} Arbre complet de nœuds avec leurs enfants et tags
+ */
+function getAllNodesTree() {
+    // Fonction récursive pour charger un nœud et ses enfants
+    function loadNodeWithChildren(nodeId = null) {
+        const query = nodeId === null
+            ? 'SELECT * FROM content_nodes WHERE parent_id IS NULL ORDER BY order_index ASC, created_at DESC'
+            : 'SELECT * FROM content_nodes WHERE parent_id = ? ORDER BY order_index ASC, created_at DESC';
+
+        const nodes = nodeId === null
+            ? db.prepare(query).all()
+            : db.prepare(query).all(nodeId);
+
+        return nodes.map(node => {
+            // Charger les tags du nœud
+            node.tags = db.prepare(`
+                SELECT t.* FROM tags t
+                JOIN content_node_tags cnt ON t.id = cnt.tag_id
+                WHERE cnt.node_id = ?
+            `).all(node.id);
+
+            // Si c'est un dossier, charger ses enfants récursivement
+            if (node.type === 'folder') {
+                node.children = loadNodeWithChildren(node.id);
+            } else {
+                node.children = [];
+            }
+
+            return node;
+        });
+    }
+
+    return loadNodeWithChildren(null);
+}
+
+/**
  * Récupère les enfants d'un nœud
  * @param {number} parentId - ID du parent
  * @returns {Array} Liste des nœuds enfants
@@ -1289,6 +1326,7 @@ module.exports = {
     updateReportStatus,
     // Content Nodes (structure arborescente)
     getRootNodes,
+    getAllNodesTree,
     getChildNodes,
     getNodeById,
     getNodeWithInheritedTags,

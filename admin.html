@@ -571,58 +571,24 @@
         <div id="message" class="message"></div>
 
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('videos')">Vidéos</button>
-            <button class="tab" onclick="switchTab('content')">📁 Contenu</button>
+            <button class="tab active" onclick="switchTab('content')">📁 Contenu</button>
             <button class="tab" onclick="switchTab('tags')">Tags</button>
             <button class="tab" onclick="switchTab('reports')">⚠️ Signalements</button>
             <button class="tab" onclick="switchTab('stats')">📊 Statistiques</button>
         </div>
 
-        <!-- TAB VIDÉOS (LECTURE SEULE) -->
-        <div id="tab-videos" class="tab-content active">
-            <div class="panel">
-                <h2>📹 Vue Globale des Vidéos</h2>
-                <p style="color: var(--color-text-secondary); margin-bottom: 20px;">
-                    Liste de toutes les vidéos du site. Pour ajouter ou modifier une vidéo, utilisez l'onglet
-                    <strong style="color: var(--color-primary); cursor: pointer;" onclick="switchTab('content')">📁 Contenu</strong>.
-                </p>
-
-                <table id="videos-table">
-                    <thead>
-                        <tr>
-                            <th>Chemin</th>
-                            <th>Titre</th>
-                            <th>Tags</th>
-                            <th>Statut</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Chargé dynamiquement -->
-                    </tbody>
-                </table>
-
-                <p id="no-videos-message" style="text-align: center; color: var(--color-text-secondary); padding: 40px; display: none;">
-                    Aucune vidéo trouvée. Créez-en une via l'onglet <strong>📁 Contenu</strong>.
-                </p>
-            </div>
-        </div>
-
         <!-- TAB CONTENU -->
-        <div id="tab-content" class="tab-content">
+        <div id="tab-content" class="tab-content active">
             <div class="panel">
-                <h2>📁 Gestion du Contenu</h2>
-
-                <!-- Breadcrumb navigation -->
-                <div id="content-breadcrumb" style="margin-bottom: 20px; padding: 10px; background: var(--color-bg-elevated); border-radius: 6px; color: var(--color-text-secondary); font-size: 14px;">
-                    <span style="cursor: pointer; color: var(--color-primary);" onclick="navigateToNode(null)">🏠 Racine</span>
-                    <span id="breadcrumb-trail"></span>
-                </div>
+                <h2>📁 Vue Globale du Contenu</h2>
+                <p style="color: var(--color-text-secondary); margin-bottom: 20px;">
+                    Arborescence complète de tous les dossiers et vidéos avec leurs tags.
+                </p>
 
                 <!-- Actions toolbar -->
                 <div style="display: flex; gap: 10px; margin-bottom: 20px;">
                     <button onclick="showCreateNodeModal('folder')">📁 Ajouter Dossier</button>
                     <button onclick="showCreateNodeModal('video')">🎬 Ajouter Vidéo</button>
-                    <button class="secondary" id="back-button" onclick="navigateBack()" style="margin-left: auto; display: none;">⬅️ Retour</button>
                 </div>
 
                 <!-- Content list (file explorer style) -->
@@ -1067,12 +1033,19 @@
                 // Utiliser la route publique pour les tags
                 const response = await fetch(`${API_URL}/tags`);
 
+                if (!response.ok) {
+                    console.error('Erreur HTTP:', response.status, response.statusText);
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
                 const data = await response.json();
+                console.log('Tags chargés:', data);
                 allTags = data.tags || [];
                 displayTags(allTags);
                 renderTagSelector(allTags);
             } catch (error) {
-                showMessage('Erreur chargement tags', 'error');
+                console.error('Erreur détaillée chargement tags:', error);
+                showMessage('Erreur chargement tags: ' + error.message, 'error');
             }
         }
 
@@ -1505,13 +1478,9 @@
         /**
          * Charge le contenu du nœud courant
          */
-        async function loadContentNodes(parentId = null) {
+        async function loadContentNodes() {
             try {
-                const endpoint = parentId === null
-                    ? `${API_URL}/admin/content/roots`
-                    : `${API_URL}/admin/content/${parentId}/children`;
-
-                const response = await fetch(endpoint, {
+                const response = await fetch(`${API_URL}/api/admin/content/tree`, {
                     credentials: 'include'
                 });
 
@@ -1520,10 +1489,10 @@
                 }
 
                 const data = await response.json();
-                contentNodes = data.nodes || data.children || [];
+                console.log('Arbre de contenu chargé:', data);
+                contentNodes = data.nodes || [];
 
                 displayContentExplorer(contentNodes);
-                updateBackButton();
             } catch (error) {
                 console.error('Erreur:', error);
                 showMessage('Erreur lors du chargement du contenu', 'error');
@@ -1546,6 +1515,7 @@
                     <thead>
                         <tr style="background: var(--color-bg-primary); border-bottom: 2px solid var(--color-bg-hover);">
                             <th style="padding: 12px; text-align: left; color: var(--color-text-secondary); font-weight: 600;">Nom</th>
+                            <th style="padding: 12px; text-align: left; color: var(--color-text-secondary); font-weight: 600; width: 200px;">Tags</th>
                             <th style="padding: 12px; text-align: left; color: var(--color-text-secondary); font-weight: 600; width: 100px;">Type</th>
                             <th style="padding: 12px; text-align: left; color: var(--color-text-secondary); font-weight: 600; width: 100px;">Statut</th>
                             <th style="padding: 12px; text-align: left; color: var(--color-text-secondary); font-weight: 600; width: 200px;">Actions</th>
@@ -1561,27 +1531,32 @@
         /**
          * Rend une ligne de nœud dans l'explorateur
          */
-        function renderNodeRow(node) {
+        function renderNodeRow(node, level = 0) {
             const isFolder = node.type === 'folder';
             const icon = isFolder ? '📁' : '🎬';
             const statusBadge = node.is_premium
                 ? '<span class="paid-badge">Premium</span>'
                 : '<span class="free-badge">Gratuit</span>';
 
-            const onClickAction = isFolder
-                ? `onclick="navigateToNode(${node.id}, '${escapeHtml(node.title)}')"`
-                : '';
+            // Indentation selon le niveau d'arborescence
+            const indent = '&nbsp;&nbsp;&nbsp;&nbsp;'.repeat(level);
 
-            const cursorStyle = isFolder ? 'cursor: pointer;' : '';
+            // Tags HTML
+            const tagsHTML = node.tags && node.tags.length > 0
+                ? node.tags.map(tag => `<span class="tag-button" style="background-color: rgba(${hexToRgb(tag.color)}, 0.2); color: ${tag.color}; border: 2px solid ${tag.color}; padding: 4px 10px; border-radius: 12px; display: inline-block; font-weight: 600; font-size: 11px; margin-right: 4px;">${tag.name}</span>`).join('')
+                : '<span style="color: var(--color-text-secondary); font-size: 12px;">-</span>';
 
-            return `
+            let rows = `
                 <tr style="border-bottom: 1px solid var(--color-bg-hover); transition: background 0.2s;"
                     onmouseover="this.style.background='var(--color-bg-primary)'"
                     onmouseout="this.style.background='transparent'">
-                    <td ${onClickAction} style="padding: 12px; ${cursorStyle}">
-                        <span style="font-size: 1.2rem; margin-right: 8px;">${icon}</span>
+                    <td style="padding: 12px;">
+                        ${indent}<span style="font-size: 1.2rem; margin-right: 8px;">${icon}</span>
                         <strong style="color: var(--color-text-primary);">${escapeHtml(node.title)}</strong>
-                        ${node.description ? `<br><small style="color: var(--color-text-secondary);">${escapeHtml(node.description)}</small>` : ''}
+                        ${node.description ? `<br>${indent}<small style="color: var(--color-text-secondary); margin-left: 32px;">${escapeHtml(node.description)}</small>` : ''}
+                    </td>
+                    <td style="padding: 12px;">
+                        ${tagsHTML}
                     </td>
                     <td style="padding: 12px; color: var(--color-text-secondary);">
                         ${isFolder ? 'Dossier' : 'Vidéo'}
@@ -1597,6 +1572,13 @@
                     </td>
                 </tr>
             `;
+
+            // Si c'est un dossier et qu'il a des enfants, les afficher récursivement
+            if (isFolder && node.children && node.children.length > 0) {
+                rows += node.children.map(child => renderNodeRow(child, level + 1)).join('');
+            }
+
+            return rows;
         }
 
         /**

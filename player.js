@@ -118,22 +118,17 @@ async function loadVideoFromURL() {
  */
 async function checkVideoAccessBeforeLoad(videoId) {
     try {
-        const response = await fetch(`http://localhost:3000/api/videos/${videoId}`);
+        const response = await fetch(`http://localhost:3000/api/content/${videoId}`, {
+            credentials: 'include'
+        });
         if (!response.ok) {
             return false;
         }
 
         const data = await response.json();
-        const video = data.video;
 
-        // Si vidéo gratuite, accès autorisé
-        if (!video.is_paid) {
-            return true;
-        }
-
-        // Vidéo payante : vérifier premium
-        const hasAccess = await checkPremiumAccess();
-        if (!hasAccess) {
+        // Vérifier l'accès via la nouvelle structure
+        if (data.access && !data.access.allowed) {
             blockVideoAccess();
             return false;
         }
@@ -151,10 +146,12 @@ async function checkVideoAccessBeforeLoad(videoId) {
  */
 async function loadVideoMetadata(videoId) {
     try {
-        const response = await fetch(`http://localhost:3000/api/videos/${videoId}`);
+        const response = await fetch(`http://localhost:3000/api/content/${videoId}`, {
+            credentials: 'include'
+        });
         if (response.ok) {
             const data = await response.json();
-            const video = data.video;
+            const video = data.node;
 
             // Afficher la description
             if (video.description) {

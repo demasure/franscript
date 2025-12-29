@@ -388,10 +388,9 @@ function updateNavigationButtons() {
 
     if (!prevBtn || !nextBtn) return;
 
-    // Si pas de sous-titres chargés, tout désactiver
+    // Si pas de sous-titres chargés, ne rien faire (laisser les boutons actifs)
     if (allSubtitles.length === 0) {
-        prevBtn.disabled = true;
-        nextBtn.disabled = true;
+        console.log('⚠️ allSubtitles vide - boutons laissés en état actuel');
         return;
     }
 
@@ -401,7 +400,7 @@ function updateNavigationButtons() {
     // Désactiver bouton suivant si on est au dernier sous-titre OU après
     nextBtn.disabled = currentSubtitleIndex >= allSubtitles.length - 1 || currentSubtitleIndex < 0;
 
-    console.log(`🔘 Navigation buttons: prev=${!prevBtn.disabled}, next=${!nextBtn.disabled} (index: ${currentSubtitleIndex}/${allSubtitles.length - 1})`);
+    console.log(`🔘 Boutons mis à jour: PREV=${!prevBtn.disabled ? 'ACTIF' : 'DÉSACTIVÉ'}, NEXT=${!nextBtn.disabled ? 'ACTIF' : 'DÉSACTIVÉ'} (index: ${currentSubtitleIndex}/${allSubtitles.length - 1})`);
 }
 
 /**
@@ -409,6 +408,11 @@ function updateNavigationButtons() {
  */
 function goToPreviousSubtitle() {
     console.log('🖱️ CLIC BOUTON PRÉCÉDENT - currentIndex:', currentSubtitleIndex, 'total:', allSubtitles.length);
+
+    if (allSubtitles.length === 0) {
+        console.log('❌ Sous-titres pas encore chargés');
+        return;
+    }
 
     if (currentSubtitleIndex <= 0) {
         console.log('❌ Impossible d\'aller au précédent (déjà au début)');
@@ -427,6 +431,11 @@ function goToPreviousSubtitle() {
  */
 function goToNextSubtitle() {
     console.log('🖱️ CLIC BOUTON SUIVANT - currentIndex:', currentSubtitleIndex, 'total:', allSubtitles.length);
+
+    if (allSubtitles.length === 0) {
+        console.log('❌ Sous-titres pas encore chargés');
+        return;
+    }
 
     if (currentSubtitleIndex >= allSubtitles.length - 1) {
         console.log('❌ Impossible d\'aller au suivant (déjà à la fin)');

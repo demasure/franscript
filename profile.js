@@ -70,6 +70,22 @@ async function loadProfile() {
             document.getElementById('premium-badge').style.display = 'block';
         }
 
+        // Vérifier si le pseudo est déjà confirmé (définitif)
+        if (profile.username_confirmed === 1) {
+            const usernameInput = document.getElementById('username');
+            usernameInput.disabled = true;
+            usernameInput.title = 'Votre pseudo est définitif et ne peut plus être modifié';
+            usernameInput.style.cursor = 'not-allowed';
+            usernameInput.style.opacity = '0.6';
+
+            // Désactiver aussi le bouton de sauvegarde si c'est la seule modification possible
+            const saveBtn = document.getElementById('save-profile-btn');
+            saveBtn.disabled = true;
+            saveBtn.style.opacity = '0.5';
+            saveBtn.style.cursor = 'not-allowed';
+            saveBtn.title = 'Votre pseudo est définitif et ne peut plus être modifié';
+        }
+
         // Réglages
         const noteWindow = profile.note_window_seconds || 10;
         document.getElementById('note-window').value = noteWindow;
@@ -181,6 +197,24 @@ async function saveProfile() {
         return;
     }
 
+    // Validation longueur
+    if (username.length < 3 || username.length > 20) {
+        showMessage('Le pseudo doit contenir entre 3 et 20 caractères', 'error');
+        return;
+    }
+
+    // CONFIRMATION IRRÉVERSIBLE
+    const confirmed = confirm(
+        '⚠️ ATTENTION : Ce pseudo sera DÉFINITIF\n\n' +
+        `Votre pseudo sera : "${username}"\n\n` +
+        'Une fois validé, vous ne pourrez PLUS le modifier.\n\n' +
+        'Êtes-vous absolument sûr(e) de vouloir continuer ?'
+    );
+
+    if (!confirmed) {
+        return; // Utilisateur a annulé
+    }
+
     try {
         const response = await fetch(`${API_URL}/profile`, {
             method: 'PUT',
@@ -191,19 +225,39 @@ async function saveProfile() {
             body: JSON.stringify({ username })
         });
 
+        const result = await response.json();
+
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Erreur lors de la mise à jour');
+            // Gérer les erreurs spécifiques
+            if (response.status === 403 && result.isConfirmed) {
+                showMessage('❌ Votre pseudo est déjà définitif et ne peut plus être modifié', 'error');
+            } else if (response.status === 409 && result.conflict) {
+                showMessage('❌ Ce pseudo est déjà utilisé par un autre utilisateur', 'error');
+            } else {
+                showMessage(`❌ ${result.error || 'Erreur lors de la mise à jour'}`, 'error');
+            }
+            return;
         }
 
-        const result = await response.json();
         console.log('Profil mis à jour:', result);
+        showMessage('✅ Votre pseudo a été confirmé avec succès ! Il est maintenant définitif.', 'success');
 
-        showMessage('✅ Profil mis à jour avec succès !', 'success');
+        // Désactiver le champ et le bouton
+        setTimeout(() => {
+            const usernameInput = document.getElementById('username');
+            usernameInput.disabled = true;
+            usernameInput.style.cursor = 'not-allowed';
+            usernameInput.style.opacity = '0.6';
+
+            const saveBtn = document.getElementById('save-profile-btn');
+            saveBtn.disabled = true;
+            saveBtn.style.opacity = '0.5';
+            saveBtn.style.cursor = 'not-allowed';
+        }, 1000);
 
     } catch (error) {
         console.error('Erreur:', error);
-        showMessage(error.message, 'error');
+        showMessage('❌ Erreur lors de la mise à jour', 'error');
     }
 }
 

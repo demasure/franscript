@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const {
     findUserById,
+    findUserByUsername,
     updateUser,
     createReport,
     getAllReports,
@@ -86,6 +87,11 @@ router.get('/profile', (req, res) => {
  * PUT /profile
  * Met à jour le profil de l'utilisateur (pseudo, réglages)
  * Body: { username?, note_window_seconds?, show_ai_help_default?, show_notes_default? }
+ *
+ * RÈGLES PSEUDO:
+ * - Peut être modifié une seule fois
+ * - Doit être unique
+ * - Devient définitif après confirmation
  */
 router.put('/profile', (req, res) => {
     if (!req.session.userId) {
@@ -94,27 +100,68 @@ router.put('/profile', (req, res) => {
 
     try {
         const { username, note_window_seconds, show_ai_help_default, show_notes_default } = req.body;
+        const currentUser = findUserById(req.session.userId);
 
-        // Validation
-        if (username !== undefined && username.trim().length === 0) {
-            return res.status(400).json({ error: 'Le pseudo ne peut pas être vide' });
+        if (!currentUser) {
+            return res.status(404).json({ error: 'Utilisateur introuvable' });
         }
 
+        // VALIDATION PSEUDO (si fourni)
+        if (username !== undefined) {
+            // Nettoyer le pseudo
+            const trimmedUsername = username.trim();
+
+            // Vérifier que le pseudo n'est pas vide
+            if (trimmedUsername.length === 0) {
+                return res.status(400).json({ error: 'Le pseudo ne peut pas être vide' });
+            }
+
+            // Vérifier longueur (3-20 caractères)
+            if (trimmedUsername.length < 3 || trimmedUsername.length > 20) {
+                return res.status(400).json({ error: 'Le pseudo doit contenir entre 3 et 20 caractères' });
+            }
+
+            // RÈGLE 1: Vérifier si le pseudo est déjà confirmé (définitif)
+            if (currentUser.username_confirmed === 1) {
+                return res.status(403).json({
+                    error: 'Votre pseudo est définitif et ne peut plus être modifié',
+                    isConfirmed: true
+                });
+            }
+
+            // RÈGLE 2: Vérifier l'unicité du pseudo
+            const existingUser = findUserByUsername(trimmedUsername);
+            if (existingUser && existingUser.id !== req.session.userId) {
+                return res.status(409).json({
+                    error: 'Ce pseudo est déjà utilisé',
+                    conflict: true
+                });
+            }
+
+            // Tout est OK : mettre à jour le pseudo ET le marquer comme confirmé
+            const updatedUser = updateUser(req.session.userId, {
+                username: trimmedUsername,
+                username_confirmed: true
+            });
+
+            const { password_hash, ...userProfile } = updatedUser;
+            return res.json(userProfile);
+        }
+
+        // Mise à jour des réglages uniquement (sans pseudo)
         if (note_window_seconds !== undefined && (note_window_seconds < 1 || note_window_seconds > 60)) {
             return res.status(400).json({ error: 'La fenêtre temporelle doit être entre 1 et 60 secondes' });
         }
 
         const updatedUser = updateUser(req.session.userId, {
-            username,
             note_window_seconds,
             show_ai_help_default,
             show_notes_default
         });
 
-        // Ne pas renvoyer le mot de passe
         const { password_hash, ...userProfile } = updatedUser;
-
         res.json(userProfile);
+
     } catch (error) {
         console.error('Erreur mise à jour profil:', error);
         res.status(500).json({ error: 'Erreur serveur' });

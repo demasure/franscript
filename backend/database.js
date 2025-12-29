@@ -146,6 +146,14 @@ function initDatabase() {
         // La colonne existe déjà, ignorer l'erreur
     }
 
+    // Migration : ajouter username_confirmed si elle n'existe pas
+    try {
+        db.exec(`ALTER TABLE users ADD COLUMN username_confirmed INTEGER DEFAULT 0`);
+        console.log('✅ Colonne "username_confirmed" ajoutée à la table users');
+    } catch (error) {
+        // La colonne existe déjà, ignorer l'erreur
+    }
+
     // Migration : ajouter la colonne profile_picture si elle n'existe pas
     try {
         db.exec(`ALTER TABLE users ADD COLUMN profile_picture TEXT`);
@@ -247,13 +255,23 @@ function findUserByEmail(email) {
 }
 
 /**
+ * Trouve un utilisateur par son username
+ * @param {string} username - Username de l'utilisateur
+ * @returns {object|null} L'utilisateur ou null si non trouvé
+ */
+function findUserByUsername(username) {
+    const stmt = db.prepare('SELECT * FROM users WHERE username = ?');
+    return stmt.get(username);
+}
+
+/**
  * Trouve un utilisateur par son ID
  * @param {number} id - ID de l'utilisateur
  * @returns {object|null} L'utilisateur ou null si non trouvé
  */
 function findUserById(id) {
     const stmt = db.prepare(`
-        SELECT id, email, username, profile_picture, role, is_premium,
+        SELECT id, email, username, username_confirmed, profile_picture, role, is_premium,
                note_window_seconds, show_ai_help_default, show_notes_default, created_at
         FROM users
         WHERE id = ?
@@ -275,6 +293,10 @@ function updateUser(id, userData) {
     if (userData.username !== undefined) {
         fields.push('username = ?');
         values.push(userData.username);
+    }
+    if (userData.username_confirmed !== undefined) {
+        fields.push('username_confirmed = ?');
+        values.push(userData.username_confirmed ? 1 : 0);
     }
     if (userData.profile_picture !== undefined) {
         fields.push('profile_picture = ?');
@@ -776,6 +798,7 @@ module.exports = {
     initDatabase,
     createUser,
     findUserByEmail,
+    findUserByUsername,
     findUserById,
     updateUser,
     countUsers,

@@ -273,10 +273,21 @@ function initializePlayer() {
     const video = document.getElementById('video-player');
     const track = document.getElementById('subtitle-track');
 
-    // Écouter les changements de sous-titres
-    track.addEventListener('load', function() {
+    // Fonction pour charger les sous-titres depuis le textTrack
+    function loadSubtitlesFromTrack() {
         const textTrack = video.textTracks[0];
+        if (!textTrack) {
+            console.log('⚠️ Aucun textTrack trouvé');
+            return false;
+        }
+
         textTrack.mode = 'showing';  // Activer les sous-titres
+
+        // Vérifier si les cues sont disponibles
+        if (!textTrack.cues || textTrack.cues.length === 0) {
+            console.log('⚠️ Cues pas encore disponibles');
+            return false;
+        }
 
         // Extraire tous les sous-titres pour le contexte IA
         allSubtitles = [];
@@ -290,7 +301,62 @@ function initializePlayer() {
         }
 
         console.log(`📝 ${allSubtitles.length} sous-titres chargés`);
+        return true;
+    }
+
+    // Tentative 1: Event 'load' sur le track (peut ne pas se déclencher)
+    track.addEventListener('load', function() {
+        console.log('✅ Event load du track détecté');
+        loadSubtitlesFromTrack();
     });
+
+    // Tentative 2: Event 'loadedmetadata' sur la vidéo
+    video.addEventListener('loadedmetadata', function() {
+        console.log('✅ Event loadedmetadata de la vidéo détecté');
+
+        // Attendre un peu que le track soit prêt
+        setTimeout(() => {
+            if (allSubtitles.length === 0) {
+                console.log('🔄 Tentative de chargement des sous-titres après loadedmetadata');
+                loadSubtitlesFromTrack();
+            }
+        }, 100);
+    });
+
+    // Tentative 3: Event 'loadeddata' sur la vidéo (backup)
+    video.addEventListener('loadeddata', function() {
+        console.log('✅ Event loadeddata de la vidéo détecté');
+
+        if (allSubtitles.length === 0) {
+            setTimeout(() => {
+                console.log('🔄 Tentative de chargement des sous-titres après loadeddata');
+                loadSubtitlesFromTrack();
+            }, 200);
+        }
+    });
+
+    // Tentative 4: Vérifier périodiquement si les cues sont disponibles (fallback)
+    let checkAttempts = 0;
+    const checkInterval = setInterval(() => {
+        checkAttempts++;
+
+        if (allSubtitles.length > 0) {
+            console.log('✅ Sous-titres déjà chargés, arrêt du polling');
+            clearInterval(checkInterval);
+            return;
+        }
+
+        if (checkAttempts > 20) { // Arrêter après 10 secondes (20 * 500ms)
+            console.log('⚠️ Abandon du chargement des sous-titres après 10 secondes');
+            clearInterval(checkInterval);
+            return;
+        }
+
+        console.log(`🔄 Tentative ${checkAttempts}/20 de chargement des sous-titres...`);
+        if (loadSubtitlesFromTrack()) {
+            clearInterval(checkInterval);
+        }
+    }, 500);
 
     // Afficher les sous-titres dans la zone interactive
     video.addEventListener('timeupdate', function() {

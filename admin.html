@@ -621,9 +621,6 @@
                             <div class="form-group">
                                 <label for="node-cover-image">Image d'affiche (cover)</label>
                                 <input type="text" id="node-cover-image" placeholder="images/covers/ma_serie.jpg">
-                                <small style="color: var(--color-text-secondary); display: block; margin-top: 5px;">
-                                    📐 Recommandé : ratio 16:9 (ex: 1280x720px) pour correspondre aux vidéos
-                                </small>
                             </div>
                         </div>
 
@@ -826,7 +823,7 @@
         // ============================================
         document.addEventListener('DOMContentLoaded', () => {
             checkAuth();
-            loadVideos();
+            loadContentNodes(); // Charger le contenu au démarrage (onglet actif par défaut)
             loadTags();
 
             // NOTE: Formulaire vidéo retiré - ajout/modification se fait via l'onglet Contenu
@@ -864,6 +861,8 @@
                 loadStats();
             } else if (tab === 'reports') {
                 loadReports();
+            } else if (tab === 'content') {
+                loadContentNodes();
             }
         }
 
@@ -1533,6 +1532,7 @@
          */
         function renderNodeRow(node, level = 0) {
             const isFolder = node.type === 'folder';
+            const hasChildren = isFolder && node.children && node.children.length > 0;
             const icon = isFolder ? '📁' : '🎬';
             const statusBadge = node.is_premium
                 ? '<span class="paid-badge">Premium</span>'
@@ -1541,19 +1541,24 @@
             // Indentation selon le niveau d'arborescence
             const indent = '&nbsp;&nbsp;&nbsp;&nbsp;'.repeat(level);
 
+            // Chevron pour les dossiers avec enfants
+            const chevron = hasChildren
+                ? '<span class="folder-chevron" style="cursor: pointer; user-select: none; margin-right: 4px; display: inline-block; width: 16px; transition: transform 0.2s;">▼</span>'
+                : '<span style="display: inline-block; width: 16px;"></span>';
+
             // Tags HTML
             const tagsHTML = node.tags && node.tags.length > 0
                 ? node.tags.map(tag => `<span class="tag-button" style="background-color: rgba(${hexToRgb(tag.color)}, 0.2); color: ${tag.color}; border: 2px solid ${tag.color}; padding: 4px 10px; border-radius: 12px; display: inline-block; font-weight: 600; font-size: 11px; margin-right: 4px;">${tag.name}</span>`).join('')
                 : '<span style="color: var(--color-text-secondary); font-size: 12px;">-</span>';
 
             let rows = `
-                <tr style="border-bottom: 1px solid var(--color-bg-hover); transition: background 0.2s;"
+                <tr data-node-id="${node.id}" style="border-bottom: 1px solid var(--color-bg-hover); transition: background 0.2s;"
                     onmouseover="this.style.background='var(--color-bg-primary)'"
                     onmouseout="this.style.background='transparent'">
                     <td style="padding: 12px;">
-                        ${indent}<span style="font-size: 1.2rem; margin-right: 8px;">${icon}</span>
+                        ${indent}${hasChildren ? `<span onclick="toggleFolder(${node.id})">${chevron}</span>` : chevron}<span style="font-size: 1.2rem; margin-right: 8px;">${icon}</span>
                         <strong style="color: var(--color-text-primary);">${escapeHtml(node.title)}</strong>
-                        ${node.description ? `<br>${indent}<small style="color: var(--color-text-secondary); margin-left: 32px;">${escapeHtml(node.description)}</small>` : ''}
+                        ${node.description ? `<br>${indent}<small style="color: var(--color-text-secondary); margin-left: 50px;">${escapeHtml(node.description)}</small>` : ''}
                     </td>
                     <td style="padding: 12px;">
                         ${tagsHTML}
@@ -1574,11 +1579,45 @@
             `;
 
             // Si c'est un dossier et qu'il a des enfants, les afficher récursivement
-            if (isFolder && node.children && node.children.length > 0) {
-                rows += node.children.map(child => renderNodeRow(child, level + 1)).join('');
+            if (hasChildren) {
+                rows += node.children.map(child => {
+                    const childRow = renderNodeRow(child, level + 1);
+                    // Ajouter une classe pour identifier les enfants de ce dossier
+                    return childRow.replace('<tr ', `<tr class="child-of-${node.id}" `);
+                }).join('');
             }
 
             return rows;
+        }
+
+        /**
+         * Enroule/Déroule un dossier
+         */
+        function toggleFolder(nodeId) {
+            const chevron = document.querySelector(`tr[data-node-id="${nodeId}"] .folder-chevron`);
+            const children = document.querySelectorAll(`.child-of-${nodeId}`);
+
+            const isCollapsed = chevron.style.transform === 'rotate(-90deg)';
+
+            if (isCollapsed) {
+                // Dérouler
+                chevron.style.transform = '';
+                children.forEach(child => {
+                    child.style.display = '';
+                });
+            } else {
+                // Enrouler
+                chevron.style.transform = 'rotate(-90deg)';
+                children.forEach(child => {
+                    child.style.display = 'none';
+                    // Enrouler aussi les sous-enfants
+                    const childNodeId = child.getAttribute('data-node-id');
+                    if (childNodeId) {
+                        const subChildren = document.querySelectorAll(`.child-of-${childNodeId}`);
+                        subChildren.forEach(sub => sub.style.display = 'none');
+                    }
+                });
+            }
         }
 
         /**

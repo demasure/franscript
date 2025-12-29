@@ -1039,8 +1039,8 @@ function getAllNodesTree() {
     // Fonction récursive pour charger un nœud et ses enfants
     function loadNodeWithChildren(nodeId = null) {
         const query = nodeId === null
-            ? 'SELECT * FROM content_nodes WHERE parent_id IS NULL ORDER BY order_index ASC, created_at DESC'
-            : 'SELECT * FROM content_nodes WHERE parent_id = ? ORDER BY order_index ASC, created_at DESC';
+            ? 'SELECT * FROM content_nodes WHERE parent_id IS NULL ORDER BY title COLLATE NOCASE ASC'
+            : 'SELECT * FROM content_nodes WHERE parent_id = ? ORDER BY title COLLATE NOCASE ASC';
 
         const nodes = nodeId === null
             ? db.prepare(query).all()

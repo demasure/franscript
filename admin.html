@@ -1041,7 +1041,7 @@
                 console.log('Tags chargés:', data);
                 allTags = data.tags || [];
                 displayTags(allTags);
-                renderTagSelector(allTags);
+                // Note: renderNodeTagSelector() est appelé automatiquement lors de l'ouverture du modal
             } catch (error) {
                 console.error('Erreur détaillée chargement tags:', error);
                 showMessage('Erreur chargement tags: ' + error.message, 'error');
@@ -1069,36 +1069,10 @@
         }
 
         /**
-         * Affiche les tags dans le sélecteur du formulaire vidéo (design boutons avec effet semi-transparent)
-         */
-        function renderTagSelector(tags) {
-            const selector = document.getElementById('tag-selector');
-            selector.innerHTML = tags.map(t => `
-                <button type="button"
-                        class="tag-button"
-                        data-tag-id="${t.id}"
-                        style="background-color: rgba(${hexToRgb(t.color)}, 0.2); color: ${t.color}; border: 2px solid ${t.color};"
-                        onclick="toggleTag(this, ${t.id})">
-                    ${t.name}
-                </button>
-            `).join('');
-        }
-
-        /**
-         * Toggle la sélection d'un tag (dans le formulaire vidéo)
+         * Toggle la sélection d'un tag (dans le formulaire de contenu)
          */
         function toggleTag(button, tagId) {
             button.classList.toggle('selected');
-        }
-
-        /**
-         * Sélectionne un niveau CECRL (exclusif)
-         */
-        function selectLevel(button, level) {
-            // Désélectionner tous les boutons de niveau
-            document.querySelectorAll('.level-btn').forEach(btn => btn.classList.remove('active'));
-            // Sélectionner le bouton cliqué
-            button.classList.add('active');
         }
 
         /**

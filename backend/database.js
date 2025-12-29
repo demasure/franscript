@@ -1055,6 +1055,53 @@ function getNodeById(id) {
 }
 
 /**
+ * Récupère un nœud avec ses tags locaux ET hérités
+ * @param {number} id - ID du nœud
+ * @returns {object} Nœud avec localTags et inheritedTags
+ */
+function getNodeWithInheritedTags(id) {
+    const node = db.prepare('SELECT * FROM content_nodes WHERE id = ?').get(id);
+    if (!node) return null;
+
+    // Récupérer les tags locaux (directement attachés à ce nœud)
+    node.localTags = db.prepare(`
+        SELECT t.* FROM tags t
+        JOIN content_node_tags cnt ON t.id = cnt.tag_id
+        WHERE cnt.node_id = ?
+    `).all(id);
+
+    // Récupérer les tags hérités des parents
+    node.inheritedTags = [];
+    const path = getNodePath(id);
+
+    // Pour chaque parent dans le chemin (sauf le nœud lui-même)
+    for (let i = 0; i < path.length - 1; i++) {
+        const parentId = path[i].id;
+        const parentTags = db.prepare(`
+            SELECT t.* FROM tags t
+            JOIN content_node_tags cnt ON t.id = cnt.tag_id
+            WHERE cnt.node_id = ?
+        `).all(parentId);
+
+        // Ajouter les tags du parent qui ne sont pas déjà dans inheritedTags
+        parentTags.forEach(tag => {
+            if (!node.inheritedTags.find(t => t.id === tag.id)) {
+                node.inheritedTags.push({ ...tag, inheritedFrom: path[i].title });
+            }
+        });
+    }
+
+    // Créer une liste combinée (tags = local + inherited)
+    const localTagIds = node.localTags.map(t => t.id);
+    node.tags = [
+        ...node.localTags,
+        ...node.inheritedTags.filter(t => !localTagIds.includes(t.id))
+    ];
+
+    return node;
+}
+
+/**
  * Crée un nouveau nœud (dossier ou vidéo)
  * @param {object} nodeData - { parent_id, title, description, type, video_url, subtitle_url, is_premium, tagIds }
  * @returns {object} Le nœud créé
@@ -1232,6 +1279,7 @@ module.exports = {
     getRootNodes,
     getChildNodes,
     getNodeById,
+    getNodeWithInheritedTags,
     createNode,
     updateNode,
     deleteNode,

@@ -334,6 +334,124 @@ function createSagaCard(saga) {
 // ========================================
 // INITIALISATION AU CHARGEMENT DE LA PAGE
 // ========================================
+/**
+ * Charge les ContentNode racine (nouveau système unifié)
+ * Affiche les dossiers ET les vidéos à la racine
+ */
+async function loadRootNodes() {
+    try {
+        const response = await fetch('http://localhost:3000/api/content/roots');
+        if (!response.ok) {
+            throw new Error('Erreur lors du chargement du contenu');
+        }
+
+        const { nodes } = await response.json();
+        const videoGrid = document.querySelector('.video-grid');
+
+        // Vider la grille actuelle
+        videoGrid.innerHTML = '';
+
+        // Créer une carte pour chaque nœud (folder ou video)
+        nodes.forEach(node => {
+            const card = createNodeCard(node);
+            videoGrid.appendChild(card);
+        });
+
+        // Réinitialiser les événements de clic sur les nouvelles cartes
+        initializeVideoCards();
+
+        console.log(`✅ ${nodes.length} élément(s) chargé(s)`);
+    } catch (error) {
+        console.error('Erreur chargement contenu:', error);
+    }
+}
+
+/**
+ * Crée une carte pour un ContentNode (folder ou video)
+ */
+function createNodeCard(node) {
+    const article = document.createElement('article');
+    article.className = 'video-card';
+
+    const isFolder = node.type === 'folder';
+
+    // Attributs data pour les filtres
+    const tagNames = node.tags ? node.tags.map(t => t.name.toLowerCase()).join(' ') : '';
+    article.setAttribute('data-categories', tagNames);
+    article.setAttribute('data-tag-ids', node.tags ? node.tags.map(t => t.id).join(',') : '');
+    article.setAttribute('data-node-id', node.id);
+    article.setAttribute('data-node-type', node.type);
+    article.setAttribute('data-is-premium', node.is_premium || 0);
+
+    if (isFolder) {
+        // DOSSIER : redirection vers browse.html
+        article.setAttribute('data-folder-id', node.id);
+    } else {
+        // VIDEO : données pour le player
+        article.setAttribute('data-level', node.level || 'B2');
+        article.setAttribute('data-video-src', node.video_url);
+        article.setAttribute('data-subtitle-src', node.subtitle_url || '');
+        article.setAttribute('data-video-id', node.id);
+    }
+
+    // Tags HTML
+    const tagsHTML = node.tags && node.tags.length > 0
+        ? node.tags.map(tag => `<span class="tag" style="background-color: rgba(${hexToRgb(tag.color)}, 0.2); color: ${tag.color}; border: 2px solid ${tag.color};">${tag.name.toUpperCase()}</span>`).join('')
+        : '';
+
+    // Thumbnail
+    const thumbnailSrc = node.thumbnail_url
+        ? node.thumbnail_url
+        : `https://via.placeholder.com/400x225/${isFolder ? 'ffa500' : '2ecc71'}/ffffff?text=${encodeURIComponent(node.title)}`;
+
+    // Badge premium
+    const shouldShowLock = node.is_premium === 1 && !currentUser.isPremium && !currentUser.isAdmin;
+    const premiumBadge = node.is_premium === 1 ? '<span class="premium-video-badge">👑 Premium</span>' : '';
+    const lockOverlay = shouldShowLock ? '<div class="video-lock-overlay"><span class="lock-icon">🔒</span></div>' : '';
+
+    // Icon et texte différent selon le type
+    const icon = isFolder ? '📁' : '▶';
+    const buttonText = isFolder ? 'Ouvrir' : 'Lire';
+
+    // Durée (uniquement pour les vidéos)
+    const durationHTML = !isFolder && node.duration ? `<span class="video-duration">${formatDuration(node.duration)}</span>` : '';
+
+    // Niveau (uniquement pour les vidéos)
+    const levelHTML = !isFolder ? `<span class="video-level level-badge level-${(node.level || 'B2').toLowerCase()}">${node.level || 'B2'}</span>` : '';
+
+    article.innerHTML = `
+        <div class="video-thumbnail">
+            <img src="${thumbnailSrc}" alt="${node.title}">
+            ${lockOverlay}
+            <div class="video-overlay">
+                <button class="play-btn">${icon} ${buttonText}</button>
+            </div>
+            ${premiumBadge}
+        </div>
+        <div class="video-info">
+            <h3 class="video-title">${isFolder ? '📁 ' : ''}${node.title}</h3>
+            <p class="video-description">${node.description || ''}</p>
+            <div class="video-meta">
+                ${durationHTML}
+                ${levelHTML}
+            </div>
+            <div class="video-tags">
+                ${tagsHTML}
+            </div>
+        </div>
+    `;
+
+    // Événement de clic différent selon le type
+    if (isFolder) {
+        article.addEventListener('click', () => {
+            // Redirection vers la page de navigation dans le dossier
+            window.location.href = `browse.html?folder=${node.id}`;
+        });
+    }
+
+    return article;
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🎬 FranScript initialisé');
 
@@ -344,19 +462,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Charger les tags
     await loadTags();
 
-    // Détecter le mode (vidéos ou sagas) via paramètre URL
-    // Par défaut : vidéos (pour compatibilité)
-    // ?mode=sagas pour afficher les sagas
-    const urlParams = new URLSearchParams(window.location.search);
-    const displayMode = urlParams.get('mode') || 'videos';
-
-    if (displayMode === 'sagas') {
-        console.log('📚 Mode SAGAS activé');
-        await loadSagas();
-    } else {
-        console.log('📹 Mode VIDÉOS activé');
-        await loadVideos();
-    }
+    // NOUVEAU: Charger les ContentNode racine par défaut
+    console.log('📁 Chargement des contenus racine');
+    await loadRootNodes();
 
     // Initialiser les filtres de catégories
     initializeFilters();

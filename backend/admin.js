@@ -23,6 +23,7 @@ const {
     getRootNodes,
     getChildNodes,
     getNodeById,
+    getNodeWithInheritedTags,
     createNode,
     updateNode,
     deleteNode,
@@ -39,7 +40,7 @@ const router = express.Router();
 
 /**
  * GET /admin/videos
- * Récupère toutes les vidéos
+ * Récupère toutes les vidéos (ancien système)
  */
 router.get('/videos', (req, res) => {
     try {
@@ -47,6 +48,42 @@ router.get('/videos', (req, res) => {
         res.json({ videos });
     } catch (error) {
         console.error('Erreur récupération vidéos:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des vidéos' });
+    }
+});
+
+/**
+ * GET /admin/videos/all-with-paths
+ * Récupère toutes les vidéos du système ContentNode avec leur chemin arborescent
+ */
+router.get('/videos/all-with-paths', (req, res) => {
+    try {
+        // Récupérer toutes les vidéos (ContentNode de type 'video')
+        const videos = db.prepare(`
+            SELECT * FROM content_nodes
+            WHERE type = 'video'
+            ORDER BY created_at DESC
+        `).all();
+
+        // Pour chaque vidéo, récupérer son chemin complet et ses tags
+        const videosWithPaths = videos.map(video => {
+            const path = getNodePath(video.id);
+            const tags = db.prepare(`
+                SELECT t.* FROM tags t
+                INNER JOIN content_node_tags cnt ON t.id = cnt.tag_id
+                WHERE cnt.node_id = ?
+            `).all(video.id);
+
+            return {
+                ...video,
+                path,
+                tags
+            };
+        });
+
+        res.json({ videos: videosWithPaths });
+    } catch (error) {
+        console.error('Erreur récupération vidéos avec chemins:', error);
         res.status(500).json({ error: 'Erreur lors de la récupération des vidéos' });
     }
 });
@@ -629,11 +666,11 @@ router.get('/content/:id/children', (req, res) => {
 
 /**
  * GET /admin/content/:id
- * Récupère un nœud par son ID
+ * Récupère un nœud par son ID avec tags locaux ET hérités
  */
 router.get('/content/:id', (req, res) => {
     try {
-        const node = getNodeById(parseInt(req.params.id));
+        const node = getNodeWithInheritedTags(parseInt(req.params.id));
         if (!node) {
             return res.status(404).json({ error: 'Nœud introuvable' });
         }

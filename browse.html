@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FranScript - Navigation</title>
+
+    <!-- Protection: Redirection vers auth si non connecté -->
+    <script src="authGuard.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="navbar.css">
+</head>
+<body>
+    <!-- HEADER - Navigation principale -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <!-- Logo / Nom du site -->
+                <a href="index.html" class="logo">
+                    <img src="images/logo.png" alt="FranScript" class="logo-icon">
+                    <span class="logo-text">FranScript</span>
+                </a>
+
+                <!-- Navigation -->
+                <nav class="nav">
+                    <ul class="nav-list">
+                        <li><a href="index.html" class="nav-link">Accueil</a></li>
+                        <li><a href="#" class="nav-link active">Navigation</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+        <div class="container">
+            <!-- Breadcrumb (fil d'Ariane) -->
+            <section class="breadcrumb" style="margin-bottom: 20px; padding: 15px; background: var(--color-bg-card); border-radius: 8px;">
+                <div id="breadcrumb-trail" style="color: var(--color-text-secondary); font-size: 14px;">
+                    <a href="index.html" style="color: var(--color-primary); text-decoration: none;">🏠 Accueil</a>
+                    <span id="breadcrumb-path"></span>
+                </div>
+            </section>
+
+            <!-- Titre du dossier -->
+            <section class="folder-header" style="margin-bottom: 30px;">
+                <h1 id="folder-title" class="hero-title" style="margin-bottom: 10px;">Chargement...</h1>
+                <p id="folder-description" class="hero-subtitle"></p>
+            </section>
+
+            <!-- Grille de contenu -->
+            <section class="video-grid" id="content-grid">
+                <!-- Chargé dynamiquement -->
+            </section>
+        </div>
+    </main>
+
+    <script src="utils.js"></script>
+    <script>
+        // ========================================
+        // VARIABLES GLOBALES
+        // ========================================
+        const API_URL = 'http://localhost:3000';
+        let currentUser = { isPremium: false, isAdmin: false };
+        let currentFolder = null;
+        let folderPath = [];
+
+        // ========================================
+        // RÉCUPÉRATION DU STATUT UTILISATEUR
+        // ========================================
+        async function getUserStatus() {
+            try {
+                const response = await fetch(`${API_URL}/auth/me`, {
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    currentUser.isPremium = data.user.is_premium === 1;
+                    currentUser.isAdmin = data.user.role === 'admin';
+                    console.log('👤 Utilisateur:', currentUser);
+                }
+            } catch (error) {
+                console.error('Erreur statut utilisateur:', error);
+            }
+        }
+
+        // ========================================
+        // CHARGEMENT DU DOSSIER
+        // ========================================
+        async function loadFolder(folderId) {
+            try {
+                // Récupérer les infos du dossier et son contenu
+                const [folderResponse, childrenResponse] = await Promise.all([
+                    fetch(`${API_URL}/api/content/${folderId}`, { credentials: 'include' }),
+                    fetch(`${API_URL}/api/content/${folderId}/children`, { credentials: 'include' })
+                ]);
+
+                if (!folderResponse.ok || !childrenResponse.ok) {
+                    throw new Error('Erreur chargement dossier');
+                }
+
+                const folderData = await folderResponse.json();
+                const childrenData = await childrenResponse.json();
+
+                currentFolder = folderData.node;
+                folderPath = folderData.path || [];
+
+                // Afficher les infos du dossier
+                document.getElementById('folder-title').textContent = currentFolder.title;
+                document.getElementById('folder-description').textContent = currentFolder.description || '';
+
+                // Afficher le breadcrumb
+                displayBreadcrumb();
+
+                // Afficher le contenu
+                displayContent(childrenData.children || []);
+
+            } catch (error) {
+                console.error('Erreur:', error);
+                document.getElementById('folder-title').textContent = 'Erreur de chargement';
+            }
+        }
+
+        // ========================================
+        // AFFICHAGE DU BREADCRUMB
+        // ========================================
+        function displayBreadcrumb() {
+            const pathElement = document.getElementById('breadcrumb-path');
+
+            if (!folderPath || folderPath.length === 0) {
+                pathElement.innerHTML = '';
+                return;
+            }
+
+            const breadcrumbHTML = folderPath.map((node, index) => {
+                const isLast = index === folderPath.length - 1;
+
+                if (isLast) {
+                    return ` &gt; <span style="color: var(--color-text-primary);">${escapeHtml(node.title)}</span>`;
+                } else {
+                    return ` &gt; <a href="browse.html?folder=${node.id}" style="color: var(--color-primary); text-decoration: none;">${escapeHtml(node.title)}</a>`;
+                }
+            }).join('');
+
+            pathElement.innerHTML = breadcrumbHTML;
+        }
+
+        // ========================================
+        // AFFICHAGE DU CONTENU
+        // ========================================
+        function displayContent(nodes) {
+            const grid = document.getElementById('content-grid');
+            grid.innerHTML = '';
+
+            if (nodes.length === 0) {
+                grid.innerHTML = '<p style="text-align: center; color: var(--color-text-secondary); padding: 40px;">Ce dossier est vide.</p>';
+                return;
+            }
+
+            nodes.forEach(node => {
+                const card = createNodeCard(node);
+                grid.appendChild(card);
+            });
+
+            // Initialiser les événements de lecture vidéo
+            initializeVideoCards();
+        }
+
+        // ========================================
+        // CRÉATION D'UNE CARTE DE CONTENU
+        // ========================================
+        function createNodeCard(node) {
+            const article = document.createElement('article');
+            article.className = 'video-card';
+
+            const isFolder = node.type === 'folder';
+
+            // Attributs data
+            article.setAttribute('data-node-id', node.id);
+            article.setAttribute('data-node-type', node.type);
+
+            if (!isFolder) {
+                article.setAttribute('data-video-src', node.video_url);
+                article.setAttribute('data-subtitle-src', node.subtitle_url || '');
+                article.setAttribute('data-video-id', node.id);
+            }
+
+            // Tags HTML
+            const tagsHTML = node.tags && node.tags.length > 0
+                ? node.tags.map(tag => `<span class="tag" style="background-color: rgba(${hexToRgb(tag.color)}, 0.2); color: ${tag.color}; border: 2px solid ${tag.color};">${tag.name.toUpperCase()}</span>`).join('')
+                : '';
+
+            // Thumbnail
+            const thumbnailSrc = node.thumbnail_url
+                ? node.thumbnail_url
+                : `https://via.placeholder.com/400x225/${isFolder ? 'ffa500' : '2ecc71'}/ffffff?text=${encodeURIComponent(node.title)}`;
+
+            // Badge premium
+            const shouldShowLock = node.is_premium === 1 && !currentUser.isPremium && !currentUser.isAdmin;
+            const premiumBadge = node.is_premium === 1 ? '<span class="premium-video-badge">👑 Premium</span>' : '';
+            const lockOverlay = shouldShowLock ? '<div class="video-lock-overlay"><span class="lock-icon">🔒</span></div>' : '';
+
+            // Icon et texte
+            const icon = isFolder ? '📁' : '▶';
+            const buttonText = isFolder ? 'Ouvrir' : 'Lire';
+
+            // Durée et niveau (uniquement pour vidéos)
+            const durationHTML = !isFolder && node.duration ? `<span class="video-duration">${formatDuration(node.duration)}</span>` : '';
+            const levelHTML = !isFolder && node.level ? `<span class="video-level level-badge level-${node.level.toLowerCase()}">${node.level}</span>` : '';
+
+            article.innerHTML = `
+                <div class="video-thumbnail">
+                    <img src="${thumbnailSrc}" alt="${node.title}">
+                    ${lockOverlay}
+                    <div class="video-overlay">
+                        <button class="play-btn">${icon} ${buttonText}</button>
+                    </div>
+                    ${premiumBadge}
+                </div>
+                <div class="video-info">
+                    <h3 class="video-title">${isFolder ? '📁 ' : ''}${escapeHtml(node.title)}</h3>
+                    <p class="video-description">${escapeHtml(node.description || '')}</p>
+                    <div class="video-meta">
+                        ${durationHTML}
+                        ${levelHTML}
+                    </div>
+                    <div class="video-tags">
+                        ${tagsHTML}
+                    </div>
+                </div>
+            `;
+
+            // Événement de clic pour les dossiers
+            if (isFolder) {
+                article.addEventListener('click', () => {
+                    window.location.href = `browse.html?folder=${node.id}`;
+                });
+            }
+
+            return article;
+        }
+
+        // ========================================
+        // UTILITAIRES
+        // ========================================
+        function hexToRgb(hex) {
+            hex = hex.replace('#', '');
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            return `${r}, ${g}, ${b}`;
+        }
+
+        function formatDuration(seconds) {
+            if (!seconds) return '';
+            const minutes = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${minutes}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function initializeVideoCards() {
+            // Copie simplifiée de la logique de script.js pour ouvrir le player
+            const videoCards = document.querySelectorAll('.video-card[data-node-type="video"]');
+            videoCards.forEach(card => {
+                card.addEventListener('click', () => {
+                    const videoId = card.getAttribute('data-video-id');
+                    window.location.href = `player.html?id=${videoId}`;
+                });
+            });
+        }
+
+        // ========================================
+        // INITIALISATION
+        // ========================================
+        document.addEventListener('DOMContentLoaded', async () => {
+            await getUserStatus();
+
+            // Récupérer l'ID du dossier depuis l'URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const folderId = urlParams.get('folder');
+
+            if (!folderId) {
+                document.getElementById('folder-title').textContent = 'Erreur: Aucun dossier spécifié';
+                return;
+            }
+
+            await loadFolder(folderId);
+        });
+    </script>
+</body>
+</html>

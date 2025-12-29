@@ -8,18 +8,26 @@ Le panel admin permet de :
 - ✅ Créer / Modifier / Supprimer des vidéos
 - ✅ Gérer les tags
 - ✅ Définir si une vidéo est gratuite ou payante (booléen uniquement)
+- ✅ **NOUVEAU:** Gérer les utilisateurs (création, modification, suppression)
 - ⚠️ Accessible uniquement aux utilisateurs avec le rôle **admin**
 
 ## 🚀 Accès au panel
 
 ### 1. Se connecter en tant qu'admin
 
-Le **premier utilisateur inscrit** devient automatiquement admin.
+**Compte admin par défaut:**
+- Email: `admin@test.com`
+- Mot de passe: `admin123`
 
+Pour créer un compte admin:
 ```bash
-# Inscrivez-vous sur auth-demo.html
-http://localhost:8000/auth-demo.html
+cd backend
+node create-admin.js
 ```
+
+Autres comptes de test disponibles:
+- **Premium:** `premium@test.com` / `premium123`
+- **Gratuit:** `free@test.com` / `free123`
 
 ### 2. Accéder au panel admin
 
@@ -225,6 +233,83 @@ curl -X DELETE http://localhost:3000/admin/tags/4 \
 
 > ⚠️ La suppression d'un tag supprime automatiquement ses associations avec les vidéos (CASCADE).
 
+### Utilisateurs
+
+#### GET /admin/users
+Récupère tous les utilisateurs
+
+```bash
+curl http://localhost:3000/admin/users \
+  -b cookies.txt
+```
+
+**Réponse :**
+```json
+{
+  "users": [
+    {
+      "id": 1,
+      "email": "admin@test.com",
+      "username": "Super Admin",
+      "role": "admin",
+      "is_premium": 1,
+      "created_at": "2025-12-29 10:00:00"
+    }
+  ]
+}
+```
+
+#### POST /admin/users
+Crée un nouvel utilisateur
+
+```bash
+curl -X POST http://localhost:3000/admin/users \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{
+    "email": "newuser@test.com",
+    "password": "motdepasse123",
+    "username": "Nouveau User",
+    "role": "user",
+    "is_premium": false
+  }'
+```
+
+**Paramètres :**
+- `email` (requis) : Email unique de l'utilisateur
+- `password` (requis) : Mot de passe (min 6 caractères)
+- `username` : Pseudo (optionnel)
+- `role` : "user" ou "admin" (défaut: "user")
+- `is_premium` : true ou false (défaut: false)
+
+#### PUT /admin/users/:id
+Met à jour un utilisateur
+
+```bash
+curl -X PUT http://localhost:3000/admin/users/2 \
+  -H "Content-Type: application/json" \
+  -b cookies.txt \
+  -d '{
+    "email": "updated@test.com",
+    "username": "Updated User",
+    "role": "admin",
+    "is_premium": true,
+    "password": "newpassword123"
+  }'
+```
+
+> 💡 Le mot de passe est optionnel lors de la mise à jour. Omettez-le pour le conserver inchangé.
+
+#### DELETE /admin/users/:id
+Supprime un utilisateur
+
+```bash
+curl -X DELETE http://localhost:3000/admin/users/2 \
+  -b cookies.txt
+```
+
+> ⚠️ Vous ne pouvez pas supprimer votre propre compte.
+
 ## 🎨 Utilisation de l'interface admin.html
 
 ### Onglet Vidéos
@@ -255,6 +340,43 @@ curl -X DELETE http://localhost:3000/admin/tags/4 \
 2. **Supprimer un tag :**
    - Cliquer sur "Supprimer" à côté du tag
    - Confirmer la suppression
+
+### Page Gestion des Utilisateurs (`admin-users.html`)
+
+Accessible via le bouton "👥 Gestion des Utilisateurs" dans le header du panel admin.
+
+1. **Créer un utilisateur :**
+   - Remplir le formulaire de création :
+     * Email (requis, unique)
+     * Mot de passe (requis, min 6 caractères)
+     * Pseudo (optionnel)
+     * Rôle: Utilisateur ou Admin
+     * Cocher "Compte Premium" si nécessaire
+   - Cliquer sur "✨ Créer l'utilisateur"
+
+2. **Rechercher un utilisateur :**
+   - Utiliser la barre de recherche en temps réel
+   - Recherche par email, pseudo, ID ou rôle
+
+3. **Modifier un utilisateur :**
+   - Cliquer sur "✏️ Modifier" dans la liste
+   - Le modal s'ouvre avec les données actuelles
+   - Modifier les champs souhaités
+   - Le mot de passe est optionnel (laisser vide pour ne pas changer)
+   - Cliquer sur "💾 Enregistrer"
+
+4. **Supprimer un utilisateur :**
+   - Cliquer sur "🗑️ Supprimer"
+   - Confirmer la suppression
+   - ⚠️ Vous ne pouvez pas supprimer votre propre compte
+
+**Fonctionnalités:**
+- ✅ Liste complète des utilisateurs avec badges (Admin/Premium/Gratuit)
+- ✅ Recherche en temps réel
+- ✅ Formatage intelligent des dates
+- ✅ Validation côté client et serveur
+- ✅ Notifications de succès/erreur
+- ✅ Interface en thème sombre
 
 ## 📝 Workflow complet
 

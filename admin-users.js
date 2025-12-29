@@ -56,14 +56,18 @@ function initializeEventListeners() {
  */
 async function loadUsers() {
     try {
+        console.log('🔄 Chargement des utilisateurs...');
         const response = await fetch(`${API_URL}/admin/users`, {
             credentials: 'include'
         });
 
+        console.log('📡 Réponse reçue:', response.status);
+
         if (!response.ok) {
             if (response.status === 401 || response.status === 403) {
+                console.error('❌ Accès non autorisé');
                 showNotification('Accès non autorisé', 'error');
-                setTimeout(() => window.location.href = 'login.html', 2000);
+                setTimeout(() => window.location.href = 'auth.html', 2000);
                 return;
             }
             throw new Error('Erreur lors du chargement des utilisateurs');
@@ -71,11 +75,12 @@ async function loadUsers() {
 
         const data = await response.json();
         allUsers = data.users || [];
+        console.log(`✅ ${allUsers.length} utilisateur(s) chargé(s):`, allUsers);
         renderUsersTable(allUsers);
         updateUserCount(allUsers.length);
     } catch (error) {
-        console.error('Erreur chargement utilisateurs:', error);
-        showNotification('Erreur lors du chargement des utilisateurs', 'error');
+        console.error('❌ Erreur chargement utilisateurs:', error);
+        showNotification('Erreur lors du chargement des utilisateurs: ' + error.message, 'error');
     }
 }
 

@@ -1846,6 +1846,8 @@
                 const type = document.getElementById('node-type').value;
                 const parentId = document.getElementById('node-parent-id').value;
 
+                console.log('📋 SUBMIT START - Node type:', type, '| Node ID:', nodeId);
+
                 const nodeData = {
                     parent_id: parentId || null,
                     title: document.getElementById('node-title').value,
@@ -1860,7 +1862,9 @@
                 if (type === 'video') {
                     nodeData.video_url = document.getElementById('node-video-url').value;
                     nodeData.subtitle_url = document.getElementById('node-subtitle-url').value || null;
-                    nodeData.thumbnail_url = document.getElementById('node-thumbnail-url').value || null;
+                    // Même logique que video_url: pas de || null pour préserver valeur existante
+                    nodeData.thumbnail_url = document.getElementById('node-thumbnail-url').value;
+                    console.log('📤 SUBMIT - thumbnail_url from form:', nodeData.thumbnail_url);
                 } else if (type === 'folder') {
                     const coverImageValue = document.getElementById('node-cover-image').value;
                     console.log('📤 SUBMIT - cover_image from form:', coverImageValue);

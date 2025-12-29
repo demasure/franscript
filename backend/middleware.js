@@ -77,7 +77,7 @@ function checkVideoAccess(req, res, next) {
         return next();
     }
 
-    // Vidéo payante : vérifier que l'utilisateur est premium
+    // Vidéo payante : vérifier les permissions
     if (!req.session.userId) {
         return res.status(401).json({
             error: 'Cette vidéo nécessite un compte premium',
@@ -88,7 +88,17 @@ function checkVideoAccess(req, res, next) {
 
     const user = findUserById(req.session.userId);
 
-    if (!user || !user.is_premium) {
+    if (!user) {
+        return res.status(404).json({ error: 'Utilisateur introuvable' });
+    }
+
+    // Les admins ont accès à TOUT
+    if (user.role === 'admin') {
+        return next();
+    }
+
+    // Utilisateurs normaux : vérifier le statut premium
+    if (!user.is_premium) {
         return res.status(403).json({
             error: 'Cette vidéo est réservée aux membres premium',
             isPaid: true,

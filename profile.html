@@ -74,8 +74,11 @@
                         <div class="form-group">
                             <label for="username" class="form-label">✏️ Pseudo</label>
                             <input type="text" id="username" class="form-input" placeholder="Votre pseudo" minlength="3" maxlength="20">
-                            <p class="form-help" style="color: #f39c12; font-weight: 600;">
+                            <p id="username-warning" class="form-help" style="color: #f39c12; font-weight: 600;">
                                 ⚠️ Une fois confirmé, votre pseudo sera DÉFINITIF et ne pourra plus être modifié
+                            </p>
+                            <p id="username-confirmed" class="form-help" style="color: #27ae60; font-weight: 600; display: none;">
+                                ✅ Votre pseudo est définitif et ne peut plus être modifié
                             </p>
                         </div>
 

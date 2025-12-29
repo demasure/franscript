@@ -2345,3 +2345,64 @@ img {
 .blocked-actions {
     margin-top: var(--spacing-lg);
 }
+
+/* ========================================
+   PREMIUM VIDEO LOCK OVERLAY
+   ======================================== */
+
+/* Overlay avec cadenas pour vidéos payantes */
+.video-lock-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    backdrop-filter: blur(2px);
+}
+
+.lock-icon {
+    font-size: 4rem;
+    color: #FFD700;
+    text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    animation: lockPulse 2s ease-in-out infinite;
+}
+
+@keyframes lockPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.9;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+}
+
+/* Badge Premium sur le thumbnail */
+.premium-video-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: #000;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+    z-index: 10;
+}
+
+/* Hover effect pour vidéos verrouillées */
+.video-card:has(.video-lock-overlay):hover .video-lock-overlay {
+    background: rgba(0, 0, 0, 0.75);
+}
+
+.video-card:has(.video-lock-overlay):hover .lock-icon {
+    transform: scale(1.2);
+}

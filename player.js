@@ -200,7 +200,8 @@ async function checkPremiumAccess() {
         }
 
         const data = await response.json();
-        return data.user && data.user.is_premium === 1;
+        // Les admins ont accès à tout, ou les utilisateurs premium
+        return data.user && (data.user.role === 'admin' || data.user.is_premium === 1);
     } catch (error) {
         console.error('Erreur vérification premium:', error);
         return false;

@@ -120,6 +120,7 @@ function createVideoCard(video) {
     article.setAttribute('data-video-src', video.video_url);
     article.setAttribute('data-subtitle-src', video.subtitle_url || '');
     article.setAttribute('data-video-id', video.id);
+    article.setAttribute('data-is-paid', video.is_paid || 0);
 
     // Générer les tags HTML avec effet semi-transparent (comme CECRL)
     const tagsHTML = video.tags && video.tags.length > 0
@@ -139,12 +140,18 @@ function createVideoCard(video) {
         ? video.thumbnail_url
         : `https://via.placeholder.com/400x225/2ecc71/ffffff?text=${encodeURIComponent(video.title)}`;
 
+    // Badge et overlay pour les vidéos payantes
+    const premiumBadge = video.is_paid === 1 ? '<span class="premium-video-badge">👑 Premium</span>' : '';
+    const lockOverlay = video.is_paid === 1 ? '<div class="video-lock-overlay"><span class="lock-icon">🔒</span></div>' : '';
+
     article.innerHTML = `
         <div class="video-thumbnail">
             <img src="${thumbnailSrc}" alt="${video.title}">
+            ${lockOverlay}
             <div class="video-overlay">
                 <button class="play-btn">▶ Lire</button>
             </div>
+            ${premiumBadge}
         </div>
         <div class="video-info">
             <h3 class="video-title">${video.title}</h3>
@@ -327,6 +334,56 @@ function hideCard(card) {
 }
 
 // ========================================
+// VÉRIFICATION D'ACCÈS PREMIUM
+// ========================================
+async function checkVideoAccess(isPaid) {
+    // Si la vidéo est gratuite, accès autorisé
+    if (isPaid !== 1 && isPaid !== '1') {
+        return { allowed: true };
+    }
+
+    // Vidéo payante : vérifier le statut de l'utilisateur
+    try {
+        const response = await fetch('http://localhost:3000/auth/me', {
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            return {
+                allowed: false,
+                message: 'Veuillez vous connecter pour accéder à cette vidéo premium'
+            };
+        }
+
+        const data = await response.json();
+        const user = data.user;
+
+        // Admin a accès à tout
+        if (user.role === 'admin') {
+            return { allowed: true };
+        }
+
+        // Utilisateur premium a accès
+        if (user.is_premium === 1) {
+            return { allowed: true };
+        }
+
+        // Utilisateur non-premium
+        return {
+            allowed: false,
+            message: '🔒 Cette vidéo est réservée aux membres Premium\n\nPassez à Premium pour accéder à tout le contenu exclusif !'
+        };
+
+    } catch (error) {
+        console.error('Erreur vérification accès:', error);
+        return {
+            allowed: false,
+            message: 'Erreur lors de la vérification de votre accès'
+        };
+    }
+}
+
+// ========================================
 // GESTION DES CARTES VIDÉO
 // ========================================
 function initializeVideoCards() {
@@ -338,7 +395,7 @@ function initializeVideoCards() {
 
     // Événement de clic sur les cartes vidéo
     videoCards.forEach(card => {
-        card.addEventListener('click', function(event) {
+        card.addEventListener('click', async function(event) {
             console.log('🖱️ DEBUG: Clic détecté sur une carte');
 
             // Empêcher le clic si on clique sur le bouton play directement
@@ -352,11 +409,20 @@ function initializeVideoCards() {
             const videoTitle = this.querySelector('.video-title').textContent.trim();
             const videoLevel = this.getAttribute('data-level') || 'B2';
             const videoId = this.getAttribute('data-video-id');
+            const isPaid = this.getAttribute('data-is-paid');
 
             console.log(`🔍 DEBUG: videoSrc="${videoSrc}", titre="${videoTitle}", ID=${videoId}`);
 
             // Vérifier si la vidéo a un fichier source
             if (videoSrc && videoSrc.trim() !== '') {
+                // Vérifier l'accès pour les vidéos payantes
+                const accessCheck = await checkVideoAccess(isPaid);
+
+                if (!accessCheck.allowed) {
+                    showNotification(accessCheck.message, 'warning', 6000);
+                    return;
+                }
+
                 console.log(`📹 Redirection vers player : ${videoTitle}`);
 
                 // Construire l'URL avec tous les paramètres, y compris l'ID
@@ -376,7 +442,7 @@ function initializeVideoCards() {
 
     // Événement de clic sur les boutons play
     playButtons.forEach(button => {
-        button.addEventListener('click', function(event) {
+        button.addEventListener('click', async function(event) {
             event.stopPropagation(); // Empêcher la propagation au parent
 
             const card = this.closest('.video-card');
@@ -385,9 +451,18 @@ function initializeVideoCards() {
             const videoTitle = card.querySelector('.video-title').textContent.trim();
             const videoLevel = card.getAttribute('data-level') || 'B2';
             const videoId = card.getAttribute('data-video-id');
+            const isPaid = card.getAttribute('data-is-paid');
 
             // Vérifier si la vidéo a un fichier source
             if (videoSrc && videoSrc.trim() !== '') {
+                // Vérifier l'accès pour les vidéos payantes
+                const accessCheck = await checkVideoAccess(isPaid);
+
+                if (!accessCheck.allowed) {
+                    showNotification(accessCheck.message, 'warning', 6000);
+                    return;
+                }
+
                 console.log(`▶️ Redirection vers player : ${videoTitle}`);
 
                 // Construire l'URL avec tous les paramètres, y compris l'ID

@@ -407,7 +407,14 @@ function updateNavigationButtons() {
  * Navigue au sous-titre précédent
  */
 function goToPreviousSubtitle() {
+    const video = document.getElementById('video-player');
+
     console.log('🖱️ CLIC BOUTON PRÉCÉDENT - currentIndex:', currentSubtitleIndex, 'total:', allSubtitles.length);
+
+    if (!video) {
+        console.log('❌ Élément vidéo non trouvé');
+        return;
+    }
 
     if (allSubtitles.length === 0) {
         console.log('❌ Sous-titres pas encore chargés');
@@ -420,8 +427,9 @@ function goToPreviousSubtitle() {
     }
 
     const prevSubtitle = allSubtitles[currentSubtitleIndex - 1];
-    if (prevSubtitle && video) {
-        console.log('⏮️ Navigation vers sous-titre index', currentSubtitleIndex - 1, ':', prevSubtitle.text.substring(0, 30) + '...');
+    if (prevSubtitle) {
+        console.log('⏮️ Navigation vers sous-titre', currentSubtitleIndex - 1, ':', prevSubtitle.text.substring(0, 30) + '...');
+        console.log('⏮️ Déplacement vidéo vers', prevSubtitle.start, 's');
         video.currentTime = prevSubtitle.start;
     }
 }
@@ -430,7 +438,14 @@ function goToPreviousSubtitle() {
  * Navigue au sous-titre suivant
  */
 function goToNextSubtitle() {
+    const video = document.getElementById('video-player');
+
     console.log('🖱️ CLIC BOUTON SUIVANT - currentIndex:', currentSubtitleIndex, 'total:', allSubtitles.length);
+
+    if (!video) {
+        console.log('❌ Élément vidéo non trouvé');
+        return;
+    }
 
     if (allSubtitles.length === 0) {
         console.log('❌ Sous-titres pas encore chargés');
@@ -443,8 +458,9 @@ function goToNextSubtitle() {
     }
 
     const nextSubtitle = allSubtitles[currentSubtitleIndex + 1];
-    if (nextSubtitle && video) {
-        console.log('⏭️ Navigation vers sous-titre index', currentSubtitleIndex + 1, ':', nextSubtitle.text.substring(0, 30) + '...');
+    if (nextSubtitle) {
+        console.log('⏭️ Navigation vers sous-titre', currentSubtitleIndex + 1, ':', nextSubtitle.text.substring(0, 30) + '...');
+        console.log('⏭️ Déplacement vidéo vers', nextSubtitle.start, 's');
         video.currentTime = nextSubtitle.start;
     }
 }

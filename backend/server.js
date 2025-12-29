@@ -325,6 +325,9 @@ app.get('/videos/:filename', (req, res) => {
     res.sendFile(filePath);
 });
 
+// Servir les fichiers statiques (HTML, CSS, JS frontend)
+app.use(express.static(path.join(__dirname, '..')));
+
 // Servir les fichiers uploadés (avatars, etc.)
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 

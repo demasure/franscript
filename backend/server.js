@@ -194,6 +194,30 @@ app.get('/videos', (req, res) => {
     }
 });
 
+// Route publique pour obtenir les métadonnées d'une vidéo par ID
+app.get('/api/videos/:id', (req, res) => {
+    try {
+        const { getVideoById } = require('./database');
+        const videoId = parseInt(req.params.id);
+
+        if (!videoId) {
+            return res.status(400).json({ error: 'ID vidéo invalide' });
+        }
+
+        const video = getVideoById(videoId);
+
+        if (!video) {
+            return res.status(404).json({ error: 'Vidéo introuvable' });
+        }
+
+        // Retourner les métadonnées de la vidéo
+        res.json({ video });
+    } catch (error) {
+        console.error('Erreur récupération vidéo:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
 // Route publique pour récupérer tous les tags (pour filtres et admin)
 app.get('/tags', (req, res) => {
     try {

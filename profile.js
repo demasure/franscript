@@ -22,7 +22,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     await loadProfile();
 
     // Initialiser les événements
+    console.log('🔧 Initialisation événements...');
     initializeEvents();
+    console.log('✅ Événements initialisés');
 });
 
 // ========================================
@@ -105,26 +107,59 @@ async function loadProfile() {
 // ========================================
 
 function initializeEvents() {
-    // Mise à jour de la valeur du range en temps réel
-    const noteWindowRange = document.getElementById('note-window');
-    const noteWindowValue = document.getElementById('note-window-value');
+    console.log('📌 initializeEvents() appelée');
 
-    noteWindowRange.addEventListener('input', function() {
-        const value = this.value;
-        noteWindowValue.textContent = `${value} seconde${value > 1 ? 's' : ''}`;
-    });
+    try {
+        // Mise à jour de la valeur du range en temps réel
+        const noteWindowRange = document.getElementById('note-window');
+        const noteWindowValue = document.getElementById('note-window-value');
 
-    // Upload d'avatar
-    document.getElementById('avatar-input').addEventListener('change', handleAvatarUpload);
+        if (noteWindowRange && noteWindowValue) {
+            noteWindowRange.addEventListener('input', function() {
+                const value = this.value;
+                noteWindowValue.textContent = `${value} seconde${value > 1 ? 's' : ''}`;
+            });
+        }
 
-    // Sauvegarder le profil (pseudo)
-    document.getElementById('save-profile-btn').addEventListener('click', saveProfile);
+        // Upload d'avatar
+        const avatarInput = document.getElementById('avatar-input');
+        if (avatarInput) {
+            avatarInput.addEventListener('change', handleAvatarUpload);
+        }
 
-    // Sauvegarder les réglages
-    document.getElementById('save-settings-btn').addEventListener('click', saveSettings);
+        // Sauvegarder le profil (pseudo)
+        const saveBtn = document.getElementById('save-profile-btn');
+        console.log('🔘 Bouton save-profile-btn trouvé:', saveBtn);
+        console.log('   disabled:', saveBtn?.disabled);
+        console.log('   type:', saveBtn?.type);
 
-    // Déconnexion
-    document.getElementById('logout-btn').addEventListener('click', logout);
+        if (saveBtn) {
+            saveBtn.addEventListener('click', function(e) {
+                console.log('🖱️ CLICK EVENT DÉTECTÉ sur save-profile-btn!');
+                console.log('   Event:', e);
+                saveProfile();
+            });
+            console.log('✅ Event listener attaché à save-profile-btn');
+        } else {
+            console.error('❌ ERREUR: Bouton save-profile-btn non trouvé!');
+        }
+
+        // Sauvegarder les réglages
+        const settingsBtn = document.getElementById('save-settings-btn');
+        if (settingsBtn) {
+            settingsBtn.addEventListener('click', saveSettings);
+        }
+
+        // Déconnexion
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', logout);
+        }
+
+        console.log('✅ Tous les événements initialisés');
+    } catch (error) {
+        console.error('❌ ERREUR dans initializeEvents():', error);
+    }
 }
 
 // ========================================
@@ -190,18 +225,25 @@ async function handleAvatarUpload(event) {
 // ========================================
 
 async function saveProfile() {
+    console.log('🚀 SAVE CLICKED - saveProfile() appelée');
+
     const username = document.getElementById('username').value.trim();
+    console.log('   Username saisi:', username);
 
     if (!username) {
+        console.log('❌ Erreur: pseudo vide');
         showMessage('Le pseudo ne peut pas être vide', 'error');
         return;
     }
 
     // Validation longueur
     if (username.length < 3 || username.length > 20) {
+        console.log('❌ Erreur: longueur invalide');
         showMessage('Le pseudo doit contenir entre 3 et 20 caractères', 'error');
         return;
     }
+
+    console.log('✅ Validation OK, demande de confirmation...');
 
     // CONFIRMATION IRRÉVERSIBLE
     const confirmed = confirm(
@@ -212,10 +254,14 @@ async function saveProfile() {
     );
 
     if (!confirmed) {
+        console.log('❌ Utilisateur a annulé la confirmation');
         return; // Utilisateur a annulé
     }
 
+    console.log('✅ Confirmation obtenue, envoi API...');
+
     try {
+        console.log('🌐 Appel API PUT /profile avec:', { username });
         const response = await fetch(`${API_URL}/profile`, {
             method: 'PUT',
             credentials: 'include',

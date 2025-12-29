@@ -219,69 +219,54 @@ function initDatabase() {
     db.exec(createReportsTable);
 
     // ============================================
-    // NOUVEAU MODÈLE : SAGA → SAISON → EPISODE
+    // STRUCTURE ARBORESCENTE UNIVERSELLE
     // ============================================
 
-    // Table des sagas (séries / films uniques)
-    const createSagasTable = `
-        CREATE TABLE IF NOT EXISTS sagas (
+    /**
+     * Table content_nodes : structure arborescente générique
+     *
+     * Peut représenter :
+     * - Un dossier (type='folder') : série, saison, catégorie, etc.
+     * - Une vidéo (type='video') : film, épisode, etc.
+     *
+     * Hiérarchie infinie via parent_id :
+     * - parent_id = null → nœud racine
+     * - parent_id = X → enfant du nœud X
+     *
+     * Premium héritable :
+     * - Si un parent est premium, ses enfants le sont aussi
+     */
+    const createContentNodesTable = `
+        CREATE TABLE IF NOT EXISTS content_nodes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            parent_id INTEGER,
             title TEXT NOT NULL,
             description TEXT,
-            cover_image TEXT,
-            is_premium INTEGER DEFAULT 0,
-            type TEXT DEFAULT 'serie',
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
-    `;
-
-    // Table de relation saga-tags (many-to-many)
-    const createSagaTagsTable = `
-        CREATE TABLE IF NOT EXISTS saga_tags (
-            saga_id INTEGER NOT NULL,
-            tag_id INTEGER NOT NULL,
-            PRIMARY KEY (saga_id, tag_id),
-            FOREIGN KEY (saga_id) REFERENCES sagas(id) ON DELETE CASCADE,
-            FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
-        )
-    `;
-
-    // Table des saisons
-    const createSaisonsTable = `
-        CREATE TABLE IF NOT EXISTS saisons (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            saga_id INTEGER NOT NULL,
-            title TEXT NOT NULL,
-            order_index INTEGER NOT NULL DEFAULT 1,
-            description TEXT,
-            is_premium INTEGER DEFAULT 0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (saga_id) REFERENCES sagas(id) ON DELETE CASCADE
-        )
-    `;
-
-    // Table des épisodes
-    const createEpisodesTable = `
-        CREATE TABLE IF NOT EXISTS episodes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            saison_id INTEGER NOT NULL,
-            title TEXT NOT NULL,
-            episode_number INTEGER NOT NULL,
-            video_url TEXT NOT NULL,
+            type TEXT NOT NULL CHECK(type IN ('folder', 'video')),
+            video_url TEXT,
             subtitle_url TEXT,
             thumbnail_url TEXT,
             duration INTEGER,
             is_premium INTEGER DEFAULT 0,
-            free_preview_seconds INTEGER,
+            order_index INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (saison_id) REFERENCES saisons(id) ON DELETE CASCADE
+            FOREIGN KEY (parent_id) REFERENCES content_nodes(id) ON DELETE CASCADE
         )
     `;
 
-    db.exec(createSagasTable);
-    db.exec(createSagaTagsTable);
-    db.exec(createSaisonsTable);
-    db.exec(createEpisodesTable);
+    // Table de relation content_nodes-tags (many-to-many)
+    const createContentNodeTagsTable = `
+        CREATE TABLE IF NOT EXISTS content_node_tags (
+            node_id INTEGER NOT NULL,
+            tag_id INTEGER NOT NULL,
+            PRIMARY KEY (node_id, tag_id),
+            FOREIGN KEY (node_id) REFERENCES content_nodes(id) ON DELETE CASCADE,
+            FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE
+        )
+    `;
+
+    db.exec(createContentNodesTable);
+    db.exec(createContentNodeTagsTable);
 
     console.log('✅ Base de données initialisée');
 }
@@ -1013,318 +998,191 @@ function updateReportStatus(reportId, status) {
 }
 
 // ============================================
-// GESTION DES SAGAS
+// GESTION DES CONTENT NODES (Structure arborescente)
 // ============================================
 
 /**
- * Récupère toutes les sagas avec leurs tags
- * @returns {Array} Liste des sagas
+ * Récupère tous les nœuds racines (parent_id = null) avec leurs tags
+ * @returns {Array} Liste des nœuds racines
  */
-function getAllSagas() {
-    const sagas = db.prepare('SELECT * FROM sagas ORDER BY created_at DESC').all();
+function getRootNodes() {
+    const nodes = db.prepare(`
+        SELECT * FROM content_nodes
+        WHERE parent_id IS NULL
+        ORDER BY order_index ASC, created_at DESC
+    `).all();
 
-    // Pour chaque saga, récupérer ses tags
-    sagas.forEach(saga => {
-        const tags = db.prepare(`
+    nodes.forEach(node => {
+        node.tags = db.prepare(`
             SELECT t.* FROM tags t
-            JOIN saga_tags st ON t.id = st.tag_id
-            WHERE st.saga_id = ?
-        `).all(saga.id);
-        saga.tags = tags;
+            JOIN content_node_tags cnt ON t.id = cnt.tag_id
+            WHERE cnt.node_id = ?
+        `).all(node.id);
     });
 
-    return sagas;
+    return nodes;
 }
 
 /**
- * Récupère une saga par son ID avec ses tags
- * @param {number} id - ID de la saga
- * @returns {object|null} La saga ou null
+ * Récupère les enfants d'un nœud
+ * @param {number} parentId - ID du parent
+ * @returns {Array} Liste des nœuds enfants
  */
-function getSagaById(id) {
-    const saga = db.prepare('SELECT * FROM sagas WHERE id = ?').get(id);
-    if (!saga) return null;
+function getChildNodes(parentId) {
+    return db.prepare(`
+        SELECT * FROM content_nodes
+        WHERE parent_id = ?
+        ORDER BY order_index ASC, created_at DESC
+    `).all(parentId);
+}
 
-    const tags = db.prepare(`
+/**
+ * Récupère un nœud par son ID avec ses tags
+ * @param {number} id - ID du nœud
+ * @returns {object|null} Le nœud ou null
+ */
+function getNodeById(id) {
+    const node = db.prepare('SELECT * FROM content_nodes WHERE id = ?').get(id);
+    if (!node) return null;
+
+    node.tags = db.prepare(`
         SELECT t.* FROM tags t
-        JOIN saga_tags st ON t.id = st.tag_id
-        WHERE st.saga_id = ?
+        JOIN content_node_tags cnt ON t.id = cnt.tag_id
+        WHERE cnt.node_id = ?
     `).all(id);
-    saga.tags = tags;
 
-    return saga;
+    return node;
 }
 
 /**
- * Crée une nouvelle saga
- * @param {object} sagaData - { title, description, cover_image, is_premium, type, tagIds }
- * @returns {object} La saga créée
+ * Crée un nouveau nœud (dossier ou vidéo)
+ * @param {object} nodeData - { parent_id, title, description, type, video_url, subtitle_url, is_premium, tagIds }
+ * @returns {object} Le nœud créé
  */
-function createSaga(sagaData) {
-    const { title, description, cover_image, is_premium, type, tagIds } = sagaData;
+function createNode(nodeData) {
+    const {
+        parent_id,
+        title,
+        description,
+        type,
+        video_url,
+        subtitle_url,
+        thumbnail_url,
+        duration,
+        is_premium,
+        order_index,
+        tagIds
+    } = nodeData;
 
     const stmt = db.prepare(`
-        INSERT INTO sagas (title, description, cover_image, is_premium, type)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO content_nodes (
+            parent_id, title, description, type, video_url, subtitle_url,
+            thumbnail_url, duration, is_premium, order_index
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const result = stmt.run(
+        parent_id || null,
         title,
         description || null,
-        cover_image || null,
+        type,
+        type === 'video' ? video_url : null,
+        type === 'video' ? (subtitle_url || null) : null,
+        thumbnail_url || null,
+        duration || null,
         is_premium ? 1 : 0,
-        type || 'serie'
+        order_index || 0
     );
-    const sagaId = result.lastInsertRowid;
+
+    const nodeId = result.lastInsertRowid;
 
     // Associer les tags
     if (tagIds && tagIds.length > 0) {
-        const insertTag = db.prepare('INSERT INTO saga_tags (saga_id, tag_id) VALUES (?, ?)');
-        tagIds.forEach(tagId => insertTag.run(sagaId, tagId));
+        const insertTag = db.prepare('INSERT INTO content_node_tags (node_id, tag_id) VALUES (?, ?)');
+        tagIds.forEach(tagId => insertTag.run(nodeId, tagId));
     }
 
-    return getSagaById(sagaId);
+    return getNodeById(nodeId);
 }
 
 /**
- * Met à jour une saga
- * @param {number} id - ID de la saga
- * @param {object} sagaData - { title, description, cover_image, is_premium, type, tagIds }
- * @returns {object} La saga mise à jour
+ * Met à jour un nœud
+ * @param {number} id - ID du nœud
+ * @param {object} nodeData - Nouvelles données
+ * @returns {object} Le nœud mis à jour
  */
-function updateSaga(id, sagaData) {
-    const { title, description, cover_image, is_premium, type, tagIds } = sagaData;
+function updateNode(id, nodeData) {
+    const {
+        title,
+        description,
+        video_url,
+        subtitle_url,
+        thumbnail_url,
+        duration,
+        is_premium,
+        order_index,
+        tagIds
+    } = nodeData;
+
+    const node = getNodeById(id);
+    if (!node) return null;
 
     const stmt = db.prepare(`
-        UPDATE sagas
-        SET title = ?, description = ?, cover_image = ?, is_premium = ?, type = ?
+        UPDATE content_nodes
+        SET title = ?, description = ?, video_url = ?, subtitle_url = ?,
+            thumbnail_url = ?, duration = ?, is_premium = ?, order_index = ?
         WHERE id = ?
     `);
 
     stmt.run(
         title,
         description || null,
-        cover_image || null,
+        node.type === 'video' ? video_url : null,
+        node.type === 'video' ? (subtitle_url || null) : null,
+        thumbnail_url || null,
+        duration || null,
         is_premium ? 1 : 0,
-        type || 'serie',
+        order_index !== undefined ? order_index : node.order_index,
         id
     );
 
     // Mettre à jour les tags
-    db.prepare('DELETE FROM saga_tags WHERE saga_id = ?').run(id);
+    db.prepare('DELETE FROM content_node_tags WHERE node_id = ?').run(id);
     if (tagIds && tagIds.length > 0) {
-        const insertTag = db.prepare('INSERT INTO saga_tags (saga_id, tag_id) VALUES (?, ?)');
+        const insertTag = db.prepare('INSERT INTO content_node_tags (node_id, tag_id) VALUES (?, ?)');
         tagIds.forEach(tagId => insertTag.run(id, tagId));
     }
 
-    return getSagaById(id);
+    return getNodeById(id);
 }
 
 /**
- * Supprime une saga (cascade vers saisons et épisodes)
- * @param {number} id - ID de la saga
+ * Supprime un nœud (cascade vers ses enfants)
+ * @param {number} id - ID du nœud
  */
-function deleteSaga(id) {
-    db.prepare('DELETE FROM sagas WHERE id = ?').run(id);
-}
-
-// ============================================
-// GESTION DES SAISONS
-// ============================================
-
-/**
- * Récupère toutes les saisons d'une saga
- * @param {number} sagaId - ID de la saga
- * @returns {Array} Liste des saisons
- */
-function getSaisonsBySaga(sagaId) {
-    return db.prepare(`
-        SELECT * FROM saisons
-        WHERE saga_id = ?
-        ORDER BY order_index ASC
-    `).all(sagaId);
+function deleteNode(id) {
+    db.prepare('DELETE FROM content_nodes WHERE id = ?').run(id);
 }
 
 /**
- * Récupère une saison par son ID
- * @param {number} id - ID de la saison
- * @returns {object|null} La saison ou null
+ * Récupère le chemin complet d'un nœud (fil d'Ariane)
+ * @param {number} nodeId - ID du nœud
+ * @returns {Array} Tableau de nœuds du parent racine jusqu'au nœud
  */
-function getSaisonById(id) {
-    return db.prepare('SELECT * FROM saisons WHERE id = ?').get(id);
-}
+function getNodePath(nodeId) {
+    const path = [];
+    let currentId = nodeId;
 
-/**
- * Crée une nouvelle saison
- * @param {object} saisonData - { saga_id, title, order_index, description, is_premium }
- * @returns {object} La saison créée
- */
-function createSaison(saisonData) {
-    const { saga_id, title, order_index, description, is_premium } = saisonData;
+    while (currentId) {
+        const node = getNodeById(currentId);
+        if (!node) break;
 
-    const stmt = db.prepare(`
-        INSERT INTO saisons (saga_id, title, order_index, description, is_premium)
-        VALUES (?, ?, ?, ?, ?)
-    `);
+        path.unshift(node);
+        currentId = node.parent_id;
+    }
 
-    const result = stmt.run(
-        saga_id,
-        title,
-        order_index || 1,
-        description || null,
-        is_premium ? 1 : 0
-    );
-
-    return getSaisonById(result.lastInsertRowid);
-}
-
-/**
- * Met à jour une saison
- * @param {number} id - ID de la saison
- * @param {object} saisonData - { title, order_index, description, is_premium }
- * @returns {object} La saison mise à jour
- */
-function updateSaison(id, saisonData) {
-    const { title, order_index, description, is_premium } = saisonData;
-
-    const stmt = db.prepare(`
-        UPDATE saisons
-        SET title = ?, order_index = ?, description = ?, is_premium = ?
-        WHERE id = ?
-    `);
-
-    stmt.run(
-        title,
-        order_index || 1,
-        description || null,
-        is_premium ? 1 : 0,
-        id
-    );
-
-    return getSaisonById(id);
-}
-
-/**
- * Supprime une saison (cascade vers épisodes)
- * @param {number} id - ID de la saison
- */
-function deleteSaison(id) {
-    db.prepare('DELETE FROM saisons WHERE id = ?').run(id);
-}
-
-// ============================================
-// GESTION DES EPISODES
-// ============================================
-
-/**
- * Récupère tous les épisodes d'une saison
- * @param {number} saisonId - ID de la saison
- * @returns {Array} Liste des épisodes
- */
-function getEpisodesBySaison(saisonId) {
-    return db.prepare(`
-        SELECT * FROM episodes
-        WHERE saison_id = ?
-        ORDER BY episode_number ASC
-    `).all(saisonId);
-}
-
-/**
- * Récupère un épisode par son ID
- * @param {number} id - ID de l'épisode
- * @returns {object|null} L'épisode ou null
- */
-function getEpisodeById(id) {
-    return db.prepare('SELECT * FROM episodes WHERE id = ?').get(id);
-}
-
-/**
- * Crée un nouvel épisode
- * @param {object} episodeData - { saison_id, title, episode_number, video_url, subtitle_url, thumbnail_url, duration, is_premium }
- * @returns {object} L'épisode créé
- */
-function createEpisode(episodeData) {
-    const {
-        saison_id,
-        title,
-        episode_number,
-        video_url,
-        subtitle_url,
-        thumbnail_url,
-        duration,
-        is_premium,
-        free_preview_seconds
-    } = episodeData;
-
-    const stmt = db.prepare(`
-        INSERT INTO episodes (
-            saison_id, title, episode_number, video_url, subtitle_url,
-            thumbnail_url, duration, is_premium, free_preview_seconds
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    const result = stmt.run(
-        saison_id,
-        title,
-        episode_number,
-        video_url,
-        subtitle_url || null,
-        thumbnail_url || null,
-        duration || null,
-        is_premium ? 1 : 0,
-        free_preview_seconds || null
-    );
-
-    return getEpisodeById(result.lastInsertRowid);
-}
-
-/**
- * Met à jour un épisode
- * @param {number} id - ID de l'épisode
- * @param {object} episodeData - { title, episode_number, video_url, subtitle_url, thumbnail_url, duration, is_premium }
- * @returns {object} L'épisode mis à jour
- */
-function updateEpisode(id, episodeData) {
-    const {
-        title,
-        episode_number,
-        video_url,
-        subtitle_url,
-        thumbnail_url,
-        duration,
-        is_premium,
-        free_preview_seconds
-    } = episodeData;
-
-    const stmt = db.prepare(`
-        UPDATE episodes
-        SET title = ?, episode_number = ?, video_url = ?, subtitle_url = ?,
-            thumbnail_url = ?, duration = ?, is_premium = ?, free_preview_seconds = ?
-        WHERE id = ?
-    `);
-
-    stmt.run(
-        title,
-        episode_number,
-        video_url,
-        subtitle_url || null,
-        thumbnail_url || null,
-        duration || null,
-        is_premium ? 1 : 0,
-        free_preview_seconds || null,
-        id
-    );
-
-    return getEpisodeById(id);
-}
-
-/**
- * Supprime un épisode
- * @param {number} id - ID de l'épisode
- */
-function deleteEpisode(id) {
-    db.prepare('DELETE FROM episodes WHERE id = ?').run(id);
+    return path;
 }
 
 module.exports = {
@@ -1370,22 +1228,12 @@ module.exports = {
     createReport,
     getAllReports,
     updateReportStatus,
-    // Sagas
-    getAllSagas,
-    getSagaById,
-    createSaga,
-    updateSaga,
-    deleteSaga,
-    // Saisons
-    getSaisonsBySaga,
-    getSaisonById,
-    createSaison,
-    updateSaison,
-    deleteSaison,
-    // Episodes
-    getEpisodesBySaison,
-    getEpisodeById,
-    createEpisode,
-    updateEpisode,
-    deleteEpisode
+    // Content Nodes (structure arborescente)
+    getRootNodes,
+    getChildNodes,
+    getNodeById,
+    createNode,
+    updateNode,
+    deleteNode,
+    getNodePath
 };

@@ -572,6 +572,7 @@
 
         <div class="tabs">
             <button class="tab active" onclick="switchTab('videos')">Vidéos</button>
+            <button class="tab" onclick="switchTab('content')">📁 Contenu</button>
             <button class="tab" onclick="switchTab('tags')">Tags</button>
             <button class="tab" onclick="switchTab('reports')">⚠️ Signalements</button>
             <button class="tab" onclick="switchTab('stats')">📊 Statistiques</button>
@@ -635,6 +636,88 @@
                     </thead>
                     <tbody></tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- TAB CONTENU -->
+        <div id="tab-content" class="tab-content">
+            <div class="panel">
+                <h2>📁 Gestion du Contenu</h2>
+
+                <!-- Breadcrumb navigation -->
+                <div id="content-breadcrumb" style="margin-bottom: 20px; padding: 10px; background: var(--color-bg-elevated); border-radius: 6px; color: var(--color-text-secondary); font-size: 14px;">
+                    <span style="cursor: pointer; color: var(--color-primary);" onclick="navigateToNode(null)">🏠 Racine</span>
+                    <span id="breadcrumb-trail"></span>
+                </div>
+
+                <!-- Actions toolbar -->
+                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                    <button onclick="showCreateNodeModal('folder')">📁 Ajouter Dossier</button>
+                    <button onclick="showCreateNodeModal('video')">🎬 Ajouter Vidéo</button>
+                    <button class="secondary" id="back-button" onclick="navigateBack()" style="margin-left: auto; display: none;">⬅️ Retour</button>
+                </div>
+
+                <!-- Content list (file explorer style) -->
+                <div id="content-explorer" style="background: var(--color-bg-elevated); border-radius: 8px; padding: 0;">
+                    <!-- Chargé dynamiquement -->
+                </div>
+            </div>
+
+            <!-- Modal for creating/editing nodes -->
+            <div id="node-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center;">
+                <div class="panel" style="max-width: 600px; margin: 20px; max-height: 90vh; overflow-y: auto;">
+                    <h2 id="modal-title">Créer un nœud</h2>
+                    <form id="node-form">
+                        <input type="hidden" id="node-id">
+                        <input type="hidden" id="node-type">
+                        <input type="hidden" id="node-parent-id">
+
+                        <div class="form-group">
+                            <label for="node-title">Titre *</label>
+                            <input type="text" id="node-title" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="node-description">Description</label>
+                            <textarea id="node-description"></textarea>
+                        </div>
+
+                        <!-- Video-specific fields -->
+                        <div id="video-fields" style="display: none;">
+                            <div class="form-group">
+                                <label for="node-video-url">URL de la vidéo *</label>
+                                <input type="text" id="node-video-url" placeholder="videos/ma_video.mp4">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="node-subtitle-url">URL des sous-titres</label>
+                                <input type="text" id="node-subtitle-url" placeholder="videos/ma_video.vtt">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="node-thumbnail-url">URL de la miniature</label>
+                                <input type="text" id="node-thumbnail-url" placeholder="videos/thumbnail.jpg">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Tags</label>
+                            <div id="node-tag-selector" class="tag-selector"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="node-is-premium">
+                                <label for="node-is-premium">Premium (hérité des parents si non coché)</label>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="submit" id="node-submit-btn">Créer</button>
+                            <button type="button" class="secondary" onclick="closeNodeModal()">Annuler</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
 
@@ -1522,6 +1605,395 @@
             div.textContent = text;
             return div.innerHTML;
         }
+
+        // ========================================
+        // GESTION DU CONTENU (ContentNode)
+        // ========================================
+
+        let currentNodeId = null;  // null = root
+        let currentPath = [];      // Breadcrumb path
+        let contentNodes = [];     // Current nodes being displayed
+
+        /**
+         * Charge le contenu du nœud courant
+         */
+        async function loadContentNodes(parentId = null) {
+            try {
+                const endpoint = parentId === null
+                    ? `${API_URL}/admin/content/roots`
+                    : `${API_URL}/admin/content/${parentId}/children`;
+
+                const response = await fetch(endpoint, {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erreur chargement contenu');
+                }
+
+                const data = await response.json();
+                contentNodes = data.nodes || data.children || [];
+
+                displayContentExplorer(contentNodes);
+                updateBackButton();
+            } catch (error) {
+                console.error('Erreur:', error);
+                showMessage('Erreur lors du chargement du contenu', 'error');
+            }
+        }
+
+        /**
+         * Affiche les nœuds dans le style explorateur de fichiers
+         */
+        function displayContentExplorer(nodes) {
+            const container = document.getElementById('content-explorer');
+
+            if (nodes.length === 0) {
+                container.innerHTML = '<p style="padding: 40px; text-align: center; color: var(--color-text-secondary);">Aucun contenu. Créez un dossier ou une vidéo pour commencer.</p>';
+                return;
+            }
+
+            container.innerHTML = `
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: var(--color-bg-primary); border-bottom: 2px solid var(--color-bg-hover);">
+                            <th style="padding: 12px; text-align: left; color: var(--color-text-secondary); font-weight: 600;">Nom</th>
+                            <th style="padding: 12px; text-align: left; color: var(--color-text-secondary); font-weight: 600; width: 100px;">Type</th>
+                            <th style="padding: 12px; text-align: left; color: var(--color-text-secondary); font-weight: 600; width: 100px;">Statut</th>
+                            <th style="padding: 12px; text-align: left; color: var(--color-text-secondary); font-weight: 600; width: 200px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${nodes.map(node => renderNodeRow(node)).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        /**
+         * Rend une ligne de nœud dans l'explorateur
+         */
+        function renderNodeRow(node) {
+            const isFolder = node.type === 'folder';
+            const icon = isFolder ? '📁' : '🎬';
+            const statusBadge = node.is_premium
+                ? '<span class="paid-badge">Premium</span>'
+                : '<span class="free-badge">Gratuit</span>';
+
+            const onClickAction = isFolder
+                ? `onclick="navigateToNode(${node.id}, '${escapeHtml(node.title)}')"`
+                : '';
+
+            const cursorStyle = isFolder ? 'cursor: pointer;' : '';
+
+            return `
+                <tr style="border-bottom: 1px solid var(--color-bg-hover); transition: background 0.2s;"
+                    onmouseover="this.style.background='var(--color-bg-primary)'"
+                    onmouseout="this.style.background='transparent'">
+                    <td ${onClickAction} style="padding: 12px; ${cursorStyle}">
+                        <span style="font-size: 1.2rem; margin-right: 8px;">${icon}</span>
+                        <strong style="color: var(--color-text-primary);">${escapeHtml(node.title)}</strong>
+                        ${node.description ? `<br><small style="color: var(--color-text-secondary);">${escapeHtml(node.description)}</small>` : ''}
+                    </td>
+                    <td style="padding: 12px; color: var(--color-text-secondary);">
+                        ${isFolder ? 'Dossier' : 'Vidéo'}
+                    </td>
+                    <td style="padding: 12px;">
+                        ${statusBadge}
+                    </td>
+                    <td style="padding: 12px;">
+                        <div class="actions">
+                            <button class="secondary" onclick="editNode(${node.id})" style="font-size: 12px; padding: 6px 12px;">Modifier</button>
+                            <button class="danger" onclick="deleteNode(${node.id})" style="font-size: 12px; padding: 6px 12px;">Supprimer</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        /**
+         * Navigue vers un nœud (entre dans un dossier)
+         */
+        function navigateToNode(nodeId, title = null) {
+            if (nodeId === null) {
+                // Retour à la racine
+                currentNodeId = null;
+                currentPath = [];
+            } else {
+                // Naviguer vers un dossier
+                currentNodeId = nodeId;
+                currentPath.push({ id: nodeId, title: title });
+            }
+
+            updateBreadcrumb();
+            loadContentNodes(currentNodeId);
+        }
+
+        /**
+         * Navigue vers le parent (retour)
+         */
+        function navigateBack() {
+            if (currentPath.length === 0) return;
+
+            currentPath.pop();
+
+            if (currentPath.length === 0) {
+                currentNodeId = null;
+            } else {
+                currentNodeId = currentPath[currentPath.length - 1].id;
+            }
+
+            updateBreadcrumb();
+            loadContentNodes(currentNodeId);
+        }
+
+        /**
+         * Met à jour le fil d'Ariane
+         */
+        function updateBreadcrumb() {
+            const trailElement = document.getElementById('breadcrumb-trail');
+
+            if (currentPath.length === 0) {
+                trailElement.innerHTML = '';
+            } else {
+                trailElement.innerHTML = currentPath.map((item, index) => {
+                    const isLast = index === currentPath.length - 1;
+                    const clickHandler = isLast ? '' : `onclick="navigateToBreadcrumb(${index})"`;
+                    const style = isLast ? 'color: var(--color-text-primary);' : 'cursor: pointer; color: var(--color-primary);';
+
+                    return ` &gt; <span ${clickHandler} style="${style}">${escapeHtml(item.title)}</span>`;
+                }).join('');
+            }
+        }
+
+        /**
+         * Navigue vers un élément du breadcrumb
+         */
+        function navigateToBreadcrumb(index) {
+            currentPath = currentPath.slice(0, index + 1);
+            currentNodeId = currentPath[currentPath.length - 1].id;
+
+            updateBreadcrumb();
+            loadContentNodes(currentNodeId);
+        }
+
+        /**
+         * Affiche/masque le bouton retour
+         */
+        function updateBackButton() {
+            const backButton = document.getElementById('back-button');
+            backButton.style.display = currentPath.length > 0 ? 'block' : 'none';
+        }
+
+        /**
+         * Affiche le modal de création/édition
+         */
+        function showCreateNodeModal(type) {
+            const modal = document.getElementById('node-modal');
+            const videoFields = document.getElementById('video-fields');
+
+            // Reset form
+            document.getElementById('node-form').reset();
+            document.getElementById('node-id').value = '';
+            document.getElementById('node-type').value = type;
+            document.getElementById('node-parent-id').value = currentNodeId || '';
+
+            // Afficher/masquer les champs vidéo
+            videoFields.style.display = type === 'video' ? 'block' : 'none';
+
+            // Titre du modal
+            document.getElementById('modal-title').textContent = type === 'folder'
+                ? '📁 Créer un Dossier'
+                : '🎬 Créer une Vidéo';
+
+            document.getElementById('node-submit-btn').textContent = 'Créer';
+
+            // Charger les tags pour le sélecteur
+            renderNodeTagSelector();
+
+            // Afficher le modal
+            modal.style.display = 'flex';
+        }
+
+        /**
+         * Ferme le modal
+         */
+        function closeNodeModal() {
+            document.getElementById('node-modal').style.display = 'none';
+        }
+
+        /**
+         * Rend le sélecteur de tags dans le modal
+         */
+        function renderNodeTagSelector() {
+            const selector = document.getElementById('node-tag-selector');
+            selector.innerHTML = allTags.map(t => `
+                <button type="button"
+                        class="tag-button"
+                        data-tag-id="${t.id}"
+                        style="background-color: rgba(${hexToRgb(t.color)}, 0.2); color: ${t.color}; border: 2px solid ${t.color};"
+                        onclick="toggleTag(this, ${t.id})">
+                    ${t.name}
+                </button>
+            `).join('');
+        }
+
+        /**
+         * Édite un nœud existant
+         */
+        async function editNode(nodeId) {
+            try {
+                const response = await fetch(`${API_URL}/admin/content/${nodeId}`, {
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erreur chargement nœud');
+                }
+
+                const data = await response.json();
+                const node = data.node;
+
+                // Remplir le formulaire
+                document.getElementById('node-id').value = node.id;
+                document.getElementById('node-type').value = node.type;
+                document.getElementById('node-parent-id').value = node.parent_id || '';
+                document.getElementById('node-title').value = node.title;
+                document.getElementById('node-description').value = node.description || '';
+                document.getElementById('node-is-premium').checked = node.is_premium === 1;
+
+                // Champs vidéo
+                const videoFields = document.getElementById('video-fields');
+                if (node.type === 'video') {
+                    videoFields.style.display = 'block';
+                    document.getElementById('node-video-url').value = node.video_url || '';
+                    document.getElementById('node-subtitle-url').value = node.subtitle_url || '';
+                    document.getElementById('node-thumbnail-url').value = node.thumbnail_url || '';
+                } else {
+                    videoFields.style.display = 'none';
+                }
+
+                // Tags
+                renderNodeTagSelector();
+                const nodeTags = node.tags || [];
+                const nodeTagIds = nodeTags.map(t => t.id);
+                document.querySelectorAll('#node-tag-selector .tag-button').forEach(btn => {
+                    if (nodeTagIds.includes(parseInt(btn.dataset.tagId))) {
+                        btn.classList.add('selected');
+                    }
+                });
+
+                // Titre et bouton
+                document.getElementById('modal-title').textContent = node.type === 'folder'
+                    ? '📁 Modifier le Dossier'
+                    : '🎬 Modifier la Vidéo';
+                document.getElementById('node-submit-btn').textContent = 'Mettre à jour';
+
+                // Afficher le modal
+                document.getElementById('node-modal').style.display = 'flex';
+
+            } catch (error) {
+                console.error('Erreur:', error);
+                showMessage('Erreur lors du chargement du nœud', 'error');
+            }
+        }
+
+        /**
+         * Supprime un nœud
+         */
+        async function deleteNode(nodeId) {
+            if (!confirm('Êtes-vous sûr ? Cette action supprimera également tous les éléments contenus dans ce nœud.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/admin/content/${nodeId}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erreur suppression');
+                }
+
+                const data = await response.json();
+                showMessage(data.message || 'Nœud supprimé avec succès', 'success');
+
+                // Recharger la liste
+                loadContentNodes(currentNodeId);
+
+            } catch (error) {
+                console.error('Erreur:', error);
+                showMessage('Erreur lors de la suppression', 'error');
+            }
+        }
+
+        /**
+         * Gère la soumission du formulaire de nœud
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('node-form')?.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const nodeId = document.getElementById('node-id').value;
+                const type = document.getElementById('node-type').value;
+                const parentId = document.getElementById('node-parent-id').value;
+
+                const nodeData = {
+                    parent_id: parentId || null,
+                    title: document.getElementById('node-title').value,
+                    description: document.getElementById('node-description').value,
+                    type: type,
+                    is_premium: document.getElementById('node-is-premium').checked ? 1 : 0,
+                    tagIds: Array.from(document.querySelectorAll('#node-tag-selector .tag-button.selected'))
+                        .map(btn => parseInt(btn.dataset.tagId))
+                };
+
+                // Ajouter les champs vidéo si c'est une vidéo
+                if (type === 'video') {
+                    nodeData.video_url = document.getElementById('node-video-url').value;
+                    nodeData.subtitle_url = document.getElementById('node-subtitle-url').value || null;
+                    nodeData.thumbnail_url = document.getElementById('node-thumbnail-url').value || null;
+                }
+
+                try {
+                    const url = nodeId
+                        ? `${API_URL}/admin/content/${nodeId}`
+                        : `${API_URL}/admin/content`;
+                    const method = nodeId ? 'PUT' : 'POST';
+
+                    const response = await fetch(url, {
+                        method,
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify(nodeData)
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        showMessage(data.message || 'Nœud enregistré avec succès', 'success');
+                        closeNodeModal();
+                        loadContentNodes(currentNodeId);
+                    } else {
+                        showMessage(data.error || 'Erreur lors de l\'enregistrement', 'error');
+                    }
+                } catch (error) {
+                    console.error('Erreur:', error);
+                    showMessage('Erreur lors de l\'enregistrement', 'error');
+                }
+            });
+        });
+
+        // Mettre à jour switchTab pour charger le contenu
+        const originalSwitchTab = switchTab;
+        switchTab = function(tab) {
+            originalSwitchTab(tab);
+
+            if (tab === 'content') {
+                loadContentNodes(currentNodeId);
+            }
+        };
     </script>
 </body>
 </html>

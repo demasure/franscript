@@ -6,12 +6,9 @@ const {
     initDatabase,
     getVideoById,
     createVideo,
-    getAllSagas,
-    getSagaById,
-    getSaisonsBySaga,
-    getSaisonById,
-    getEpisodesBySaison,
-    getEpisodeById
+    getRootNodes,
+    getChildNodes,
+    getNodeById
 } = require('./database');
 const authRoutes = require('./auth');
 const userFeaturesRoutes = require('./userFeatures');
@@ -19,7 +16,7 @@ const profileRoutes = require('./profile');
 const adminRoutes = require('./admin');
 const subtitlesRoutes = require('./subtitles');
 const { requireAuth, requireAdmin } = require('./middleware');
-const { canUserAccessEpisode, getEpisodeWithContext } = require('./services/premiumService');
+const { canUserAccessNode, getNodeWithContext } = require('./services/contentService');
 
 const app = express();
 const PORT = 3000;
@@ -246,111 +243,67 @@ app.get('/tags', (req, res) => {
 });
 
 // ============================================
-// ROUTES PUBLIQUES - NOUVEAU SYSTÈME (Sagas/Saisons/Episodes)
+// ROUTES PUBLIQUES - SYSTÈME CONTENT NODES
 // ============================================
 
 /**
- * GET /api/sagas
- * Récupère toutes les sagas (pour la page d'accueil)
+ * GET /api/content/roots
+ * Récupère tous les nœuds racine (pour la page d'accueil)
  */
-app.get('/api/sagas', (req, res) => {
+app.get('/api/content/roots', (req, res) => {
     try {
-        const sagas = getAllSagas();
-        res.json({ sagas });
+        const nodes = getRootNodes();
+        res.json({ nodes });
     } catch (error) {
-        console.error('Erreur récupération sagas:', error);
-        res.status(500).json({ error: 'Erreur lors de la récupération des sagas' });
+        console.error('Erreur récupération nœuds racine:', error);
+        res.status(500).json({ error: 'Erreur lors de la récupération des nœuds' });
     }
 });
 
 /**
- * GET /api/sagas/:id
- * Récupère une saga par son ID avec ses saisons
- */
-app.get('/api/sagas/:id', (req, res) => {
-    try {
-        const sagaId = parseInt(req.params.id);
-        const saga = getSagaById(sagaId);
-
-        if (!saga) {
-            return res.status(404).json({ error: 'Saga introuvable' });
-        }
-
-        // Récupérer les saisons de cette saga
-        const saisons = getSaisonsBySaga(sagaId);
-
-        res.json({
-            saga,
-            saisons
-        });
-    } catch (error) {
-        console.error('Erreur récupération saga:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
-    }
-});
-
-/**
- * GET /api/saisons/:id
- * Récupère une saison par son ID avec ses épisodes
- */
-app.get('/api/saisons/:id', (req, res) => {
-    try {
-        const saisonId = parseInt(req.params.id);
-        const saison = getSaisonById(saisonId);
-
-        if (!saison) {
-            return res.status(404).json({ error: 'Saison introuvable' });
-        }
-
-        // Récupérer la saga parente
-        const saga = getSagaById(saison.saga_id);
-
-        // Récupérer les épisodes de cette saison
-        const episodes = getEpisodesBySaison(saisonId);
-
-        res.json({
-            saison,
-            saga,
-            episodes
-        });
-    } catch (error) {
-        console.error('Erreur récupération saison:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
-    }
-});
-
-/**
- * GET /api/episodes/:id
- * Récupère un épisode par son ID avec contexte complet
+ * GET /api/content/:id
+ * Récupère un nœud par son ID avec contexte complet
  * Vérifie les permissions premium
  */
-app.get('/api/episodes/:id', async (req, res) => {
+app.get('/api/content/:id', async (req, res) => {
     try {
-        const episodeId = parseInt(req.params.id);
+        const nodeId = parseInt(req.params.id);
 
-        // Récupérer l'épisode avec son contexte
-        const context = await getEpisodeWithContext(episodeId);
+        // Récupérer le nœud avec son contexte
+        const userId = req.session.userId || null;
+        const context = await getNodeWithContext(nodeId, userId);
 
         if (!context) {
-            return res.status(404).json({ error: 'Épisode introuvable' });
+            return res.status(404).json({ error: 'Nœud introuvable' });
         }
 
-        const { episode, saison, saga, isPremium } = context;
-
-        // Vérifier les permissions d'accès
-        const userId = req.session.userId || null;
-        const accessCheck = await canUserAccessEpisode(userId, episodeId);
+        const { node, path, isPremium, access } = context;
 
         // Retourner les informations avec le statut d'accès
         res.json({
-            episode,
-            saison,
-            saga,
+            node,
+            path,
             isPremium,
-            access: accessCheck
+            access
         });
     } catch (error) {
-        console.error('Erreur récupération épisode:', error);
+        console.error('Erreur récupération nœud:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+/**
+ * GET /api/content/:id/children
+ * Récupère les enfants d'un nœud
+ */
+app.get('/api/content/:id/children', (req, res) => {
+    try {
+        const nodeId = parseInt(req.params.id);
+        const children = getChildNodes(nodeId);
+
+        res.json({ children });
+    } catch (error) {
+        console.error('Erreur récupération enfants:', error);
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });

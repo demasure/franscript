@@ -19,22 +19,14 @@ const {
     updateUser,
     deleteUser,
     countUsers,
-    // Nouveau modèle Saga/Saison/Episode
-    getAllSagas,
-    getSagaById,
-    createSaga,
-    updateSaga,
-    deleteSaga,
-    getSaisonsBySaga,
-    getSaisonById,
-    createSaison,
-    updateSaison,
-    deleteSaison,
-    getEpisodesBySaison,
-    getEpisodeById,
-    createEpisode,
-    updateEpisode,
-    deleteEpisode,
+    // Content Nodes (structure arborescente)
+    getRootNodes,
+    getChildNodes,
+    getNodeById,
+    createNode,
+    updateNode,
+    deleteNode,
+    getNodePath,
     db
 } = require('./database');
 const { detectVideoDuration, extractThumbnail } = require('./videoUtils');
@@ -603,438 +595,188 @@ router.get('/stats', (req, res) => {
 });
 
 // ============================================
-// ROUTES SAGAS - Admin uniquement
+// ROUTES CONTENT NODES - Admin uniquement
 // ============================================
 
 /**
- * GET /admin/sagas
- * Récupère toutes les sagas
+ * GET /admin/content/roots
+ * Récupère tous les nœuds racines
  */
-router.get('/sagas', (req, res) => {
+router.get('/content/roots', (req, res) => {
     try {
-        const sagas = getAllSagas();
-        res.json({ sagas });
+        const nodes = getRootNodes();
+        res.json({ nodes });
     } catch (error) {
-        console.error('Erreur récupération sagas:', error);
-        res.status(500).json({ error: 'Erreur lors de la récupération des sagas' });
+        console.error('Erreur récupération nœuds racines:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
     }
 });
 
 /**
- * GET /admin/sagas/:id
- * Récupère une saga par son ID
+ * GET /admin/content/:id/children
+ * Récupère les enfants d'un nœud
  */
-router.get('/sagas/:id', (req, res) => {
+router.get('/content/:id/children', (req, res) => {
     try {
-        const saga = getSagaById(parseInt(req.params.id));
-        if (!saga) {
-            return res.status(404).json({ error: 'Saga non trouvée' });
-        }
-        res.json({ saga });
+        const parentId = parseInt(req.params.id);
+        const children = getChildNodes(parentId);
+        res.json({ children });
     } catch (error) {
-        console.error('Erreur récupération saga:', error);
-        res.status(500).json({ error: 'Erreur lors de la récupération de la saga' });
+        console.error('Erreur récupération enfants:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
     }
 });
 
 /**
- * POST /admin/sagas
- * Crée une nouvelle saga
+ * GET /admin/content/:id
+ * Récupère un nœud par son ID
  */
-router.post('/sagas', (req, res) => {
+router.get('/content/:id', (req, res) => {
     try {
-        const { title, description, cover_image, is_premium, type, tagIds } = req.body;
-
-        if (!title) {
-            return res.status(400).json({ error: 'Le titre est requis' });
+        const node = getNodeById(parseInt(req.params.id));
+        if (!node) {
+            return res.status(404).json({ error: 'Nœud introuvable' });
         }
+        res.json({ node });
+    } catch (error) {
+        console.error('Erreur récupération nœud:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
 
-        const saga = createSaga({
+/**
+ * POST /admin/content
+ * Crée un nouveau nœud (dossier ou vidéo)
+ */
+router.post('/content', async (req, res) => {
+    try {
+        const {
+            parent_id,
             title,
             description,
-            cover_image,
+            type,
+            video_url,
+            subtitle_url,
+            is_premium,
+            order_index,
+            tagIds
+        } = req.body;
+
+        if (!title || !type) {
+            return res.status(400).json({ error: 'Titre et type requis' });
+        }
+
+        if (type === 'video' && !video_url) {
+            return res.status(400).json({ error: 'URL vidéo requise pour type video' });
+        }
+
+        // Détecter durée si vidéo
+        let duration = null;
+        if (type === 'video') {
+            duration = await detectVideoDuration(video_url);
+        }
+
+        const node = createNode({
+            parent_id,
+            title,
+            description,
+            type,
+            video_url,
+            subtitle_url,
+            duration,
             is_premium: is_premium || false,
-            type: type || 'serie',
+            order_index: order_index || 0,
             tagIds: tagIds || []
         });
 
-        res.status(201).json({
-            message: 'Saga créée avec succès',
-            saga
-        });
-    } catch (error) {
-        console.error('Erreur création saga:', error);
-        res.status(500).json({ error: 'Erreur lors de la création de la saga' });
-    }
-});
-
-/**
- * PUT /admin/sagas/:id
- * Met à jour une saga
- */
-router.put('/sagas/:id', (req, res) => {
-    try {
-        const id = parseInt(req.params.id);
-        const { title, description, cover_image, is_premium, type, tagIds } = req.body;
-
-        const existingSaga = getSagaById(id);
-        if (!existingSaga) {
-            return res.status(404).json({ error: 'Saga non trouvée' });
-        }
-
-        if (!title) {
-            return res.status(400).json({ error: 'Le titre est requis' });
-        }
-
-        const saga = updateSaga(id, {
-            title,
-            description,
-            cover_image,
-            is_premium: is_premium || false,
-            type: type || 'serie',
-            tagIds: tagIds || []
-        });
-
-        res.json({
-            message: 'Saga mise à jour avec succès',
-            saga
-        });
-    } catch (error) {
-        console.error('Erreur mise à jour saga:', error);
-        res.status(500).json({ error: 'Erreur lors de la mise à jour de la saga' });
-    }
-});
-
-/**
- * DELETE /admin/sagas/:id
- * Supprime une saga
- */
-router.delete('/sagas/:id', (req, res) => {
-    try {
-        const id = parseInt(req.params.id);
-        const saga = getSagaById(id);
-        if (!saga) {
-            return res.status(404).json({ error: 'Saga non trouvée' });
-        }
-
-        deleteSaga(id);
-        res.json({ message: 'Saga supprimée avec succès' });
-    } catch (error) {
-        console.error('Erreur suppression saga:', error);
-        res.status(500).json({ error: 'Erreur lors de la suppression de la saga' });
-    }
-});
-
-// ============================================
-// ROUTES SAISONS - Admin uniquement
-// ============================================
-
-/**
- * GET /admin/saisons/saga/:sagaId
- * Récupère toutes les saisons d'une saga
- */
-router.get('/saisons/saga/:sagaId', (req, res) => {
-    try {
-        const sagaId = parseInt(req.params.sagaId);
-        const saisons = getSaisonsBySaga(sagaId);
-        res.json({ saisons });
-    } catch (error) {
-        console.error('Erreur récupération saisons:', error);
-        res.status(500).json({ error: 'Erreur lors de la récupération des saisons' });
-    }
-});
-
-/**
- * GET /admin/saisons/:id
- * Récupère une saison par son ID
- */
-router.get('/saisons/:id', (req, res) => {
-    try {
-        const saison = getSaisonById(parseInt(req.params.id));
-        if (!saison) {
-            return res.status(404).json({ error: 'Saison non trouvée' });
-        }
-        res.json({ saison });
-    } catch (error) {
-        console.error('Erreur récupération saison:', error);
-        res.status(500).json({ error: 'Erreur lors de la récupération de la saison' });
-    }
-});
-
-/**
- * POST /admin/saisons
- * Crée une nouvelle saison
- */
-router.post('/saisons', (req, res) => {
-    try {
-        const { saga_id, title, order_index, description, is_premium } = req.body;
-
-        if (!saga_id || !title) {
-            return res.status(400).json({ error: 'La saga et le titre sont requis' });
-        }
-
-        // Vérifier que la saga existe
-        const saga = getSagaById(saga_id);
-        if (!saga) {
-            return res.status(404).json({ error: 'Saga non trouvée' });
-        }
-
-        const saison = createSaison({
-            saga_id,
-            title,
-            order_index: order_index || 1,
-            description,
-            is_premium: is_premium || false
-        });
-
-        res.status(201).json({
-            message: 'Saison créée avec succès',
-            saison
-        });
-    } catch (error) {
-        console.error('Erreur création saison:', error);
-        res.status(500).json({ error: 'Erreur lors de la création de la saison' });
-    }
-});
-
-/**
- * PUT /admin/saisons/:id
- * Met à jour une saison
- */
-router.put('/saisons/:id', (req, res) => {
-    try {
-        const id = parseInt(req.params.id);
-        const { title, order_index, description, is_premium } = req.body;
-
-        const existingSaison = getSaisonById(id);
-        if (!existingSaison) {
-            return res.status(404).json({ error: 'Saison non trouvée' });
-        }
-
-        if (!title) {
-            return res.status(400).json({ error: 'Le titre est requis' });
-        }
-
-        const saison = updateSaison(id, {
-            title,
-            order_index: order_index || 1,
-            description,
-            is_premium: is_premium || false
-        });
-
-        res.json({
-            message: 'Saison mise à jour avec succès',
-            saison
-        });
-    } catch (error) {
-        console.error('Erreur mise à jour saison:', error);
-        res.status(500).json({ error: 'Erreur lors de la mise à jour de la saison' });
-    }
-});
-
-/**
- * DELETE /admin/saisons/:id
- * Supprime une saison
- */
-router.delete('/saisons/:id', (req, res) => {
-    try {
-        const id = parseInt(req.params.id);
-        const saison = getSaisonById(id);
-        if (!saison) {
-            return res.status(404).json({ error: 'Saison non trouvée' });
-        }
-
-        deleteSaison(id);
-        res.json({ message: 'Saison supprimée avec succès' });
-    } catch (error) {
-        console.error('Erreur suppression saison:', error);
-        res.status(500).json({ error: 'Erreur lors de la suppression de la saison' });
-    }
-});
-
-// ============================================
-// ROUTES EPISODES - Admin uniquement
-// ============================================
-
-/**
- * GET /admin/episodes/saison/:saisonId
- * Récupère tous les épisodes d'une saison
- */
-router.get('/episodes/saison/:saisonId', (req, res) => {
-    try {
-        const saisonId = parseInt(req.params.saisonId);
-        const episodes = getEpisodesBySaison(saisonId);
-        res.json({ episodes });
-    } catch (error) {
-        console.error('Erreur récupération épisodes:', error);
-        res.status(500).json({ error: 'Erreur lors de la récupération des épisodes' });
-    }
-});
-
-/**
- * GET /admin/episodes/:id
- * Récupère un épisode par son ID
- */
-router.get('/episodes/:id', (req, res) => {
-    try {
-        const episode = getEpisodeById(parseInt(req.params.id));
-        if (!episode) {
-            return res.status(404).json({ error: 'Épisode non trouvé' });
-        }
-        res.json({ episode });
-    } catch (error) {
-        console.error('Erreur récupération épisode:', error);
-        res.status(500).json({ error: 'Erreur lors de la récupération de l\'épisode' });
-    }
-});
-
-/**
- * POST /admin/episodes
- * Crée un nouvel épisode
- */
-router.post('/episodes', async (req, res) => {
-    try {
-        const {
-            saison_id,
-            title,
-            episode_number,
-            video_url,
-            subtitle_url,
-            is_premium
-        } = req.body;
-
-        if (!saison_id || !title || !video_url) {
-            return res.status(400).json({
-                error: 'La saison, le titre et l\'URL vidéo sont requis'
-            });
-        }
-
-        // Vérifier que la saison existe
-        const saison = getSaisonById(saison_id);
-        if (!saison) {
-            return res.status(404).json({ error: 'Saison non trouvée' });
-        }
-
-        // Détecter automatiquement la durée
-        const detectedDuration = await detectVideoDuration(video_url);
-
-        const episode = createEpisode({
-            saison_id,
-            title,
-            episode_number: episode_number || 1,
-            video_url,
-            subtitle_url,
-            thumbnail_url: null,
-            duration: detectedDuration,
-            is_premium: is_premium || false
-        });
-
-        // Extraire le thumbnail en arrière-plan
-        extractThumbnail(video_url, episode.id, 'episodes').then(thumbnailPath => {
-            if (thumbnailPath) {
-                updateEpisode(episode.id, {
-                    ...episode,
-                    thumbnail_url: thumbnailPath
-                });
-            }
-        });
-
-        res.status(201).json({
-            message: 'Épisode créé avec succès',
-            episode
-        });
-    } catch (error) {
-        console.error('Erreur création épisode:', error);
-        res.status(500).json({ error: 'Erreur lors de la création de l\'épisode' });
-    }
-});
-
-/**
- * PUT /admin/episodes/:id
- * Met à jour un épisode
- */
-router.put('/episodes/:id', async (req, res) => {
-    try {
-        const id = parseInt(req.params.id);
-        const {
-            title,
-            episode_number,
-            video_url,
-            subtitle_url,
-            is_premium
-        } = req.body;
-
-        const existingEpisode = getEpisodeById(id);
-        if (!existingEpisode) {
-            return res.status(404).json({ error: 'Épisode non trouvé' });
-        }
-
-        if (!title || !video_url) {
-            return res.status(400).json({
-                error: 'Le titre et l\'URL vidéo sont requis'
-            });
-        }
-
-        // Détecter la durée si l'URL a changé
-        let detectedDuration = existingEpisode.duration;
-        let thumbnailUrl = existingEpisode.thumbnail_url;
-
-        if (video_url !== existingEpisode.video_url) {
-            detectedDuration = await detectVideoDuration(video_url);
-
-            // Extraire nouveau thumbnail en arrière-plan
-            extractThumbnail(video_url, id, 'episodes').then(thumbnailPath => {
+        // Extraire thumbnail en arrière-plan si vidéo
+        if (type === 'video' && video_url) {
+            extractThumbnail(video_url, node.id, 'content').then(thumbnailPath => {
                 if (thumbnailPath) {
-                    updateEpisode(id, {
-                        title,
-                        episode_number: episode_number || 1,
-                        video_url,
-                        subtitle_url,
-                        thumbnail_url: thumbnailPath,
-                        duration: detectedDuration,
-                        is_premium: is_premium || false
-                    });
+                    updateNode(node.id, { ...node, thumbnail_url: thumbnailPath });
                 }
             });
         }
 
-        const episode = updateEpisode(id, {
-            title,
-            episode_number: episode_number || 1,
-            video_url,
-            subtitle_url,
-            thumbnail_url: thumbnailUrl,
-            duration: detectedDuration,
-            is_premium: is_premium || false
-        });
-
-        res.json({
-            message: 'Épisode mis à jour avec succès',
-            episode
-        });
+        res.status(201).json({ message: 'Nœud créé', node });
     } catch (error) {
-        console.error('Erreur mise à jour épisode:', error);
-        res.status(500).json({ error: 'Erreur lors de la mise à jour de l\'épisode' });
+        console.error('Erreur création nœud:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
     }
 });
 
 /**
- * DELETE /admin/episodes/:id
- * Supprime un épisode
+ * PUT /admin/content/:id
+ * Met à jour un nœud
  */
-router.delete('/episodes/:id', (req, res) => {
+router.put('/content/:id', async (req, res) => {
     try {
         const id = parseInt(req.params.id);
-        const episode = getEpisodeById(id);
-        if (!episode) {
-            return res.status(404).json({ error: 'Épisode non trouvé' });
+        const existingNode = getNodeById(id);
+
+        if (!existingNode) {
+            return res.status(404).json({ error: 'Nœud introuvable' });
         }
 
-        deleteEpisode(id);
-        res.json({ message: 'Épisode supprimé avec succès' });
+        const {
+            title,
+            description,
+            video_url,
+            subtitle_url,
+            is_premium,
+            order_index,
+            tagIds
+        } = req.body;
+
+        // Détecter durée si URL changée
+        let duration = existingNode.duration;
+        if (existingNode.type === 'video' && video_url && video_url !== existingNode.video_url) {
+            duration = await detectVideoDuration(video_url);
+
+            // Extraire nouveau thumbnail
+            extractThumbnail(video_url, id, 'content').then(thumbnailPath => {
+                if (thumbnailPath) {
+                    updateNode(id, { ...existingNode, thumbnail_url: thumbnailPath });
+                }
+            });
+        }
+
+        const node = updateNode(id, {
+            title,
+            description,
+            video_url,
+            subtitle_url,
+            duration,
+            is_premium,
+            order_index,
+            tagIds
+        });
+
+        res.json({ message: 'Nœud mis à jour', node });
     } catch (error) {
-        console.error('Erreur suppression épisode:', error);
-        res.status(500).json({ error: 'Erreur lors de la suppression de l\'épisode' });
+        console.error('Erreur mise à jour nœud:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+/**
+ * DELETE /admin/content/:id
+ * Supprime un nœud (et ses enfants via CASCADE)
+ */
+router.delete('/content/:id', (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const node = getNodeById(id);
+
+        if (!node) {
+            return res.status(404).json({ error: 'Nœud introuvable' });
+        }
+
+        deleteNode(id);
+        res.json({ message: 'Nœud supprimé' });
+    } catch (error) {
+        console.error('Erreur suppression nœud:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
     }
 });
 

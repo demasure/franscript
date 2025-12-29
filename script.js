@@ -399,10 +399,10 @@ function createNodeCard(node) {
         ? node.tags.map(tag => `<span class="tag" style="background-color: rgba(${hexToRgb(tag.color)}, 0.2); color: ${tag.color}; border: 2px solid ${tag.color};">${tag.name.toUpperCase()}</span>`).join('')
         : '';
 
-    // Thumbnail
-    const thumbnailSrc = node.thumbnail_url
-        ? node.thumbnail_url
-        : `https://via.placeholder.com/400x225/${isFolder ? 'ffa500' : '2ecc71'}/ffffff?text=${encodeURIComponent(node.title)}`;
+    // Image d'affiche : cover_image pour les dossiers, thumbnail_url pour les vidéos
+    const thumbnailSrc = isFolder
+        ? (node.cover_image || `https://via.placeholder.com/400x225/ffa500/ffffff?text=${encodeURIComponent(node.title)}`)
+        : (node.thumbnail_url || `https://via.placeholder.com/400x225/2ecc71/ffffff?text=${encodeURIComponent(node.title)}`);
 
     // Badge premium
     const shouldShowLock = node.is_premium === 1 && !currentUser.isPremium && !currentUser.isAdmin;
@@ -429,7 +429,7 @@ function createNodeCard(node) {
             ${premiumBadge}
         </div>
         <div class="video-info">
-            <h3 class="video-title">${isFolder ? '📁 ' : ''}${node.title}</h3>
+            <h3 class="video-title">${node.title}</h3>
             <p class="video-description">${node.description || ''}</p>
             <div class="video-meta">
                 ${durationHTML}

@@ -268,6 +268,14 @@ function initDatabase() {
     db.exec(createContentNodesTable);
     db.exec(createContentNodeTagsTable);
 
+    // Migration : ajouter la colonne cover_image si elle n'existe pas
+    try {
+        db.exec(`ALTER TABLE content_nodes ADD COLUMN cover_image TEXT`);
+        console.log('✅ Colonne "cover_image" ajoutée à la table content_nodes');
+    } catch (error) {
+        // La colonne existe déjà, ignorer l'erreur
+    }
+
     console.log('✅ Base de données initialisée');
 }
 
@@ -1115,6 +1123,7 @@ function createNode(nodeData) {
         video_url,
         subtitle_url,
         thumbnail_url,
+        cover_image,
         duration,
         is_premium,
         order_index,
@@ -1124,9 +1133,9 @@ function createNode(nodeData) {
     const stmt = db.prepare(`
         INSERT INTO content_nodes (
             parent_id, title, description, type, video_url, subtitle_url,
-            thumbnail_url, duration, is_premium, order_index
+            thumbnail_url, cover_image, duration, is_premium, order_index
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const result = stmt.run(
@@ -1137,6 +1146,7 @@ function createNode(nodeData) {
         type === 'video' ? video_url : null,
         type === 'video' ? (subtitle_url || null) : null,
         thumbnail_url || null,
+        cover_image || null,
         duration || null,
         is_premium ? 1 : 0,
         order_index || 0
@@ -1166,6 +1176,7 @@ function updateNode(id, nodeData) {
         video_url,
         subtitle_url,
         thumbnail_url,
+        cover_image,
         duration,
         is_premium,
         order_index,
@@ -1178,7 +1189,7 @@ function updateNode(id, nodeData) {
     const stmt = db.prepare(`
         UPDATE content_nodes
         SET title = ?, description = ?, video_url = ?, subtitle_url = ?,
-            thumbnail_url = ?, duration = ?, is_premium = ?, order_index = ?
+            thumbnail_url = ?, cover_image = ?, duration = ?, is_premium = ?, order_index = ?
         WHERE id = ?
     `);
 
@@ -1188,6 +1199,7 @@ function updateNode(id, nodeData) {
         node.type === 'video' ? video_url : null,
         node.type === 'video' ? (subtitle_url || null) : null,
         thumbnail_url || null,
+        cover_image || null,
         duration || null,
         is_premium ? 1 : 0,
         order_index !== undefined ? order_index : node.order_index,

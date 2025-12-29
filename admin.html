@@ -650,6 +650,17 @@
                             <textarea id="node-description"></textarea>
                         </div>
 
+                        <!-- Folder-specific fields -->
+                        <div id="folder-fields" style="display: none;">
+                            <div class="form-group">
+                                <label for="node-cover-image">Image d'affiche (cover)</label>
+                                <input type="text" id="node-cover-image" placeholder="images/covers/ma_serie.jpg">
+                                <small style="color: var(--color-text-secondary); display: block; margin-top: 5px;">
+                                    📐 Recommandé : ratio 16:9 (ex: 1280x720px) pour correspondre aux vidéos
+                                </small>
+                            </div>
+                        </div>
+
                         <!-- Video-specific fields -->
                         <div id="video-fields" style="display: none;">
                             <div class="form-group">
@@ -1668,6 +1679,7 @@
         function showCreateNodeModal(type) {
             const modal = document.getElementById('node-modal');
             const videoFields = document.getElementById('video-fields');
+            const folderFields = document.getElementById('folder-fields');
 
             // Reset form
             document.getElementById('node-form').reset();
@@ -1675,8 +1687,9 @@
             document.getElementById('node-type').value = type;
             document.getElementById('node-parent-id').value = currentNodeId || '';
 
-            // Afficher/masquer les champs vidéo
+            // Afficher/masquer les champs selon le type
             videoFields.style.display = type === 'video' ? 'block' : 'none';
+            folderFields.style.display = type === 'folder' ? 'block' : 'none';
 
             // Titre du modal
             document.getElementById('modal-title').textContent = type === 'folder'
@@ -1739,15 +1752,20 @@
                 document.getElementById('node-description').value = node.description || '';
                 document.getElementById('node-is-premium').checked = node.is_premium === 1;
 
-                // Champs vidéo
+                // Champs spécifiques selon le type
                 const videoFields = document.getElementById('video-fields');
+                const folderFields = document.getElementById('folder-fields');
+
                 if (node.type === 'video') {
                     videoFields.style.display = 'block';
+                    folderFields.style.display = 'none';
                     document.getElementById('node-video-url').value = node.video_url || '';
                     document.getElementById('node-subtitle-url').value = node.subtitle_url || '';
                     document.getElementById('node-thumbnail-url').value = node.thumbnail_url || '';
                 } else {
                     videoFields.style.display = 'none';
+                    folderFields.style.display = 'block';
+                    document.getElementById('node-cover-image').value = node.cover_image || '';
                 }
 
                 // Tags
@@ -1826,11 +1844,13 @@
                         .map(btn => parseInt(btn.dataset.tagId))
                 };
 
-                // Ajouter les champs vidéo si c'est une vidéo
+                // Ajouter les champs spécifiques selon le type
                 if (type === 'video') {
                     nodeData.video_url = document.getElementById('node-video-url').value;
                     nodeData.subtitle_url = document.getElementById('node-subtitle-url').value || null;
                     nodeData.thumbnail_url = document.getElementById('node-thumbnail-url').value || null;
+                } else if (type === 'folder') {
+                    nodeData.cover_image = document.getElementById('node-cover-image').value || null;
                 }
 
                 try {

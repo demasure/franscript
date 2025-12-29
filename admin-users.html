@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion Utilisateurs - FranScript Admin</title>
+
+    <!-- Protection admin -->
+    <script src="authGuard.js"></script>
+
+    <!-- Styles principaux (thème sombre) -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="navbar.css">
+
+    <style>
+        /* Overrides spécifiques pour l'admin */
+        body {
+            background: var(--color-bg-primary);
+            padding: 2rem;
+        }
+
+        .admin-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .admin-header {
+            background: var(--color-bg-card);
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 2rem;
+            box-shadow: var(--box-shadow-lg);
+        }
+
+        .admin-header h1 {
+            color: var(--color-text-primary);
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .admin-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #000;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 700;
+            margin-left: 1rem;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--color-primary);
+            text-decoration: none;
+            margin-bottom: 1rem;
+            transition: opacity 0.3s;
+        }
+
+        .back-link:hover {
+            opacity: 0.8;
+        }
+
+        /* Section création */
+        .create-section {
+            background: var(--color-bg-card);
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 2rem;
+            box-shadow: var(--box-shadow);
+        }
+
+        .create-section h2 {
+            color: var(--color-text-primary);
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-field label {
+            color: var(--color-text-secondary);
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .form-field input,
+        .form-field select {
+            background: var(--color-bg-elevated);
+            border: 1px solid var(--color-bg-hover);
+            border-radius: 8px;
+            padding: 0.75rem;
+            color: var(--color-text-primary);
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .form-field input:focus,
+        .form-field select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(0, 85, 164, 0.1);
+        }
+
+        .checkbox-field {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .checkbox-field input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checkbox-field label {
+            color: var(--color-text-primary);
+            cursor: pointer;
+        }
+
+        /* Boutons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-light);
+            transform: translateY(-2px);
+            box-shadow: var(--box-shadow);
+        }
+
+        .btn-secondary {
+            background: var(--color-bg-elevated);
+            color: var(--color-text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-bg-hover);
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        /* Section liste */
+        .users-section {
+            background: var(--color-bg-card);
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        .users-section h2 {
+            color: var(--color-text-primary);
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        .search-bar {
+            margin-bottom: 1.5rem;
+        }
+
+        .search-bar input {
+            width: 100%;
+            max-width: 400px;
+            background: var(--color-bg-elevated);
+            border: 1px solid var(--color-bg-hover);
+            border-radius: 8px;
+            padding: 0.75rem;
+            color: var(--color-text-primary);
+            font-size: 1rem;
+        }
+
+        .search-bar input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(0, 85, 164, 0.1);
+        }
+
+        /* Table */
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .users-table thead {
+            background: var(--color-bg-elevated);
+        }
+
+        .users-table th {
+            padding: 1rem;
+            text-align: left;
+            color: var(--color-text-secondary);
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .users-table td {
+            padding: 1rem;
+            border-top: 1px solid var(--color-bg-hover);
+            color: var(--color-text-primary);
+        }
+
+        .users-table tbody tr {
+            transition: background 0.2s;
+        }
+
+        .users-table tbody tr:hover {
+            background: var(--color-bg-elevated);
+        }
+
+        .user-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-admin {
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            color: #000;
+        }
+
+        .badge-premium {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .badge-free {
+            background: var(--color-bg-elevated);
+            color: var(--color-text-secondary);
+        }
+
+        .actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--color-bg-card);
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h3 {
+            color: var(--color-text-primary);
+            font-size: 1.5rem;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--color-text-secondary);
+            font-size: 2rem;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+
+        .close-modal:hover {
+            background: var(--color-bg-elevated);
+            color: var(--color-text-primary);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 2rem;
+        }
+
+        /* Messages */
+        .message {
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-weight: 500;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.success {
+            background: rgba(46, 204, 113, 0.1);
+            border: 1px solid #2ecc71;
+            color: #2ecc71;
+        }
+
+        .message.error {
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid #e74c3c;
+            color: #e74c3c;
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--color-text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .users-table {
+                display: block;
+                overflow-x: auto;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Header -->
+        <div class="admin-header">
+            <a href="admin.html" class="back-link">← Retour au dashboard</a>
+            <h1>
+                👥 Gestion des Utilisateurs
+                <span class="admin-badge">Admin</span>
+            </h1>
+            <p style="color: var(--color-text-secondary); margin-top: 0.5rem;">
+                Créez, modifiez et gérez les comptes utilisateurs
+            </p>
+        </div>
+
+        <!-- Message de notification -->
+        <div id="notification" class="message"></div>
+
+        <!-- Section création d'utilisateur -->
+        <div class="create-section">
+            <h2>➕ Créer un nouvel utilisateur</h2>
+
+            <form id="create-user-form">
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label for="new-email">Email *</label>
+                        <input type="email" id="new-email" required placeholder="utilisateur@example.com">
+                    </div>
+
+                    <div class="form-field">
+                        <label for="new-password">Mot de passe *</label>
+                        <input type="password" id="new-password" required placeholder="Min. 6 caractères" minlength="6">
+                    </div>
+
+                    <div class="form-field">
+                        <label for="new-username">Pseudo</label>
+                        <input type="text" id="new-username" placeholder="Nom d'affichage">
+                    </div>
+
+                    <div class="form-field">
+                        <label for="new-role">Rôle</label>
+                        <select id="new-role">
+                            <option value="user">Utilisateur</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="checkbox-field">
+                    <input type="checkbox" id="new-premium">
+                    <label for="new-premium">👑 Compte Premium</label>
+                </div>
+
+                <div style="margin-top: 1.5rem;">
+                    <button type="submit" class="btn btn-primary">
+                        ✨ Créer l'utilisateur
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Section liste des utilisateurs -->
+        <div class="users-section">
+            <h2>📋 Liste des utilisateurs (<span id="user-count">0</span>)</h2>
+
+            <div class="search-bar">
+                <input type="text" id="search-input" placeholder="🔍 Rechercher par email ou pseudo...">
+            </div>
+
+            <table class="users-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Email</th>
+                        <th>Pseudo</th>
+                        <th>Rôle</th>
+                        <th>Statut</th>
+                        <th>Créé le</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="users-table-body">
+                    <!-- Rempli dynamiquement -->
+                </tbody>
+            </table>
+
+            <div id="empty-state" class="empty-state" style="display: none;">
+                <div class="empty-state-icon">👤</div>
+                <p>Aucun utilisateur trouvé</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal d'édition -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✏️ Modifier l'utilisateur</h3>
+                <button class="close-modal" onclick="closeEditModal()">&times;</button>
+            </div>
+
+            <form id="edit-user-form">
+                <input type="hidden" id="edit-user-id">
+
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label for="edit-email">Email *</label>
+                        <input type="email" id="edit-email" required>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="edit-username">Pseudo</label>
+                        <input type="text" id="edit-username">
+                    </div>
+
+                    <div class="form-field">
+                        <label for="edit-role">Rôle</label>
+                        <select id="edit-role">
+                            <option value="user">Utilisateur</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="edit-password">Nouveau mot de passe (optionnel)</label>
+                        <input type="password" id="edit-password" placeholder="Laisser vide pour ne pas changer" minlength="6">
+                    </div>
+                </div>
+
+                <div class="checkbox-field">
+                    <input type="checkbox" id="edit-premium">
+                    <label for="edit-premium">👑 Compte Premium</label>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">
+                        Annuler
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        💾 Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="navbar.js"></script>
+    <script src="admin-users.js"></script>
+</body>
+</html>

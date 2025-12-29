@@ -7,6 +7,10 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>FranScript - Panel Admin</title>
+
+    <!-- Styles pour le thème sombre -->
+    <link rel="stylesheet" href="style.css">
+
     <style>
         * {
             margin: 0;
@@ -16,7 +20,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #f5f5f5;
+            background: var(--color-bg-primary);
             padding: 20px;
         }
 
@@ -26,15 +30,15 @@
         }
 
         header {
-            background: white;
+            background: var(--color-bg-card);
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: var(--box-shadow-lg);
         }
 
         h1 {
-            color: #1e3c72;
+            color: var(--color-text-primary);
             margin-bottom: 10px;
         }
 
@@ -56,18 +60,19 @@
 
         .tab {
             padding: 12px 24px;
-            background: white;
+            background: var(--color-bg-card);
             border: none;
             border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
             font-weight: 500;
             transition: all 0.3s;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: var(--box-shadow);
+            color: var(--color-text-primary);
         }
 
         .tab.active {
-            background: #1e3c72;
+            background: var(--color-primary);
             color: white;
         }
 
@@ -80,15 +85,15 @@
         }
 
         .panel {
-            background: white;
+            background: var(--color-bg-card);
             padding: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: var(--box-shadow);
             margin-bottom: 20px;
         }
 
         h2 {
-            color: #1e3c72;
+            color: var(--color-text-primary);
             margin-bottom: 15px;
         }
 
@@ -99,19 +104,22 @@
         label {
             display: block;
             margin-bottom: 5px;
-            color: #333;
+            color: var(--color-text-secondary);
             font-weight: 500;
         }
 
         input[type="text"],
         input[type="url"],
         textarea,
-        select {
+        select,
+        input[type="color"] {
             width: 100%;
             padding: 10px;
-            border: 2px solid #e0e0e0;
+            background: var(--color-bg-elevated);
+            border: 1px solid var(--color-bg-hover);
             border-radius: 6px;
             font-size: 14px;
+            color: var(--color-text-primary);
             transition: border-color 0.3s;
         }
 
@@ -119,7 +127,8 @@
         textarea:focus,
         select:focus {
             outline: none;
-            border-color: #1e3c72;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(0, 85, 164, 0.1);
         }
 
         textarea {
@@ -141,7 +150,7 @@
 
         button {
             padding: 10px 20px;
-            background: #1e3c72;
+            background: var(--color-primary);
             color: white;
             border: none;
             border-radius: 6px;
@@ -152,7 +161,7 @@
         }
 
         button:hover {
-            background: #2a5298;
+            background: var(--color-primary-light);
         }
 
         button.danger {
@@ -164,11 +173,12 @@
         }
 
         button.secondary {
-            background: #6c757d;
+            background: var(--color-bg-elevated);
+            color: var(--color-text-primary);
         }
 
         button.secondary:hover {
-            background: #5a6268;
+            background: var(--color-bg-hover);
         }
 
         .message {
@@ -202,17 +212,18 @@
         th, td {
             padding: 12px;
             text-align: left;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid var(--color-bg-hover);
+            color: var(--color-text-primary);
         }
 
         th {
-            background: #f8f9fa;
+            background: var(--color-bg-elevated);
             font-weight: 600;
-            color: #333;
+            color: var(--color-text-secondary);
         }
 
         tr:hover {
-            background: #f8f9fa;
+            background: var(--color-bg-elevated);
         }
 
         .actions {
@@ -341,10 +352,10 @@
         }
 
         .stat-card {
-            background: white;
+            background: var(--color-bg-card);
             padding: 24px;
             border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: var(--box-shadow);
             display: flex;
             align-items: center;
             gap: 16px;
@@ -353,7 +364,7 @@
 
         .stat-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            box-shadow: var(--box-shadow-lg);
         }
 
         .stat-icon {
@@ -367,7 +378,7 @@
 
         .stat-label {
             font-size: 0.875rem;
-            color: #666;
+            color: var(--color-text-secondary);
             margin-bottom: 8px;
             font-weight: 500;
         }
@@ -375,7 +386,7 @@
         .stat-value {
             font-size: 2rem;
             font-weight: 700;
-            color: #1e3c72;
+            color: var(--color-primary);
         }
 
         .level-stats, .tag-stats {
@@ -399,7 +410,7 @@
         .level-bar-bg, .tag-bar-bg {
             flex: 1;
             height: 32px;
-            background: #f0f0f0;
+            background: var(--color-bg-elevated);
             border-radius: 16px;
             overflow: hidden;
             position: relative;
@@ -460,36 +471,48 @@
 
         .filter-btn {
             padding: 8px 16px;
-            background: white;
-            border: 2px solid #ddd;
+            background: var(--color-bg-elevated);
+            border: 2px solid var(--color-bg-hover);
             border-radius: 6px;
             cursor: pointer;
             font-size: 14px;
             font-weight: 500;
+            color: var(--color-text-primary);
             transition: all 0.3s;
         }
 
         .filter-btn:hover {
-            border-color: #1e3c72;
+            border-color: var(--color-primary);
         }
 
         .filter-btn.active {
-            background: #1e3c72;
+            background: var(--color-primary);
             color: white;
-            border-color: #1e3c72;
+            border-color: var(--color-primary);
+        }
+
+        .btn-users-link:hover {
+            background: var(--color-primary-light) !important;
+            transform: translateY(-2px);
+            box-shadow: var(--box-shadow);
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <a href="/index.html" style="color: #1e3c72; text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 10px;">← Retour à l'accueil</a>
+            <a href="/index.html" style="color: var(--color-primary); text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 10px;">← Retour à l'accueil</a>
             <button class="logout-btn" onclick="logout()">Se déconnecter</button>
             <h1>👑 Panel Admin FranScript</h1>
             <div style="display: flex; align-items: center; gap: 12px;">
                 <span class="admin-badge">Admin</span>
                 <img id="admin-profile-pic" src="" alt="Profil" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #ffc107; object-fit: cover; display: none;">
-                <span id="admin-username" style="font-weight: 600; color: #333;"></span>
+                <span id="admin-username" style="font-weight: 600; color: var(--color-text-primary);"></span>
+            </div>
+            <div style="margin-top: 15px;">
+                <a href="admin-users.html" class="btn-users-link" style="display: inline-block; padding: 10px 20px; background: var(--color-primary); color: white; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; transition: background 0.3s;">
+                    👥 Gestion des Utilisateurs
+                </a>
             </div>
         </header>
 
@@ -600,7 +623,7 @@
         <div id="tab-reports" class="tab-content">
             <div class="panel">
                 <h2>⚠️ Signalements des utilisateurs</h2>
-                <p style="color: #666; margin-bottom: 20px;">Gérez les signalements de problèmes envoyés par les utilisateurs.</p>
+                <p style="color: var(--color-text-secondary); margin-bottom: 20px;">Gérez les signalements de problèmes envoyés par les utilisateurs.</p>
 
                 <!-- Filtres -->
                 <div class="form-group">
@@ -630,7 +653,7 @@
                     </tbody>
                 </table>
 
-                <p id="no-reports-message" style="text-align: center; color: #999; padding: 40px; display: none;">
+                <p id="no-reports-message" style="text-align: center; color: var(--color-text-secondary); padding: 40px; display: none;">
                     Aucun signalement trouvé.
                 </p>
             </div>
@@ -1267,7 +1290,7 @@
             const tagEntries = Object.entries(tagUsage).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
             if (tagEntries.length === 0) {
-                container.innerHTML = '<p style="color: #666;">Aucun tag utilisé</p>';
+                container.innerHTML = '<p style="color: var(--color-text-secondary);">Aucun tag utilisé</p>';
                 return;
             }
 
@@ -1296,7 +1319,7 @@
             const tbody = document.querySelector('#recent-videos-table tbody');
 
             if (videos.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #666;">Aucune vidéo</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--color-text-secondary);">Aucune vidéo</td></tr>';
                 return;
             }
 

@@ -78,29 +78,80 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 async function loadVideoFromURL() {
     const params = new URLSearchParams(window.location.search);
-    const videoSrc = params.get('video') || 'videos/ma_video.mp4';
-    const subtitleSrc = params.get('subtitle') || 'videos/ma_video.vtt';
-    const title = params.get('title') || 'Ma Première Vidéo';
-    const level = params.get('level') || 'B2';
     currentVideoId = params.get('id') || null;
+
+    console.log('🎬 Chargement vidéo - ID:', currentVideoId);
+
+    let videoData = null;
+
+    // Si un ID est fourni, charger les données depuis l'API
+    if (currentVideoId) {
+        try {
+            const response = await fetch(`http://localhost:3000/api/content/${currentVideoId}`, {
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                console.error('❌ Erreur chargement vidéo:', response.status);
+                return;
+            }
+
+            const data = await response.json();
+
+            // Vérifier l'accès
+            if (data.access && !data.access.allowed) {
+                console.log('🔒 Accès refusé à la vidéo');
+                blockVideoAccess();
+                return;
+            }
+
+            videoData = data.node;
+            console.log('✅ Vidéo chargée:', videoData.title, '| video_url:', videoData.video_url);
+
+        } catch (error) {
+            console.error('❌ Erreur fetch vidéo:', error);
+            return;
+        }
+    }
+
+    // Déterminer les sources à utiliser
+    const videoSrc = videoData?.video_url || params.get('video') || 'videos/ma_video.mp4';
+    const subtitleSrc = videoData?.subtitle_url || params.get('subtitle') || 'videos/ma_video.vtt';
+    const title = videoData?.title || params.get('title') || 'Ma Première Vidéo';
+    const level = videoData?.level || params.get('level') || 'B2';
+
+    console.log('📹 Sources - Video:', videoSrc, '| Subtitle:', subtitleSrc);
 
     // Mettre à jour les informations de base
     document.getElementById('video-title').textContent = title;
     document.querySelector('.video-level-badge').textContent = level;
     document.querySelector('.video-level-badge').className = `video-level-badge level-${level.toLowerCase()}`;
 
-    // CRITIQUE : Vérifier l'accès AVANT de charger la vidéo
-    if (currentVideoId) {
-        const canAccess = await checkVideoAccessBeforeLoad(currentVideoId);
-        if (!canAccess) {
-            return; // Bloqué - ne pas charger la vidéo
+    // Afficher les métadonnées supplémentaires
+    if (videoData) {
+        // Description
+        if (videoData.description) {
+            document.getElementById('video-description').textContent = videoData.description;
         }
 
-        // Charger les métadonnées
-        await loadVideoMetadata(currentVideoId);
+        // Tags
+        if (videoData.tags && videoData.tags.length > 0) {
+            const tagsHTML = videoData.tags.map(tag => {
+                const rgb = hexToRgb(tag.color);
+                return `<span class="video-tag" style="background-color: rgba(${rgb}, 0.2); color: ${tag.color}; border: 2px solid ${tag.color}; padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 500; margin-right: 8px;">${tag.name.toUpperCase()}</span>`;
+            }).join('');
+            document.querySelector('.video-meta-tags').innerHTML += tagsHTML;
+        }
+
+        // Durée
+        if (videoData.duration) {
+            const durationFormatted = formatDuration(videoData.duration);
+            const durationHTML = `<span class="video-duration-badge" style="padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 500; background-color: rgba(255, 255, 255, 0.1); color: var(--color-text-secondary); border: 1px solid rgba(255, 255, 255, 0.2); margin-right: 8px;">⏱️ ${durationFormatted}</span>`;
+            document.querySelector('.video-meta-tags').innerHTML += durationHTML;
+        }
     }
 
-    // SEULEMENT MAINTENANT charger la vidéo si autorisé
+    // Charger la vidéo
     const videoElement = document.getElementById('video-player');
     const sourceElement = document.getElementById('video-source');
     const trackElement = document.getElementById('subtitle-track');
@@ -110,78 +161,6 @@ async function loadVideoFromURL() {
     videoElement.load();
 
     console.log(`📹 Vidéo chargée : ${title} (${level})`);
-}
-
-/**
- * Vérifie l'accès à la vidéo AVANT de la charger
- * Retourne true si l'utilisateur peut accéder, false sinon
- */
-async function checkVideoAccessBeforeLoad(videoId) {
-    try {
-        const response = await fetch(`http://localhost:3000/api/content/${videoId}`, {
-            credentials: 'include'
-        });
-        if (!response.ok) {
-            return false;
-        }
-
-        const data = await response.json();
-
-        // Vérifier l'accès via la nouvelle structure
-        if (data.access && !data.access.allowed) {
-            blockVideoAccess();
-            return false;
-        }
-
-        return true;
-    } catch (error) {
-        console.error('Erreur vérification accès:', error);
-        return false;
-    }
-}
-
-/**
- * Charge les métadonnées complètes de la vidéo depuis la base de données
- * Note: La vérification d'accès est déjà faite avant l'appel de cette fonction
- */
-async function loadVideoMetadata(videoId) {
-    try {
-        const response = await fetch(`http://localhost:3000/api/content/${videoId}`, {
-            credentials: 'include'
-        });
-        if (response.ok) {
-            const data = await response.json();
-            const video = data.node;
-
-            // Afficher la description
-            if (video.description) {
-                document.getElementById('video-description').textContent = video.description;
-            }
-
-            // Afficher les tags
-            if (video.tags && video.tags.length > 0) {
-                const tagsHTML = video.tags.map(tag => {
-                    const rgb = hexToRgb(tag.color);
-                    return `<span class="video-tag" style="background-color: rgba(${rgb}, 0.2); color: ${tag.color}; border: 2px solid ${tag.color}; padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 500; margin-right: 8px;">${tag.name.toUpperCase()}</span>`;
-                }).join('');
-
-                // Ajouter les tags après le niveau
-                const metaTags = document.querySelector('.video-meta-tags');
-                metaTags.innerHTML += tagsHTML;
-            }
-
-            // Afficher la durée
-            if (video.duration) {
-                const durationFormatted = formatDuration(video.duration);
-                const durationHTML = `<span class="video-duration-badge" style="padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 500; background-color: rgba(255, 255, 255, 0.1); color: var(--color-text-secondary); border: 1px solid rgba(255, 255, 255, 0.2); margin-right: 8px;">⏱️ ${durationFormatted}</span>`;
-
-                const metaTags = document.querySelector('.video-meta-tags');
-                metaTags.innerHTML += durationHTML;
-            }
-        }
-    } catch (error) {
-        console.error('Erreur chargement métadonnées:', error);
-    }
 }
 
 /**

@@ -357,9 +357,6 @@ async function loadRootNodes() {
             videoGrid.appendChild(card);
         });
 
-        // Réinitialiser les événements de clic sur les nouvelles cartes
-        initializeVideoCards();
-
         console.log(`✅ ${nodes.length} élément(s) chargé(s)`);
     } catch (error) {
         console.error('Erreur chargement contenu:', error);
@@ -446,6 +443,11 @@ function createNodeCard(node) {
         article.addEventListener('click', () => {
             // Redirection vers la page de navigation dans le dossier
             window.location.href = `browse.html?folder=${node.id}`;
+        });
+    } else {
+        // VIDEO : redirection vers le lecteur
+        article.addEventListener('click', () => {
+            window.location.href = `player.html?id=${node.id}`;
         });
     }
 

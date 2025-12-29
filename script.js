@@ -6,6 +6,7 @@
  * - Redirection vers page player dédiée (player.html)
  * - Navigation fluide
  * - Protection anti-téléchargement
+ * - Gestion dynamique accès Premium
  *
  * Structure évolutive pour ajouter :
  * - Authentification utilisateur
@@ -13,6 +14,16 @@
  * - Annotations interactives
  * - Recherche avancée
  */
+
+// ========================================
+// ÉTAT UTILISATEUR GLOBAL
+// ========================================
+let currentUser = {
+    isPremium: false,
+    isAdmin: false,
+    isLoggedIn: false,
+    email: null
+};
 
 // ========================================
 // UTILITAIRES
@@ -39,6 +50,54 @@ function formatDuration(seconds) {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
+}
+
+// ========================================
+// RÉCUPÉRATION DU STATUT UTILISATEUR
+// ========================================
+/**
+ * Récupère le statut de l'utilisateur connecté (premium, admin, etc.)
+ * Met à jour l'objet currentUser global
+ */
+async function getUserStatus() {
+    try {
+        const response = await fetch('http://localhost:3000/auth/me', {
+            credentials: 'include'
+        });
+
+        if (!response.ok) {
+            // Utilisateur non connecté
+            console.log('👤 Utilisateur non connecté');
+            currentUser = {
+                isPremium: false,
+                isAdmin: false,
+                isLoggedIn: false,
+                email: null
+            };
+            return;
+        }
+
+        const data = await response.json();
+        const user = data.user;
+
+        currentUser = {
+            isPremium: user.is_premium === 1,
+            isAdmin: user.role === 'admin',
+            isLoggedIn: true,
+            email: user.email
+        };
+
+        console.log(`✅ Utilisateur connecté: ${user.email} | Premium: ${currentUser.isPremium} | Admin: ${currentUser.isAdmin}`);
+
+    } catch (error) {
+        console.error('❌ Erreur récupération statut utilisateur:', error);
+        currentUser = {
+            isPremium: false,
+            isAdmin: false,
+            isLoggedIn: false,
+            email: null
+        };
+    }
 }
 
 // ========================================
@@ -141,8 +200,10 @@ function createVideoCard(video) {
         : `https://via.placeholder.com/400x225/2ecc71/ffffff?text=${encodeURIComponent(video.title)}`;
 
     // Badge et overlay pour les vidéos payantes
+    // N'afficher le cadenas QUE si l'utilisateur n'est PAS premium/admin ET que la vidéo est payante
+    const shouldShowLock = video.is_paid === 1 && !currentUser.isPremium && !currentUser.isAdmin;
     const premiumBadge = video.is_paid === 1 ? '<span class="premium-video-badge">👑 Premium</span>' : '';
-    const lockOverlay = video.is_paid === 1 ? '<div class="video-lock-overlay"><span class="lock-icon">🔒</span></div>' : '';
+    const lockOverlay = shouldShowLock ? '<div class="video-lock-overlay"><span class="lock-icon">🔒</span></div>' : '';
 
     article.innerHTML = `
         <div class="video-thumbnail">
@@ -174,6 +235,10 @@ function createVideoCard(video) {
 // ========================================
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('🎬 FranScript initialisé');
+
+    // IMPORTANT: Récupérer le statut utilisateur EN PREMIER
+    // pour que currentUser soit disponible lors du rendu des vidéos
+    await getUserStatus();
 
     // Charger les tags et vidéos depuis la base de données
     await loadTags();

@@ -916,6 +916,7 @@ img {
     align-items: center;
     padding: 0 0.5rem;
     pointer-events: none;  /* Permet de cliquer sur le texte au centre */
+    z-index: 10;  /* Au-dessus du texte du sous-titre */
 }
 
 .subtitle-nav-btn {
@@ -933,6 +934,8 @@ img {
     align-items: center;
     gap: 0.25rem;
     opacity: 0.7;
+    z-index: 11;  /* Au-dessus de tout */
+    position: relative;  /* Pour que z-index fonctionne */
 }
 
 .subtitle-nav-btn:hover {

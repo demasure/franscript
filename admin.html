@@ -1775,7 +1775,9 @@
                 } else {
                     videoFields.style.display = 'none';
                     folderFields.style.display = 'block';
+                    console.log('🔍 EDIT - cover_image from API:', node.cover_image);
                     document.getElementById('node-cover-image').value = node.cover_image || '';
+                    console.log('🔍 EDIT - Set input field to:', document.getElementById('node-cover-image').value);
                 }
 
                 // Tags
@@ -1860,7 +1862,10 @@
                     nodeData.subtitle_url = document.getElementById('node-subtitle-url').value || null;
                     nodeData.thumbnail_url = document.getElementById('node-thumbnail-url').value || null;
                 } else if (type === 'folder') {
-                    nodeData.cover_image = document.getElementById('node-cover-image').value || null;
+                    const coverImageValue = document.getElementById('node-cover-image').value;
+                    console.log('📤 SUBMIT - cover_image from form:', coverImageValue);
+                    nodeData.cover_image = coverImageValue; // Même logique que video_url
+                    console.log('📤 SUBMIT - Sending cover_image:', nodeData.cover_image);
                 }
 
                 try {

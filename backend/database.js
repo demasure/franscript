@@ -1220,8 +1220,13 @@ function updateNode(id, nodeData) {
         tagIds
     } = nodeData;
 
+    console.log('💾 updateNode - id:', id);
+    console.log('💾 updateNode - cover_image from request:', cover_image);
+
     const node = getNodeById(id);
     if (!node) return null;
+
+    console.log('💾 updateNode - existing node.cover_image:', node.cover_image);
 
     const stmt = db.prepare(`
         UPDATE content_nodes
@@ -1230,13 +1235,17 @@ function updateNode(id, nodeData) {
         WHERE id = ?
     `);
 
+    // Même logique que video_url: si défini, on l'utilise tel quel, sinon on garde l'ancien
+    const finalCoverImage = cover_image !== undefined ? cover_image : node.cover_image;
+    console.log('💾 updateNode - Final cover_image value to save:', finalCoverImage);
+
     stmt.run(
         title,
         description !== undefined ? (description || null) : node.description,
         node.type === 'video' ? (video_url !== undefined ? video_url : node.video_url) : null,
         node.type === 'video' ? (subtitle_url !== undefined ? (subtitle_url || null) : node.subtitle_url) : null,
         thumbnail_url !== undefined ? (thumbnail_url || null) : node.thumbnail_url,
-        cover_image !== undefined ? (cover_image || null) : node.cover_image,
+        finalCoverImage,
         duration !== undefined ? (duration || null) : node.duration,
         is_premium !== undefined ? (is_premium ? 1 : 0) : node.is_premium,
         order_index !== undefined ? order_index : node.order_index,

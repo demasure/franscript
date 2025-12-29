@@ -11,9 +11,9 @@
  * - Aucune donnée hardcodée
  * - Gestion d'erreurs centralisée
  * - Prêt pour mise en cache future
+ *
+ * NOTE: API_URL est défini globalement dans navbar.js (chargé avant ce module)
  */
-
-const API_URL = 'http://localhost:3000';
 
 // ============================================
 // GESTION DES UTILISATEURS

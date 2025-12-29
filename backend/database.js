@@ -276,6 +276,73 @@ function initDatabase() {
         // La colonne existe déjà, ignorer l'erreur
     }
 
+    // ========================================
+    // MIGRATION : Unification sur cover_image
+    // ========================================
+    // Copier thumbnail_url vers cover_image si cover_image est vide
+    try {
+        const updateResult = db.prepare(`
+            UPDATE content_nodes
+            SET cover_image = thumbnail_url
+            WHERE cover_image IS NULL AND thumbnail_url IS NOT NULL
+        `).run();
+
+        if (updateResult.changes > 0) {
+            console.log(`✅ Migration: ${updateResult.changes} thumbnail_url copiés vers cover_image`);
+        }
+    } catch (error) {
+        console.error('❌ Erreur migration thumbnail_url → cover_image:', error.message);
+    }
+
+    // Supprimer la colonne thumbnail_url (reconstruction de table nécessaire pour SQLite)
+    try {
+        // Vérifier si la colonne thumbnail_url existe encore
+        const columns = db.prepare("PRAGMA table_info(content_nodes)").all();
+        const hasThumbnailUrl = columns.some(col => col.name === 'thumbnail_url');
+
+        if (hasThumbnailUrl) {
+            console.log('🔄 Suppression de la colonne thumbnail_url...');
+
+            // Créer table temporaire sans thumbnail_url
+            db.exec(`
+                CREATE TABLE content_nodes_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    parent_id INTEGER,
+                    title TEXT NOT NULL,
+                    description TEXT,
+                    type TEXT NOT NULL CHECK(type IN ('folder', 'video')),
+                    video_url TEXT,
+                    subtitle_url TEXT,
+                    cover_image TEXT,
+                    duration INTEGER,
+                    is_premium INTEGER DEFAULT 0,
+                    order_index INTEGER DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (parent_id) REFERENCES content_nodes(id) ON DELETE CASCADE
+                )
+            `);
+
+            // Copier les données (sans thumbnail_url)
+            db.exec(`
+                INSERT INTO content_nodes_new
+                    (id, parent_id, title, description, type, video_url, subtitle_url,
+                     cover_image, duration, is_premium, order_index, created_at)
+                SELECT
+                    id, parent_id, title, description, type, video_url, subtitle_url,
+                    cover_image, duration, is_premium, order_index, created_at
+                FROM content_nodes
+            `);
+
+            // Remplacer l'ancienne table
+            db.exec('DROP TABLE content_nodes');
+            db.exec('ALTER TABLE content_nodes_new RENAME TO content_nodes');
+
+            console.log('✅ Colonne thumbnail_url supprimée - cover_image est maintenant la source unique');
+        }
+    } catch (error) {
+        console.error('❌ Erreur suppression thumbnail_url:', error.message);
+    }
+
     console.log('✅ Base de données initialisée');
 }
 
@@ -1148,7 +1215,8 @@ function getNodeWithInheritedTags(id) {
 
 /**
  * Crée un nouveau nœud (dossier ou vidéo)
- * @param {object} nodeData - { parent_id, title, description, type, video_url, subtitle_url, is_premium, tagIds }
+ * SOURCE UNIQUE POUR LES IMAGES: cover_image pour TOUS les types (vidéo ET dossier)
+ * @param {object} nodeData - { parent_id, title, description, type, video_url, subtitle_url, cover_image, is_premium, tagIds }
  * @returns {object} Le nœud créé
  */
 function createNode(nodeData) {
@@ -1159,7 +1227,6 @@ function createNode(nodeData) {
         type,
         video_url,
         subtitle_url,
-        thumbnail_url,
         cover_image,
         duration,
         is_premium,
@@ -1170,9 +1237,9 @@ function createNode(nodeData) {
     const stmt = db.prepare(`
         INSERT INTO content_nodes (
             parent_id, title, description, type, video_url, subtitle_url,
-            thumbnail_url, cover_image, duration, is_premium, order_index
+            cover_image, duration, is_premium, order_index
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const result = stmt.run(
@@ -1182,8 +1249,7 @@ function createNode(nodeData) {
         type,
         type === 'video' ? video_url : null,
         type === 'video' ? (subtitle_url || null) : null,
-        thumbnail_url || null,
-        cover_image || null,
+        cover_image || null,  // Source unique pour TOUS les types
         duration || null,
         is_premium ? 1 : 0,
         order_index || 0
@@ -1202,6 +1268,7 @@ function createNode(nodeData) {
 
 /**
  * Met à jour un nœud
+ * SOURCE UNIQUE POUR LES IMAGES: cover_image pour TOUS les types (vidéo ET dossier)
  * @param {number} id - ID du nœud
  * @param {object} nodeData - Nouvelles données
  * @returns {object} Le nœud mis à jour
@@ -1212,7 +1279,6 @@ function updateNode(id, nodeData) {
         description,
         video_url,
         subtitle_url,
-        thumbnail_url,
         cover_image,
         duration,
         is_premium,
@@ -1220,35 +1286,25 @@ function updateNode(id, nodeData) {
         tagIds
     } = nodeData;
 
-    console.log('💾 updateNode - id:', id);
-    console.log('💾 updateNode - cover_image from request:', cover_image);
-
     const node = getNodeById(id);
     if (!node) return null;
-
-    console.log('💾 updateNode - existing node.cover_image:', node.cover_image);
 
     const stmt = db.prepare(`
         UPDATE content_nodes
         SET title = ?, description = ?, video_url = ?, subtitle_url = ?,
-            thumbnail_url = ?, cover_image = ?, duration = ?, is_premium = ?, order_index = ?
+            cover_image = ?, duration = ?, is_premium = ?, order_index = ?
         WHERE id = ?
     `);
 
-    // Même logique que video_url: si défini, on l'utilise tel quel, sinon on garde l'ancien
-    const finalThumbnailUrl = thumbnail_url !== undefined ? thumbnail_url : node.thumbnail_url;
+    // Préserver la valeur existante si non définie
     const finalCoverImage = cover_image !== undefined ? cover_image : node.cover_image;
-
-    console.log('💾 updateNode - Final thumbnail_url value to save:', finalThumbnailUrl);
-    console.log('💾 updateNode - Final cover_image value to save:', finalCoverImage);
 
     stmt.run(
         title,
         description !== undefined ? (description || null) : node.description,
         node.type === 'video' ? (video_url !== undefined ? video_url : node.video_url) : null,
         node.type === 'video' ? (subtitle_url !== undefined ? (subtitle_url || null) : node.subtitle_url) : null,
-        finalThumbnailUrl,
-        finalCoverImage,
+        finalCoverImage,  // Source unique pour TOUS les types
         duration !== undefined ? (duration || null) : node.duration,
         is_premium !== undefined ? (is_premium ? 1 : 0) : node.is_premium,
         order_index !== undefined ? order_index : node.order_index,

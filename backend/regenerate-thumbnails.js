@@ -1,13 +1,16 @@
-const { getAllVideos, updateVideo } = require('./database');
+const { getAllNodes, updateNode } = require('./database');
 const { extractThumbnail } = require('./videoUtils');
 
 /**
- * Régénère tous les thumbnails pour toutes les vidéos existantes
+ * Régénère toutes les images d'affiche pour les vidéos
+ * SOURCE UNIQUE: utilise cover_image pour TOUS les contenus
  */
 async function regenerateAllThumbnails() {
-    console.log('🎬 Début de la régénération des thumbnails...\n');
+    console.log('🎬 Début de la régénération des images d\'affiche...\n');
 
-    const videos = getAllVideos();
+    // Récupérer seulement les vidéos (pas les dossiers)
+    const allNodes = getAllNodes();
+    const videos = allNodes.filter(node => node.type === 'video');
     console.log(`📹 ${videos.length} vidéo(s) trouvée(s)\n`);
 
     let successCount = 0;
@@ -18,21 +21,21 @@ async function regenerateAllThumbnails() {
         console.log(`   Vidéo: ${video.video_url}`);
 
         try {
-            // Extraire le thumbnail
-            const thumbnailPath = await extractThumbnail(video.video_url, video.id);
+            // Extraire l'image d'affiche
+            const coverImagePath = await extractThumbnail(video.video_url, video.id);
 
-            if (thumbnailPath) {
-                // Mettre à jour la base de données
-                updateVideo(video.id, {
+            if (coverImagePath) {
+                // Mettre à jour la base de données - SOURCE UNIQUE: cover_image
+                updateNode(video.id, {
                     ...video,
-                    thumbnail_url: thumbnailPath,
+                    cover_image: coverImagePath,
                     tagIds: video.tags.map(t => t.id)
                 });
 
-                console.log(`   ✅ Thumbnail créé: ${thumbnailPath}`);
+                console.log(`   ✅ Image d'affiche créée: ${coverImagePath}`);
                 successCount++;
             } else {
-                console.log(`   ❌ Échec de création du thumbnail`);
+                console.log(`   ❌ Échec de création de l'image`);
                 errorCount++;
             }
         } catch (error) {

@@ -228,10 +228,8 @@ function createVideoCard(video) {
     const durationFormatted = formatDuration(video.duration);
     const durationHTML = durationFormatted ? `<span class="video-duration">${durationFormatted}</span>` : '';
 
-    // Utiliser le thumbnail réel si disponible, sinon placeholder
-    const thumbnailSrc = video.thumbnail_url
-        ? video.thumbnail_url
-        : `https://via.placeholder.com/400x225/2ecc71/ffffff?text=${encodeURIComponent(video.title)}`;
+    // Image d'affiche - SOURCE UNIQUE
+    const thumbnailSrc = video.cover_image || '';
 
     // Badge et overlay pour les vidéos payantes
     // N'afficher le cadenas QUE si l'utilisateur n'est PAS premium/admin ET que la vidéo est payante
@@ -284,10 +282,8 @@ function createSagaCard(saga) {
         ? saga.tags.map(tag => `<span class="tag" style="background-color: rgba(${hexToRgb(tag.color)}, 0.2); color: ${tag.color}; border: 2px solid ${tag.color};">${tag.name.toUpperCase()}</span>`).join('')
         : '';
 
-    // Thumbnail
-    const thumbnailSrc = saga.cover_image
-        ? saga.cover_image
-        : `https://via.placeholder.com/400x225/667eea/ffffff?text=${encodeURIComponent(saga.title)}`;
+    // Image d'affiche - SOURCE UNIQUE
+    const thumbnailSrc = saga.cover_image || '';
 
     // Badge premium
     const shouldShowLock = saga.is_premium === 1 && !currentUser.isPremium && !currentUser.isAdmin;
@@ -396,10 +392,8 @@ function createNodeCard(node) {
         ? node.tags.map(tag => `<span class="tag" style="background-color: rgba(${hexToRgb(tag.color)}, 0.2); color: ${tag.color}; border: 2px solid ${tag.color};">${tag.name.toUpperCase()}</span>`).join('')
         : '';
 
-    // Image d'affiche : cover_image pour les dossiers, thumbnail_url pour les vidéos
-    const thumbnailSrc = isFolder
-        ? (node.cover_image || `https://via.placeholder.com/400x225/ffa500/ffffff?text=${encodeURIComponent(node.title)}`)
-        : (node.thumbnail_url || `https://via.placeholder.com/400x225/2ecc71/ffffff?text=${encodeURIComponent(node.title)}`);
+    // Image d'affiche - SOURCE UNIQUE pour TOUS les types
+    const thumbnailSrc = node.cover_image || '';
 
     // Badge premium
     const shouldShowLock = node.is_premium === 1 && !currentUser.isPremium && !currentUser.isAdmin;

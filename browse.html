@@ -190,10 +190,8 @@
                 ? node.tags.map(tag => `<span class="tag" style="background-color: rgba(${hexToRgb(tag.color)}, 0.2); color: ${tag.color}; border: 2px solid ${tag.color};">${tag.name.toUpperCase()}</span>`).join('')
                 : '';
 
-            // Image d'affiche : cover_image pour les dossiers, thumbnail_url pour les vidéos
-            const thumbnailSrc = isFolder
-                ? (node.cover_image || `https://via.placeholder.com/400x225/ffa500/ffffff?text=${encodeURIComponent(node.title)}`)
-                : (node.thumbnail_url || `https://via.placeholder.com/400x225/2ecc71/ffffff?text=${encodeURIComponent(node.title)}`);
+            // Image d'affiche - SOURCE UNIQUE pour TOUS les types
+            const thumbnailSrc = node.cover_image || '';
 
             // Badge premium
             const shouldShowLock = node.is_premium === 1 && !currentUser.isPremium && !currentUser.isAdmin;

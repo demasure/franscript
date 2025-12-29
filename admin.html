@@ -616,14 +616,6 @@
                             <textarea id="node-description"></textarea>
                         </div>
 
-                        <!-- Folder-specific fields -->
-                        <div id="folder-fields" style="display: none;">
-                            <div class="form-group">
-                                <label for="node-cover-image">Image d'affiche (cover)</label>
-                                <input type="text" id="node-cover-image" placeholder="images/covers/ma_serie.jpg">
-                            </div>
-                        </div>
-
                         <!-- Video-specific fields -->
                         <div id="video-fields" style="display: none;">
                             <div class="form-group">
@@ -635,14 +627,15 @@
                                 <label for="node-subtitle-url">URL des sous-titres</label>
                                 <input type="text" id="node-subtitle-url" placeholder="videos/ma_video.vtt">
                             </div>
+                        </div>
 
-                            <div class="form-group">
-                                <label for="node-thumbnail-url">URL de la miniature</label>
-                                <input type="text" id="node-thumbnail-url" placeholder="videos/thumbnail.jpg">
-                                <small style="color: var(--color-text-secondary); display: block; margin-top: 5px;">
-                                    💡 Le fichier image doit exister sur le serveur. Si l'image ne s'affiche pas sur l'accueil après modification, videz le cache (Ctrl+F5) ou changez le nom du fichier.
-                                </small>
-                            </div>
+                        <!-- Image field - SOURCE UNIQUE pour TOUS les types (vidéo ET dossier) -->
+                        <div class="form-group">
+                            <label for="node-cover-image">Image d'affiche</label>
+                            <input type="text" id="node-cover-image" placeholder="images/mon_affiche.jpg">
+                            <small style="color: var(--color-text-secondary); display: block; margin-top: 5px;">
+                                💡 Pour vidéos et dossiers. Le fichier image doit exister sur le serveur.
+                            </small>
                         </div>
 
                         <div class="form-group">
@@ -1764,21 +1757,17 @@
 
                 // Champs spécifiques selon le type
                 const videoFields = document.getElementById('video-fields');
-                const folderFields = document.getElementById('folder-fields');
 
                 if (node.type === 'video') {
                     videoFields.style.display = 'block';
-                    folderFields.style.display = 'none';
                     document.getElementById('node-video-url').value = node.video_url || '';
                     document.getElementById('node-subtitle-url').value = node.subtitle_url || '';
-                    document.getElementById('node-thumbnail-url').value = node.thumbnail_url || '';
                 } else {
                     videoFields.style.display = 'none';
-                    folderFields.style.display = 'block';
-                    console.log('🔍 EDIT - cover_image from API:', node.cover_image);
-                    document.getElementById('node-cover-image').value = node.cover_image || '';
-                    console.log('🔍 EDIT - Set input field to:', document.getElementById('node-cover-image').value);
                 }
+
+                // Image - SOURCE UNIQUE pour TOUS les types
+                document.getElementById('node-cover-image').value = node.cover_image || '';
 
                 // Tags
                 renderNodeTagSelector();
@@ -1846,8 +1835,6 @@
                 const type = document.getElementById('node-type').value;
                 const parentId = document.getElementById('node-parent-id').value;
 
-                console.log('📋 SUBMIT START - Node type:', type, '| Node ID:', nodeId);
-
                 const nodeData = {
                     parent_id: parentId || null,
                     title: document.getElementById('node-title').value,
@@ -1858,19 +1845,14 @@
                         .map(btn => parseInt(btn.dataset.tagId))
                 };
 
-                // Ajouter les champs spécifiques selon le type
+                // Champs vidéo (si type vidéo)
                 if (type === 'video') {
                     nodeData.video_url = document.getElementById('node-video-url').value;
                     nodeData.subtitle_url = document.getElementById('node-subtitle-url').value || null;
-                    // Même logique que video_url: pas de || null pour préserver valeur existante
-                    nodeData.thumbnail_url = document.getElementById('node-thumbnail-url').value;
-                    console.log('📤 SUBMIT - thumbnail_url from form:', nodeData.thumbnail_url);
-                } else if (type === 'folder') {
-                    const coverImageValue = document.getElementById('node-cover-image').value;
-                    console.log('📤 SUBMIT - cover_image from form:', coverImageValue);
-                    nodeData.cover_image = coverImageValue; // Même logique que video_url
-                    console.log('📤 SUBMIT - Sending cover_image:', nodeData.cover_image);
                 }
+
+                // Image - SOURCE UNIQUE pour TOUS les types (vidéo ET dossier)
+                nodeData.cover_image = document.getElementById('node-cover-image').value;
 
                 try {
                     const url = nodeId

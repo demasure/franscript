@@ -374,9 +374,7 @@ app.put('/admin/content/:id', requireAdmin, (req, res) => {
     try {
         const { updateNode } = require('./database');
         const nodeId = parseInt(req.params.id);
-        console.log('🔧 PUT /admin/content/:id - Received data:', JSON.stringify(req.body, null, 2));
         const updatedNode = updateNode(nodeId, req.body);
-        console.log('✅ PUT /admin/content/:id - Updated node:', JSON.stringify(updatedNode, null, 2));
 
         if (!updatedNode) {
             return res.status(404).json({ error: 'Nœud introuvable' });

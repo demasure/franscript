@@ -687,23 +687,54 @@ function getVideoByUrl(videoUrl) {
  * @returns {object} La vidéo créée
  */
 function createVideo(videoData) {
+    // WRAPPER RÉTROCOMPATIBLE: redirige vers createNode pour la nouvelle structure
     const { title, description, video_url, subtitle_url, thumbnail_url, level, duration, is_paid, tagIds } = videoData;
 
-    const stmt = db.prepare(`
-        INSERT INTO videos (title, description, video_url, subtitle_url, thumbnail_url, level, duration, is_paid)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+    // Convertir les anciens paramètres vers la nouvelle structure
+    const nodeData = {
+        parent_id: null,  // Les vidéos legacy sont à la racine
+        title,
+        description,
+        type: 'video',
+        video_url,
+        subtitle_url,
+        cover_url: thumbnail_url,  // thumbnail_url → cover_url
+        duration,
+        is_premium: is_paid,  // is_paid → is_premium
+        tagIds
+    };
 
-    const result = stmt.run(title, description, video_url, subtitle_url || null, thumbnail_url || null, level || 'B2', duration || null, is_paid ? 1 : 0);
-    const videoId = result.lastInsertRowid;
+    // Utiliser la fonction moderne qui insère dans content_nodes
+    const node = createNode(nodeData);
 
-    // Associer les tags
-    if (tagIds && tagIds.length > 0) {
-        const insertTag = db.prepare('INSERT INTO video_tags (video_id, tag_id) VALUES (?, ?)');
-        tagIds.forEach(tagId => insertTag.run(videoId, tagId));
+    // Pour rétrocompatibilité, insérer aussi dans l'ancienne table videos si elle existe
+    try {
+        const checkTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='videos'").get();
+        if (checkTable) {
+            const stmt = db.prepare(`
+                INSERT INTO videos (id, title, description, video_url, subtitle_url, thumbnail_url, level, duration, is_paid, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `);
+            stmt.run(
+                node.id,
+                title,
+                description,
+                video_url,
+                subtitle_url || null,
+                thumbnail_url || null,
+                level || 'B2',
+                duration || null,
+                is_paid ? 1 : 0,
+                node.created_at,
+                node.updated_at
+            );
+        }
+    } catch (error) {
+        // Erreur non-bloquante (la vidéo existe déjà dans content_nodes)
+        console.log('⚠️  Info: vidéo non dupliquée dans table legacy "videos"');
     }
 
-    return getVideoById(videoId);
+    return node;
 }
 
 /**

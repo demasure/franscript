@@ -342,7 +342,11 @@ function initDatabase() {
         const commentsColumns = db.prepare("PRAGMA table_info(comments)").all();
         const hasVideoId = commentsColumns.some(col => col.name === 'video_id');
 
-        if (hasVideoId) {
+        // Vérifier aussi subtitle_notes séparément
+        const notesColumns = db.prepare("PRAGMA table_info(subtitle_notes)").all();
+        const notesHasVideoId = notesColumns.some(col => col.name === 'video_id');
+
+        if (hasVideoId || notesHasVideoId) {
             console.log('🔄 Migration video_id → node_id dans comments, subtitle_notes, reports...');
 
             // Sauvegarder les données existantes
@@ -379,8 +383,8 @@ function initDatabase() {
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     user_id INTEGER NOT NULL,
                     node_id INTEGER NOT NULL,
-                    subtitle_index INTEGER NOT NULL,
-                    note TEXT NOT NULL,
+                    start_time REAL NOT NULL,
+                    text TEXT NOT NULL,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
                     FOREIGN KEY (node_id) REFERENCES content_nodes(id) ON DELETE CASCADE
@@ -389,9 +393,13 @@ function initDatabase() {
 
             // Restaurer les données (video_id → node_id)
             if (existingNotes.length > 0) {
-                const stmt = db.prepare('INSERT INTO subtitle_notes (id, user_id, node_id, subtitle_index, note, created_at) VALUES (?, ?, ?, ?, ?, ?)');
+                const stmt = db.prepare('INSERT INTO subtitle_notes (id, user_id, node_id, start_time, text, created_at) VALUES (?, ?, ?, ?, ?, ?)');
                 existingNotes.forEach(n => {
-                    stmt.run(n.id, n.user_id, n.video_id, n.subtitle_index, n.note, n.created_at);
+                    // Gérer les deux formats possibles (ancien: video_id, nouveau: node_id)
+                    const nodeId = n.node_id || n.video_id;
+                    const startTime = n.start_time || 0;
+                    const text = n.text || n.note || '';
+                    stmt.run(n.id, n.user_id, nodeId, startTime, text, n.created_at);
                 });
             }
 

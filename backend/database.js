@@ -1327,11 +1327,13 @@ function updateNode(id, nodeData) {
 
         // Si le statut premium a changé
         if (newPremiumStatus !== oldPremiumStatus) {
-            if (newPremiumStatus === 1 && node.type === 'folder') {
-                // DESCENDANTE : Dossier devient premium → propager aux descendants
-                propagatePremiumToChildren(id, true);
-            } else if (newPremiumStatus === 0) {
-                // ASCENDANTE : Nœud devient gratuit → remonter aux parents
+            // DESCENDANTE : Si c'est un dossier, propager aux descendants (premium OU gratuit)
+            if (node.type === 'folder') {
+                propagatePremiumToChildren(id, newPremiumStatus === 1);
+            }
+
+            // ASCENDANTE : Si devient gratuit, remonter aux parents
+            if (newPremiumStatus === 0) {
                 propagateFreeToParents(id);
             }
         }

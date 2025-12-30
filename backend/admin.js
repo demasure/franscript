@@ -1,5 +1,8 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const {
     getAllVideos,
     getVideoById,
@@ -24,6 +27,80 @@ const {
 const { detectVideoDuration, extractThumbnail } = require('./videoUtils');
 
 const router = express.Router();
+
+// ============================================
+// CONFIGURATION UPLOAD THUMBNAILS
+// ============================================
+
+// Créer le dossier thumbnails s'il n'existe pas
+const thumbnailsDir = path.join(__dirname, '..', 'uploads', 'thumbnails');
+if (!fs.existsSync(thumbnailsDir)) {
+    fs.mkdirSync(thumbnailsDir, { recursive: true });
+}
+
+// Configuration multer pour l'upload de thumbnails
+const thumbnailStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, thumbnailsDir);
+    },
+    filename: function (req, file, cb) {
+        // Nom: thumbnail-timestamp-random.ext
+        const ext = path.extname(file.originalname);
+        const filename = `thumbnail-${Date.now()}-${Math.random().toString(36).substring(7)}${ext}`;
+        cb(null, filename);
+    }
+});
+
+const thumbnailUpload = multer({
+    storage: thumbnailStorage,
+    limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB max
+    },
+    fileFilter: function (req, file, cb) {
+        // Accepter seulement images
+        const allowedTypes = /jpeg|jpg|png|gif|webp/;
+        const ext = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = allowedTypes.test(file.mimetype);
+
+        if (ext && mimetype) {
+            return cb(null, true);
+        }
+        cb(new Error('Format de fichier non supporté. Utilisez JPG, PNG, GIF ou WebP.'));
+    }
+});
+
+// ============================================
+// ROUTE UPLOAD THUMBNAIL - Admin uniquement
+// ============================================
+
+/**
+ * POST /admin/upload-thumbnail
+ * Upload d'une vignette (thumbnail) pour une vidéo
+ * Multipart form-data avec fichier "thumbnail"
+ *
+ * Retourne: { url: "/uploads/thumbnails/filename.jpg" }
+ */
+router.post('/upload-thumbnail', thumbnailUpload.single('thumbnail'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ error: 'Aucun fichier fourni' });
+    }
+
+    try {
+        // Retourner l'URL du fichier uploadé
+        const thumbnailUrl = `/uploads/thumbnails/${req.file.filename}`;
+
+        console.log(`✅ Thumbnail uploadé: ${thumbnailUrl}`);
+
+        res.json({
+            url: thumbnailUrl,
+            filename: req.file.filename,
+            size: req.file.size
+        });
+    } catch (error) {
+        console.error('Erreur upload thumbnail:', error);
+        res.status(500).json({ error: 'Erreur lors de l\'upload du thumbnail' });
+    }
+});
 
 // ============================================
 // ROUTES VIDÉOS - Admin uniquement
@@ -69,6 +146,7 @@ router.get('/videos/:id', (req, res) => {
  *   description: string
  *   video_url: string (requis)
  *   subtitle_url: string
+ *   thumbnail_url: string (optionnel, URL de la vignette)
  *   level: string (B2, C1, C2)
  *   duration: number (en secondes)
  *   is_paid: boolean
@@ -77,7 +155,7 @@ router.get('/videos/:id', (req, res) => {
  */
 router.post('/videos', async (req, res) => {
     try {
-        const { title, description, video_url, subtitle_url, level, is_paid, tagIds } = req.body;
+        const { title, description, video_url, subtitle_url, thumbnail_url, level, is_paid, tagIds } = req.body;
 
         // Validation
         if (!title || !video_url) {
@@ -95,23 +173,25 @@ router.post('/videos', async (req, res) => {
             description: description || '',
             video_url,
             subtitle_url,
-            thumbnail_url: null, // Sera mis à jour juste après
+            thumbnail_url: thumbnail_url || null, // Utiliser thumbnail_url fourni ou null
             level: level || 'B2',
             duration: detectedDuration,
             is_paid: is_paid || false,
             tagIds: tagIds || []
         });
 
-        // Extraire le thumbnail après création (en arrière-plan)
-        extractThumbnail(video_url, video.id).then(thumbnailPath => {
-            if (thumbnailPath) {
-                updateVideo(video.id, {
-                    ...video,
-                    thumbnail_url: thumbnailPath,
-                    tagIds: video.tags.map(t => t.id)
-                });
-            }
-        });
+        // Si aucun thumbnail fourni, extraire automatiquement (en arrière-plan)
+        if (!thumbnail_url) {
+            extractThumbnail(video_url, video.id).then(thumbnailPath => {
+                if (thumbnailPath) {
+                    updateVideo(video.id, {
+                        ...video,
+                        thumbnail_url: thumbnailPath,
+                        tagIds: video.tags.map(t => t.id)
+                    });
+                }
+            });
+        }
 
         res.status(201).json({
             message: 'Vidéo créée avec succès',
@@ -132,6 +212,7 @@ router.post('/videos', async (req, res) => {
  *   description: string
  *   video_url: string
  *   subtitle_url: string
+ *   thumbnail_url: string (optionnel, URL de la vignette)
  *   level: string (B2, C1, C2)
  *   duration: number (en secondes)
  *   is_paid: boolean
@@ -141,7 +222,7 @@ router.post('/videos', async (req, res) => {
 router.put('/videos/:id', async (req, res) => {
     try {
         const id = parseInt(req.params.id);
-        const { title, description, video_url, subtitle_url, level, is_paid, tagIds } = req.body;
+        const { title, description, video_url, subtitle_url, thumbnail_url, level, is_paid, tagIds } = req.body;
 
         // Vérifier que la vidéo existe
         const existingVideo = getVideoById(id);
@@ -158,28 +239,30 @@ router.put('/videos/:id', async (req, res) => {
 
         // Détecter automatiquement la durée de la vidéo si l'URL a changé
         let detectedDuration = existingVideo.duration;
-        let thumbnailUrl = existingVideo.thumbnail_url;
+        let finalThumbnailUrl = thumbnail_url !== undefined ? thumbnail_url : existingVideo.thumbnail_url;
 
         if (video_url !== existingVideo.video_url) {
             detectedDuration = await detectVideoDuration(video_url);
             console.log(`📹 Durée détectée pour "${title}": ${detectedDuration ? detectedDuration + 's' : 'Non détectée'}`);
 
-            // Extraire nouveau thumbnail en arrière-plan
-            extractThumbnail(video_url, id).then(thumbnailPath => {
-                if (thumbnailPath) {
-                    updateVideo(id, {
-                        title,
-                        description: description || '',
-                        video_url,
-                        subtitle_url,
-                        thumbnail_url: thumbnailPath,
-                        level: level || 'B2',
-                        duration: detectedDuration,
-                        is_paid: is_paid || false,
-                        tagIds: tagIds || []
-                    });
-                }
-            });
+            // Extraire nouveau thumbnail en arrière-plan SEULEMENT si aucun thumbnail fourni
+            if (thumbnail_url === undefined) {
+                extractThumbnail(video_url, id).then(thumbnailPath => {
+                    if (thumbnailPath) {
+                        updateVideo(id, {
+                            title,
+                            description: description || '',
+                            video_url,
+                            subtitle_url,
+                            thumbnail_url: thumbnailPath,
+                            level: level || 'B2',
+                            duration: detectedDuration,
+                            is_paid: is_paid || false,
+                            tagIds: tagIds || []
+                        });
+                    }
+                });
+            }
         }
 
         const video = updateVideo(id, {
@@ -187,7 +270,7 @@ router.put('/videos/:id', async (req, res) => {
             description: description || '',
             video_url,
             subtitle_url,
-            thumbnail_url: thumbnailUrl,
+            thumbnail_url: finalThumbnailUrl,
             level: level || 'B2',
             duration: detectedDuration,
             is_paid: is_paid || false,

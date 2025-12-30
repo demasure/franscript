@@ -1315,7 +1315,41 @@ function updateNode(id, nodeData) {
         tagIds.forEach(tagId => insertTag.run(id, tagId));
     }
 
+    // Si c'est un dossier, propager les tags aux enfants récursivement
+    if (node.type === 'folder' && tagIds && tagIds.length > 0) {
+        propagateTagsToChildren(id, tagIds);
+    }
+
     return getNodeById(id);
+}
+
+/**
+ * Propage les tags d'un dossier à tous ses descendants (récursif)
+ * @param {number} folderId - ID du dossier parent
+ * @param {Array<number>} tagIds - IDs des tags à propager
+ */
+function propagateTagsToChildren(folderId, tagIds) {
+    const children = getChildNodes(folderId);
+
+    children.forEach(child => {
+        // Récupérer les tags existants de l'enfant
+        const existingTags = db.prepare(`
+            SELECT tag_id FROM content_node_tags WHERE node_id = ?
+        `).all(child.id).map(row => row.tag_id);
+
+        // Fusionner avec les nouveaux tags (union, sans doublons)
+        const mergedTags = [...new Set([...existingTags, ...tagIds])];
+
+        // Mettre à jour les tags de l'enfant
+        db.prepare('DELETE FROM content_node_tags WHERE node_id = ?').run(child.id);
+        const insertTag = db.prepare('INSERT INTO content_node_tags (node_id, tag_id) VALUES (?, ?)');
+        mergedTags.forEach(tagId => insertTag.run(child.id, tagId));
+
+        // Si l'enfant est un dossier, propager récursivement
+        if (child.type === 'folder') {
+            propagateTagsToChildren(child.id, tagIds);
+        }
+    });
 }
 
 /**

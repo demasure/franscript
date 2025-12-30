@@ -1528,6 +1528,7 @@
         let currentNodeId = null;  // null = root
         let currentPath = [];      // Breadcrumb path
         let contentNodes = [];     // Current nodes being displayed
+        let openFolders = new Set(); // IDs des dossiers ouverts (persistance session)
 
         /**
          * Charge le contenu du nœud courant
@@ -1582,6 +1583,27 @@
 
             // Ajouter event listeners après le rendu
             attachRowListeners();
+
+            // Restaurer l'état des dossiers ouverts
+            restoreOpenFoldersState();
+        }
+
+        /**
+         * Restaure l'état des dossiers ouverts après le rendu
+         */
+        function restoreOpenFoldersState() {
+            openFolders.forEach(folderId => {
+                const chevron = document.querySelector(`tr[data-node-id="${folderId}"] .folder-chevron`);
+                const children = document.querySelectorAll(`.child-of-${folderId}`);
+
+                if (chevron && children.length > 0) {
+                    // Ouvrir le dossier
+                    chevron.style.transform = '';
+                    children.forEach(child => {
+                        child.style.display = '';
+                    });
+                }
+            });
         }
 
         /**
@@ -1661,6 +1683,8 @@
                 children.forEach(child => {
                     child.style.display = '';
                 });
+                // Mémoriser que ce dossier est ouvert
+                openFolders.add(parseInt(nodeId));
             } else {
                 // Enrouler
                 chevron.style.transform = 'rotate(-90deg)';
@@ -1671,8 +1695,12 @@
                     if (childNodeId) {
                         const subChildren = document.querySelectorAll(`.child-of-${childNodeId}`);
                         subChildren.forEach(sub => sub.style.display = 'none');
+                        // Retirer aussi les sous-enfants de openFolders
+                        openFolders.delete(parseInt(childNodeId));
                     }
                 });
+                // Retirer ce dossier de la liste des dossiers ouverts
+                openFolders.delete(parseInt(nodeId));
             }
         }
 

@@ -1320,6 +1320,23 @@ function updateNode(id, nodeData) {
         propagateTagsToChildren(id, tagIds);
     }
 
+    // Gestion de la propagation du statut premium (bidirectionnelle)
+    if (is_premium !== undefined) {
+        const newPremiumStatus = is_premium ? 1 : 0;
+        const oldPremiumStatus = node.is_premium;
+
+        // Si le statut premium a changé
+        if (newPremiumStatus !== oldPremiumStatus) {
+            if (newPremiumStatus === 1 && node.type === 'folder') {
+                // DESCENDANTE : Dossier devient premium → propager aux descendants
+                propagatePremiumToChildren(id, true);
+            } else if (newPremiumStatus === 0) {
+                // ASCENDANTE : Nœud devient gratuit → remonter aux parents
+                propagateFreeToParents(id);
+            }
+        }
+    }
+
     return getNodeById(id);
 }
 
@@ -1350,6 +1367,45 @@ function propagateTagsToChildren(folderId, tagIds) {
             propagateTagsToChildren(child.id, tagIds);
         }
     });
+}
+
+/**
+ * Propage le statut premium d'un dossier à tous ses descendants (récursif)
+ * @param {number} folderId - ID du dossier parent
+ * @param {boolean} isPremium - Statut premium à propager
+ */
+function propagatePremiumToChildren(folderId, isPremium) {
+    const children = getChildNodes(folderId);
+    const stmt = db.prepare('UPDATE content_nodes SET is_premium = ? WHERE id = ?');
+
+    children.forEach(child => {
+        // Mettre à jour le statut premium de l'enfant
+        stmt.run(isPremium ? 1 : 0, child.id);
+
+        // Si l'enfant est un dossier, propager récursivement
+        if (child.type === 'folder') {
+            propagatePremiumToChildren(child.id, isPremium);
+        }
+    });
+}
+
+/**
+ * Propage le statut gratuit à tous les parents (remontée)
+ * @param {number} nodeId - ID du nœud qui devient gratuit
+ */
+function propagateFreeToParents(nodeId) {
+    const node = getNodeById(nodeId);
+    if (!node || !node.parent_id) return;
+
+    const stmt = db.prepare('UPDATE content_nodes SET is_premium = 0 WHERE id = ?');
+
+    // Remonter la chaîne des parents
+    let currentId = node.parent_id;
+    while (currentId) {
+        stmt.run(currentId);
+        const parent = getNodeById(currentId);
+        currentId = parent ? parent.parent_id : null;
+    }
 }
 
 /**

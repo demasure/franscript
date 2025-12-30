@@ -1023,18 +1023,6 @@ img {
     text-align: center;
 }
 
-/* Toolbar admin INLINE dans le bandeau sous-titres */
-.subtitle-toolbar-inline {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 6px;
-    z-index: 10;
-}
-
 /* Toggle switch compact */
 .toggle-switch {
     display: flex;
@@ -1285,6 +1273,67 @@ img {
     border-radius: var(--border-radius);
     padding: var(--spacing-md);
     box-shadow: var(--box-shadow);
+}
+
+/* === BANDEAU ADMIN === */
+.admin-panel {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md);
+    box-shadow: var(--box-shadow);
+    margin-bottom: var(--spacing-md);
+    border: 2px solid #ffc107;
+}
+
+.admin-panel-header {
+    margin-bottom: var(--spacing-sm);
+}
+
+.admin-panel-header .panel-title {
+    color: #ffc107;
+    font-size: var(--font-size-base);
+    font-weight: 700;
+    margin: 0;
+}
+
+.admin-panel-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.admin-option {
+    padding: var(--spacing-sm);
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.admin-option:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.btn-save-admin {
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: linear-gradient(135deg, #ffc107 0%, #f39c12 100%);
+    color: #1a1a1a;
+    border: none;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+}
+
+.btn-save-admin:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.5);
+}
+
+.btn-save-admin:active {
+    transform: translateY(0);
 }
 
 .action-btn {

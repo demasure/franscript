@@ -21,6 +21,7 @@ let isEditMode = false;  // Mode édition activé ou non
 let editedSubtitles = {};  // Sous-titres modifiés {index: newText}
 let currentVideoId = null;  // ID de la vidéo courante
 let isAdmin = false;  // Utilisateur admin ou non
+let isDeleteMode = false;  // Mode suppression commentaires (admin uniquement)
 let userNotes = [];  // Notes personnelles de l'utilisateur pour cette vidéo
 let isNotesCompactMode = true;  // Mode compact (défaut) : affiche notes dans fenêtre temporelle
 let lastNotesRefreshTime = -1;  // Dernier temps où les notes ont été rafraîchies (pour throttle)
@@ -67,6 +68,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Initialiser le mode édition
     initializeEditMode();
+
+    // Initialiser le mode suppression commentaires (admin)
+    initializeDeleteMode();
 
     // Vidéos suggérées désactivées (bandeau supprimé)
     // loadSuggestedVideos();
@@ -954,9 +958,12 @@ async function checkAdminStatus() {
             isAdmin = data.user && data.user.role === 'admin';
 
             if (isAdmin) {
-                console.log('👑 Admin détecté - Mode édition disponible');
-                // Afficher la toolbar admin
-                document.getElementById('subtitle-admin-toolbar').style.display = 'flex';
+                console.log('👑 Admin détecté - Bandeau admin activé');
+                // Afficher le bandeau admin
+                const adminPanel = document.getElementById('admin-panel');
+                if (adminPanel) {
+                    adminPanel.style.display = 'block';
+                }
             }
         }
     } catch (error) {
@@ -969,9 +976,10 @@ async function checkAdminStatus() {
  */
 function initializeEditMode() {
     const toggle = document.getElementById('edit-mode-toggle');
+    const saveContainer = document.getElementById('save-subtitles-container');
     const saveBtn = document.getElementById('save-subtitles-btn');
 
-    if (!toggle || !saveBtn) return;
+    if (!toggle || !saveContainer || !saveBtn) return;
 
     // Écouteur sur le toggle
     toggle.addEventListener('change', function() {
@@ -979,10 +987,10 @@ function initializeEditMode() {
 
         if (isEditMode) {
             console.log('✏️ Mode édition activé');
-            saveBtn.style.display = 'inline-block';
+            saveContainer.style.display = 'block';
         } else {
             console.log('👁️ Mode normal activé');
-            saveBtn.style.display = 'none';
+            saveContainer.style.display = 'none';
         }
 
         // Mettre à jour le sous-titre actuel si présent
@@ -994,6 +1002,29 @@ function initializeEditMode() {
 
     // Écouteur sur le bouton sauvegarder
     saveBtn.addEventListener('click', saveSubtitles);
+}
+
+/**
+ * Initialiser le mode suppression des commentaires (admin uniquement)
+ */
+function initializeDeleteMode() {
+    const toggle = document.getElementById('delete-comments-toggle');
+
+    if (!toggle) return;
+
+    // Écouteur sur le toggle
+    toggle.addEventListener('change', function() {
+        isDeleteMode = this.checked;
+
+        if (isDeleteMode) {
+            console.log('🗑️ Mode suppression commentaires activé');
+        } else {
+            console.log('👁️ Mode suppression commentaires désactivé');
+        }
+
+        // Rafraîchir l'affichage des commentaires pour afficher/masquer les boutons de suppression
+        loadComments();
+    });
 }
 
 /**
@@ -1232,6 +1263,7 @@ function displayComments(comments) {
         const date = new Date(comment.created_at);
         const formattedDate = formatCommentDate(date);
         const isOwner = currentUser && currentUser.id === comment.user_id;
+        const canDelete = isOwner || (isAdmin && isDeleteMode);
 
         return `
             <div class="comment-card">
@@ -1254,7 +1286,7 @@ function displayComments(comments) {
                     ` : `
                         <span class="comment-likes">👍 ${comment.like_count || 0}</span>
                     `}
-                    ${isOwner ? `
+                    ${canDelete ? `
                         <button class="comment-delete-btn" onclick="deleteComment(${comment.id})">
                             🗑️ Supprimer
                         </button>

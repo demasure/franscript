@@ -58,18 +58,6 @@
                     <!-- Zone de sous-titres interactifs -->
                     <div class="interactive-subtitles-panel">
                         <div id="subtitles-display" class="subtitles-interactive">
-                            <!-- Toggle admin intégré dans le bandeau (coin supérieur droit) -->
-                            <div id="subtitle-admin-toolbar" class="subtitle-toolbar-inline" style="display: none;">
-                                <label class="toggle-switch">
-                                    <input type="checkbox" id="edit-mode-toggle">
-                                    <span class="toggle-slider"></span>
-                                    <span class="toggle-label">✏️ Mode édition</span>
-                                </label>
-                                <button id="save-subtitles-btn" class="btn-save-inline" style="display: none;">
-                                    💾 Sauvegarder
-                                </button>
-                            </div>
-
                             <!-- Boutons de navigation sous-titres -->
                             <div class="subtitle-navigation">
                                 <button id="prev-subtitle-btn" class="subtitle-nav-btn" title="Sous-titre précédent (flèche gauche)">
@@ -123,6 +111,39 @@
 
                 <!-- COLONNE DROITE : Aide IA et Suggestions -->
                 <div class="player-sidebar">
+
+                    <!-- Bandeau Admin (visible admin uniquement) -->
+                    <div id="admin-panel" class="admin-panel" style="display: none;">
+                        <div class="admin-panel-header">
+                            <h3 class="panel-title">⚙️ Admin</h3>
+                        </div>
+                        <div class="admin-panel-content">
+                            <!-- Switch Mode édition sous-titres -->
+                            <div class="admin-option">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="edit-mode-toggle">
+                                    <span class="toggle-slider"></span>
+                                    <span class="toggle-label">✏️ Mode édition sous-titres</span>
+                                </label>
+                            </div>
+
+                            <!-- Switch Suppression commentaires -->
+                            <div class="admin-option">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="delete-comments-toggle">
+                                    <span class="toggle-slider"></span>
+                                    <span class="toggle-label">🗑️ Supprimer commentaires</span>
+                                </label>
+                            </div>
+
+                            <!-- Bouton sauvegarde sous-titres (masqué par défaut) -->
+                            <div id="save-subtitles-container" class="admin-option" style="display: none;">
+                                <button id="save-subtitles-btn" class="btn-save-admin">
+                                    💾 Sauvegarder les sous-titres
+                                </button>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- Aide IA -->
                     <div class="ai-help-panel" id="ai-help-panel">

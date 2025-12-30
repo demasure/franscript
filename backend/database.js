@@ -992,10 +992,15 @@ function createComment(userId, nodeId, text) {
  * @param {number} userId - ID de l'utilisateur qui demande la suppression
  * @returns {boolean} True si supprimé, false sinon
  */
-function deleteComment(commentId, userId) {
+function deleteComment(commentId, userId, isAdmin = false) {
     const comment = db.prepare('SELECT * FROM comments WHERE id = ?').get(commentId);
 
-    if (!comment || comment.user_id !== userId) {
+    if (!comment) {
+        return false; // Commentaire introuvable
+    }
+
+    // Autoriser si l'utilisateur est admin OU propriétaire du commentaire
+    if (!isAdmin && comment.user_id !== userId) {
         return false; // Pas le droit de supprimer
     }
 

@@ -1,7 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const { getVideoById } = require('./database');
+const { getNodeById } = require('./database');
 
 const router = express.Router();
 
@@ -90,24 +90,28 @@ function cuesToWebVTT(cues) {
 }
 
 /**
- * GET /admin/subtitles/:videoId
+ * GET /admin/subtitles/:nodeId
  * Récupère les sous-titres d'une vidéo parsés
  */
-router.get('/:videoId', (req, res) => {
+router.get('/:nodeId', (req, res) => {
     try {
-        const videoId = parseInt(req.params.videoId);
-        const video = getVideoById(videoId);
+        const nodeId = parseInt(req.params.nodeId);
+        const node = getNodeById(nodeId);
 
-        if (!video) {
-            return res.status(404).json({ error: 'Vidéo non trouvée' });
+        if (!node) {
+            return res.status(404).json({ error: 'Contenu non trouvé' });
         }
 
-        if (!video.subtitle_url) {
+        if (node.type !== 'video') {
+            return res.status(400).json({ error: 'Ce contenu n\'est pas une vidéo' });
+        }
+
+        if (!node.subtitle_url) {
             return res.status(404).json({ error: 'Cette vidéo n\'a pas de sous-titres' });
         }
 
         // Construire le chemin absolu vers le fichier .vtt
-        const subtitlePath = path.join(__dirname, '..', video.subtitle_url);
+        const subtitlePath = path.join(__dirname, '..', node.subtitle_url);
 
         if (!fs.existsSync(subtitlePath)) {
             return res.status(404).json({ error: 'Fichier de sous-titres introuvable' });
@@ -118,8 +122,8 @@ router.get('/:videoId', (req, res) => {
         const cues = parseWebVTT(vttContent);
 
         res.json({
-            videoId,
-            subtitlePath: video.subtitle_url,
+            nodeId,
+            subtitlePath: node.subtitle_url,
             cues
         });
 
@@ -130,31 +134,35 @@ router.get('/:videoId', (req, res) => {
 });
 
 /**
- * PUT /admin/subtitles/:videoId
+ * PUT /admin/subtitles/:nodeId
  * Sauvegarde les modifications des sous-titres
  *
  * Body: { cues: [{index, start, end, text}] }
  */
-router.put('/:videoId', (req, res) => {
+router.put('/:nodeId', (req, res) => {
     try {
-        const videoId = parseInt(req.params.videoId);
+        const nodeId = parseInt(req.params.nodeId);
         const { cues } = req.body;
 
         if (!cues || !Array.isArray(cues)) {
             return res.status(400).json({ error: 'Données invalides' });
         }
 
-        const video = getVideoById(videoId);
+        const node = getNodeById(nodeId);
 
-        if (!video) {
-            return res.status(404).json({ error: 'Vidéo non trouvée' });
+        if (!node) {
+            return res.status(404).json({ error: 'Contenu non trouvé' });
         }
 
-        if (!video.subtitle_url) {
+        if (node.type !== 'video') {
+            return res.status(400).json({ error: 'Ce contenu n\'est pas une vidéo' });
+        }
+
+        if (!node.subtitle_url) {
             return res.status(404).json({ error: 'Cette vidéo n\'a pas de sous-titres' });
         }
 
-        const subtitlePath = path.join(__dirname, '..', video.subtitle_url);
+        const subtitlePath = path.join(__dirname, '..', node.subtitle_url);
 
         if (!fs.existsSync(subtitlePath)) {
             return res.status(404).json({ error: 'Fichier de sous-titres introuvable' });

@@ -9,7 +9,8 @@ const {
     getNotesByUserAndVideo,
     createNote,
     updateNote,
-    deleteNote
+    deleteNote,
+    findUserById
 } = require('./database');
 
 const router = express.Router();
@@ -121,7 +122,7 @@ router.post('/comments', (req, res) => {
 
 /**
  * DELETE /comments/:commentId
- * Supprime un commentaire (seulement l'auteur)
+ * Supprime un commentaire (auteur ou admin)
  */
 router.delete('/comments/:commentId', (req, res) => {
     // Vérifier que l'utilisateur est connecté
@@ -131,7 +132,12 @@ router.delete('/comments/:commentId', (req, res) => {
 
     try {
         const commentId = parseInt(req.params.commentId);
-        const deleted = deleteComment(commentId, req.session.userId);
+
+        // Vérifier si l'utilisateur est admin
+        const user = findUserById(req.session.userId);
+        const isAdmin = user && user.role === 'admin';
+
+        const deleted = deleteComment(commentId, req.session.userId, isAdmin);
 
         if (!deleted) {
             return res.status(403).json({ error: 'Non autorisé' });

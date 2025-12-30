@@ -38,3 +38,8 @@ npm-debug.log*
 # Environnement
 .env
 .env.local
+
+# Base de données locale
+*.db
+*.sqlite
+*.sqlite3

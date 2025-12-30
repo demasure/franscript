@@ -31,7 +31,7 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization'],
     exposedHeaders: ['set-cookie']
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // Configuration des sessions
 app.use(session({

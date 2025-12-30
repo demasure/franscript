@@ -1074,36 +1074,36 @@ function unlikeComment(userId, commentId) {
 /**
  * Récupère toutes les notes d'un utilisateur pour une vidéo
  * @param {number} userId - ID de l'utilisateur
- * @param {number} videoId - ID de la vidéo
+ * @param {number} nodeId - ID du content node (vidéo)
  * @returns {Array} Liste des notes
  */
-function getNotesByUserAndVideo(userId, videoId) {
+function getNotesByUserAndVideo(userId, nodeId) {
     return db.prepare(`
         SELECT * FROM subtitle_notes
-        WHERE user_id = ? AND video_id = ?
+        WHERE user_id = ? AND node_id = ?
         ORDER BY start_time ASC
-    `).all(userId, videoId);
+    `).all(userId, nodeId);
 }
 
 /**
  * Crée une nouvelle note
  * @param {number} userId - ID de l'utilisateur
- * @param {number} videoId - ID de la vidéo
+ * @param {number} nodeId - ID du content node (vidéo)
  * @param {number} startTime - Timecode de début (en secondes)
  * @param {string} text - Texte de la note
  * @returns {object} La note créée
  */
-function createNote(userId, videoId, startTime, text) {
+function createNote(userId, nodeId, startTime, text) {
     const stmt = db.prepare(`
-        INSERT INTO subtitle_notes (user_id, video_id, start_time, text)
+        INSERT INTO subtitle_notes (user_id, node_id, start_time, text)
         VALUES (?, ?, ?, ?)
     `);
 
-    const result = stmt.run(userId, videoId, startTime, text);
+    const result = stmt.run(userId, nodeId, startTime, text);
     return {
         id: result.lastInsertRowid,
         user_id: userId,
-        video_id: videoId,
+        node_id: nodeId,
         start_time: startTime,
         text,
         created_at: new Date().toISOString()

@@ -118,7 +118,6 @@ async function loadVideoFromURL() {
     const videoSrc = videoData?.video_url || params.get('video');
     const subtitleSrc = videoData?.subtitle_url || params.get('subtitle');
     const title = videoData?.title || params.get('title') || 'Vidéo sans titre';
-    const level = videoData?.level || params.get('level') || 'B2';
 
     // Vérification critique: une vidéo DOIT avoir une URL
     if (!videoSrc) {
@@ -141,7 +140,7 @@ async function loadVideoFromURL() {
     trackElement.src = subtitleSrc;
     videoElement.load();
 
-    console.log(`📹 Vidéo chargée : ${title} (${level})`);
+    console.log(`📹 Vidéo chargée : ${title}`);
 }
 
 /**

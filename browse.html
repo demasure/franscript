@@ -210,9 +210,8 @@
             const icon = isFolder ? '📁' : '▶';
             const buttonText = isFolder ? 'Ouvrir' : 'Lire';
 
-            // Durée et niveau (uniquement pour vidéos)
+            // Durée (uniquement pour vidéos)
             const durationHTML = !isFolder && node.duration ? `<span class="video-duration">${formatDuration(node.duration)}</span>` : '';
-            const levelHTML = !isFolder && node.level ? `<span class="video-level level-badge level-${node.level.toLowerCase()}">${node.level}</span>` : '';
 
             article.innerHTML = `
                 <div class="video-thumbnail">
@@ -228,7 +227,6 @@
                     <p class="video-description">${escapeHtml(node.description || '')}</p>
                     <div class="video-meta">
                         ${durationHTML}
-                        ${levelHTML}
                     </div>
                     <div class="video-tags">
                         ${tagsHTML}

@@ -2,7 +2,7 @@
  * FranScript - Script JavaScript pour interactions de base
  *
  * Fonctionnalités actuelles :
- * - Filtrage des vidéos par catégorie ET niveau CECRL (B2, C1, C2)
+ * - Filtrage des vidéos par catégorie
  * - Redirection vers page player dédiée (player.html)
  * - Navigation fluide
  * - Protection anti-téléchargement
@@ -209,20 +209,15 @@ function createVideoCard(video) {
     const tagNames = video.tags ? video.tags.map(t => t.name.toLowerCase()).join(' ') : '';
     article.setAttribute('data-categories', tagNames);
     article.setAttribute('data-tag-ids', video.tags ? video.tags.map(t => t.id).join(',') : '');
-    article.setAttribute('data-level', video.level || 'B2');
     article.setAttribute('data-video-src', video.video_url);
     article.setAttribute('data-subtitle-src', video.subtitle_url || '');
     article.setAttribute('data-video-id', video.id);
     article.setAttribute('data-is-paid', video.is_paid || 0);
 
-    // Générer les tags HTML avec effet semi-transparent (comme CECRL)
+    // Générer les tags HTML avec effet semi-transparent
     const tagsHTML = video.tags && video.tags.length > 0
         ? video.tags.map(tag => `<span class="tag" style="background-color: rgba(${hexToRgb(tag.color)}, 0.2); color: ${tag.color}; border: 2px solid ${tag.color};">${tag.name.toUpperCase()}</span>`).join('')
         : '';
-
-    // Déterminer la classe CSS du niveau
-    const level = video.level || 'B2';
-    const levelClass = `level-${level.toLowerCase()}`;
 
     // Formater la durée si elle existe
     const durationFormatted = formatDuration(video.duration);
@@ -253,7 +248,6 @@ function createVideoCard(video) {
             <p class="video-description">${video.description || ''}</p>
             <div class="video-meta">
                 ${durationHTML}
-                <span class="video-level level-badge ${levelClass}">${level}</span>
             </div>
             <div class="video-tags">
                 ${tagsHTML}
@@ -385,7 +379,6 @@ function createNodeCard(node) {
         article.setAttribute('data-folder-id', node.id);
     } else {
         // VIDEO : données pour le player
-        article.setAttribute('data-level', node.level || 'B2');
         article.setAttribute('data-video-src', node.video_url);
         article.setAttribute('data-subtitle-src', node.subtitle_url || '');
         article.setAttribute('data-video-id', node.id);
@@ -413,9 +406,6 @@ function createNodeCard(node) {
     // Durée (uniquement pour les vidéos)
     const durationHTML = !isFolder && node.duration ? `<span class="video-duration">${formatDuration(node.duration)}</span>` : '';
 
-    // Niveau (uniquement pour les vidéos)
-    const levelHTML = !isFolder ? `<span class="video-level level-badge level-${(node.level || 'B2').toLowerCase()}">${node.level || 'B2'}</span>` : '';
-
     article.innerHTML = `
         <div class="video-thumbnail${noImageClass}">
             ${thumbnailHTML}
@@ -430,7 +420,6 @@ function createNodeCard(node) {
             <p class="video-description">${node.description || ''}</p>
             <div class="video-meta">
                 ${durationHTML}
-                ${levelHTML}
             </div>
             <div class="video-tags">
                 ${tagsHTML}
@@ -484,13 +473,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 // État global des filtres
 let currentFilters = {
-    tags: [], // Tableau de tags sélectionnés (multi-sélection)
-    level: 'all'
+    tags: [] // Tableau de tags sélectionnés (multi-sélection)
 };
 
 function initializeFilters() {
-    const categoryButtons = document.querySelectorAll('.filter-btn:not(.level-filter)');
-    const levelButtons = document.querySelectorAll('.filter-btn.level-filter');
+    const categoryButtons = document.querySelectorAll('.filter-btn');
 
     // Gestionnaire pour les filtres de tags (multi-sélection)
     categoryButtons.forEach(button => {
@@ -524,36 +511,20 @@ function initializeFilters() {
                 }
             }
 
-            // Appliquer les filtres combinés
-            applyFilters();
-        });
-    });
-
-    // Gestionnaire pour les filtres de niveau (exclusifs)
-    levelButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const level = this.getAttribute('data-level');
-            currentFilters.level = level;
-
-            // Mettre à jour les boutons actifs (seulement les niveaux)
-            levelButtons.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-
-            // Appliquer les filtres combinés
+            // Appliquer les filtres
             applyFilters();
         });
     });
 }
 
 /**
- * Applique les filtres combinés (tags multiples ET niveau exclusif)
+ * Applique les filtres (tags multiples)
  */
 function applyFilters() {
     const videoCards = document.querySelectorAll('.video-card');
 
     videoCards.forEach(card => {
         const categories = card.getAttribute('data-categories');
-        const level = card.getAttribute('data-level');
 
         // Vérifier le filtre de tags (au moins un tag doit correspondre)
         let matchesTags = true;
@@ -561,12 +532,8 @@ function applyFilters() {
             matchesTags = currentFilters.tags.some(tag => categories.includes(tag));
         }
 
-        // Vérifier le filtre de niveau
-        const matchesLevel = currentFilters.level === 'all' ||
-                            level === currentFilters.level;
-
-        // Afficher seulement si les deux filtres correspondent
-        if (matchesTags && matchesLevel) {
+        // Afficher seulement si le filtre correspond
+        if (matchesTags) {
             showCard(card);
         } else {
             hideCard(card);
@@ -709,7 +676,6 @@ function initializeVideoCards() {
             const videoSrc = this.getAttribute('data-video-src');
             const subtitleSrc = this.getAttribute('data-subtitle-src');
             const videoTitle = this.querySelector('.video-title').textContent.trim();
-            const videoLevel = this.getAttribute('data-level') || 'B2';
             const videoId = this.getAttribute('data-video-id');
             const isPaid = this.getAttribute('data-is-paid');
 
@@ -728,7 +694,7 @@ function initializeVideoCards() {
                 console.log(`📹 Redirection vers player : ${videoTitle}`);
 
                 // Construire l'URL avec tous les paramètres, y compris l'ID
-                let url = `player.html?video=${encodeURIComponent(videoSrc)}&subtitle=${encodeURIComponent(subtitleSrc)}&title=${encodeURIComponent(videoTitle)}&level=${encodeURIComponent(videoLevel)}`;
+                let url = `player.html?video=${encodeURIComponent(videoSrc)}&subtitle=${encodeURIComponent(subtitleSrc)}&title=${encodeURIComponent(videoTitle)}`;
                 if (videoId) {
                     url += `&id=${videoId}`;
                 }
@@ -751,7 +717,6 @@ function initializeVideoCards() {
             const videoSrc = card.getAttribute('data-video-src');
             const subtitleSrc = card.getAttribute('data-subtitle-src');
             const videoTitle = card.querySelector('.video-title').textContent.trim();
-            const videoLevel = card.getAttribute('data-level') || 'B2';
             const videoId = card.getAttribute('data-video-id');
             const isPaid = card.getAttribute('data-is-paid');
 
@@ -768,7 +733,7 @@ function initializeVideoCards() {
                 console.log(`▶️ Redirection vers player : ${videoTitle}`);
 
                 // Construire l'URL avec tous les paramètres, y compris l'ID
-                let url = `player.html?video=${encodeURIComponent(videoSrc)}&subtitle=${encodeURIComponent(subtitleSrc)}&title=${encodeURIComponent(videoTitle)}&level=${encodeURIComponent(videoLevel)}`;
+                let url = `player.html?video=${encodeURIComponent(videoSrc)}&subtitle=${encodeURIComponent(subtitleSrc)}&title=${encodeURIComponent(videoTitle)}`;
                 if (videoId) {
                     url += `&id=${videoId}`;
                 }

@@ -28,7 +28,6 @@ async function updateAllDurations() {
                 description: video.description || '',
                 video_url: video.video_url,
                 subtitle_url: video.subtitle_url,
-                level: video.level || 'B2',
                 duration: detectedDuration,
                 is_paid: video.is_paid === 1,
                 tagIds: video.tags.map(t => t.id)

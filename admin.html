@@ -315,52 +315,11 @@
             font-weight: 600;
         }
 
-        .tag-selector,
-        .level-selector {
+        .tag-selector {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
             margin-top: 12px;
-        }
-
-        .level-btn {
-            padding: 8px 20px;
-            border-radius: 25px;
-            font-weight: 600;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            background-color: transparent;
-        }
-
-        .level-btn[data-level="B2"] {
-            background-color: rgba(46, 204, 113, 0.2);
-            color: #2ecc71;
-            border: 2px solid #2ecc71;
-        }
-
-        .level-btn[data-level="C1"] {
-            background-color: rgba(243, 156, 18, 0.2);
-            color: #f39c12;
-            border: 2px solid #f39c12;
-        }
-
-        .level-btn[data-level="C2"] {
-            background-color: rgba(231, 76, 60, 0.2);
-            color: #e74c3c;
-            border: 2px solid #e74c3c;
-        }
-
-        .level-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        .level-btn.active {
-            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3), 0 4px 12px rgba(0, 0, 0, 0.3);
-            transform: scale(1.05);
         }
 
         .tag-button {
@@ -441,25 +400,25 @@
             color: var(--color-primary);
         }
 
-        .level-stats, .tag-stats {
+        .tag-stats {
             display: flex;
             flex-direction: column;
             gap: 12px;
         }
 
-        .level-bar, .tag-bar {
+        .tag-bar {
             display: flex;
             align-items: center;
             gap: 12px;
         }
 
-        .level-bar-label, .tag-bar-label {
+        .tag-bar-label {
             min-width: 80px;
             font-weight: 600;
             font-size: 0.9rem;
         }
 
-        .level-bar-bg, .tag-bar-bg {
+        .tag-bar-bg {
             flex: 1;
             height: 32px;
             background: var(--color-bg-elevated);
@@ -468,7 +427,7 @@
             position: relative;
         }
 
-        .level-bar-fill, .tag-bar-fill {
+        .tag-bar-fill {
             height: 100%;
             background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
             display: flex;
@@ -479,18 +438,6 @@
             font-weight: 600;
             font-size: 0.85rem;
             transition: width 0.6s ease;
-        }
-
-        .level-bar-fill.level-b2 {
-            background: linear-gradient(90deg, #2ecc71 0%, #27ae60 100%);
-        }
-
-        .level-bar-fill.level-c1 {
-            background: linear-gradient(90deg, #f39c12 0%, #e67e22 100%);
-        }
-
-        .level-bar-fill.level-c2 {
-            background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
         }
 
         #recent-videos-table {
@@ -854,12 +801,6 @@
                 </div>
             </div>
 
-            <!-- Vidéos par niveau -->
-            <div class="panel">
-                <h2>📈 Répartition par Niveau CECRL</h2>
-                <div class="level-stats" id="level-stats"></div>
-            </div>
-
             <!-- Tags les plus utilisés -->
             <div class="panel">
                 <h2>🏆 Tags les Plus Utilisés</h2>
@@ -873,7 +814,6 @@
                     <thead>
                         <tr>
                             <th>Titre</th>
-                            <th>Niveau</th>
                             <th>Date</th>
                         </tr>
                     </thead>
@@ -1280,9 +1220,6 @@
                 document.getElementById('stat-total-duration').textContent = totalDurationFormatted;
                 document.getElementById('stat-avg-duration').textContent = avgDurationFormatted;
 
-                // Afficher les vidéos par niveau
-                displayLevelStats(stats.videosByLevel, stats.overview.totalVideos);
-
                 // Afficher les tags les plus utilisés
                 displayTagStats(stats.tagUsage);
 
@@ -1306,30 +1243,6 @@
                 return `${hours}h ${minutes}m`;
             }
             return `${minutes}m`;
-        }
-
-        /**
-         * Affiche les barres de statistiques par niveau
-         */
-        function displayLevelStats(videosByLevel, total) {
-            const container = document.getElementById('level-stats');
-            const levels = ['B2', 'C1', 'C2'];
-
-            container.innerHTML = levels.map(level => {
-                const count = videosByLevel[level] || 0;
-                const percentage = total > 0 ? (count / total * 100).toFixed(1) : 0;
-
-                return `
-                    <div class="level-bar">
-                        <div class="level-bar-label">${level}</div>
-                        <div class="level-bar-bg">
-                            <div class="level-bar-fill level-${level.toLowerCase()}" style="width: ${percentage}%">
-                                ${count} vidéo${count > 1 ? 's' : ''} (${percentage}%)
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
         }
 
         /**
@@ -1369,7 +1282,7 @@
             const tbody = document.querySelector('#recent-videos-table tbody');
 
             if (videos.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: var(--color-text-secondary);">Aucune vidéo</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: var(--color-text-secondary);">Aucune vidéo</td></tr>';
                 return;
             }
 
@@ -1378,7 +1291,6 @@
                 return `
                     <tr>
                         <td>${v.title}</td>
-                        <td><span class="level-badge level-${v.level.toLowerCase()}">${v.level}</span></td>
                         <td>${date}</td>
                     </tr>
                 `;

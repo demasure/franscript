@@ -114,14 +114,6 @@ function initDatabase() {
         // La colonne existe déjà, ignorer l'erreur
     }
 
-    // Migration : ajouter la colonne level si elle n'existe pas
-    try {
-        db.exec(`ALTER TABLE videos ADD COLUMN level TEXT DEFAULT 'B2'`);
-        console.log('✅ Colonne "level" ajoutée à la table videos');
-    } catch (error) {
-        // La colonne existe déjà, ignorer l'erreur
-    }
-
     // Migration : ajouter la colonne duration si elle n'existe pas
     try {
         db.exec(`ALTER TABLE videos ADD COLUMN duration INTEGER`);
@@ -821,12 +813,12 @@ function getVideoByUrl(videoUrl) {
 
 /**
  * Crée une nouvelle vidéo
- * @param {object} videoData - { title, description, video_url, subtitle_url, thumbnail_url, level, duration, is_paid, tagIds }
+ * @param {object} videoData - { title, description, video_url, subtitle_url, thumbnail_url, duration, is_paid, tagIds }
  * @returns {object} La vidéo créée
  */
 function createVideo(videoData) {
     // WRAPPER RÉTROCOMPATIBLE: redirige vers createNode pour la nouvelle structure
-    const { title, description, video_url, subtitle_url, thumbnail_url, level, duration, is_paid, tagIds } = videoData;
+    const { title, description, video_url, subtitle_url, thumbnail_url, duration, is_paid, tagIds } = videoData;
 
     // Convertir les anciens paramètres vers la nouvelle structure
     const nodeData = {
@@ -849,19 +841,19 @@ function createVideo(videoData) {
 /**
  * Met à jour une vidéo
  * @param {number} id - ID de la vidéo
- * @param {object} videoData - { title, description, video_url, subtitle_url, thumbnail_url, level, duration, is_paid, tagIds }
+ * @param {object} videoData - { title, description, video_url, subtitle_url, thumbnail_url, duration, is_paid, tagIds }
  * @returns {object} La vidéo mise à jour
  */
 function updateVideo(id, videoData) {
-    const { title, description, video_url, subtitle_url, thumbnail_url, level, duration, is_paid, tagIds } = videoData;
+    const { title, description, video_url, subtitle_url, thumbnail_url, duration, is_paid, tagIds } = videoData;
 
     const stmt = db.prepare(`
         UPDATE videos
-        SET title = ?, description = ?, video_url = ?, subtitle_url = ?, thumbnail_url = ?, level = ?, duration = ?, is_paid = ?
+        SET title = ?, description = ?, video_url = ?, subtitle_url = ?, thumbnail_url = ?, duration = ?, is_paid = ?
         WHERE id = ?
     `);
 
-    stmt.run(title, description, video_url, subtitle_url || null, thumbnail_url || null, level || 'B2', duration || null, is_paid ? 1 : 0, id);
+    stmt.run(title, description, video_url, subtitle_url || null, thumbnail_url || null, duration || null, is_paid ? 1 : 0, id);
 
     // Mettre à jour les tags
     db.prepare('DELETE FROM video_tags WHERE video_id = ?').run(id);

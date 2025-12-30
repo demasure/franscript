@@ -114,7 +114,6 @@ router.get('/videos/:id', (req, res) => {
  *   description: string
  *   video_url: string (requis)
  *   subtitle_url: string
- *   level: string (B2, C1, C2)
  *   duration: number (en secondes)
  *   is_paid: boolean
  *   tagIds: number[] (IDs des tags)
@@ -122,7 +121,7 @@ router.get('/videos/:id', (req, res) => {
  */
 router.post('/videos', async (req, res) => {
     try {
-        const { title, description, video_url, subtitle_url, level, is_paid, tagIds } = req.body;
+        const { title, description, video_url, subtitle_url, is_paid, tagIds } = req.body;
 
         // Validation
         if (!title || !video_url) {
@@ -141,7 +140,6 @@ router.post('/videos', async (req, res) => {
             video_url,
             subtitle_url,
             thumbnail_url: null, // Sera mis à jour juste après
-            level: level || 'B2',
             duration: detectedDuration,
             is_paid: is_paid || false,
             tagIds: tagIds || []
@@ -177,7 +175,6 @@ router.post('/videos', async (req, res) => {
  *   description: string
  *   video_url: string
  *   subtitle_url: string
- *   level: string (B2, C1, C2)
  *   duration: number (en secondes)
  *   is_paid: boolean
  *   tagIds: number[]
@@ -186,7 +183,7 @@ router.post('/videos', async (req, res) => {
 router.put('/videos/:id', async (req, res) => {
     try {
         const id = parseInt(req.params.id);
-        const { title, description, video_url, subtitle_url, level, is_paid, tagIds } = req.body;
+        const { title, description, video_url, subtitle_url, is_paid, tagIds } = req.body;
 
         // Vérifier que la vidéo existe
         const existingVideo = getVideoById(id);
@@ -218,7 +215,6 @@ router.put('/videos/:id', async (req, res) => {
                         video_url,
                         subtitle_url,
                         thumbnail_url: thumbnailPath,
-                        level: level || 'B2',
                         duration: detectedDuration,
                         is_paid: is_paid || false,
                         tagIds: tagIds || []
@@ -233,7 +229,6 @@ router.put('/videos/:id', async (req, res) => {
             video_url,
             subtitle_url,
             thumbnail_url: thumbnailUrl,
-            level: level || 'B2',
             duration: detectedDuration,
             is_paid: is_paid || false,
             tagIds: tagIds || []
@@ -591,13 +586,6 @@ router.get('/stats', (req, res) => {
         const totalDuration = videos.reduce((sum, v) => sum + (v.duration || 0), 0);
         const avgDuration = totalVideos > 0 ? Math.round(totalDuration / totalVideos) : 0;
 
-        // Vidéos par niveau
-        const videosByLevel = videos.reduce((acc, v) => {
-            const level = v.level || 'B2';
-            acc[level] = (acc[level] || 0) + 1;
-            return acc;
-        }, {});
-
         // Tags les plus utilisés
         const tagUsage = {};
         videos.forEach(v => {
@@ -614,12 +602,10 @@ router.get('/stats', (req, res) => {
                 totalDuration,
                 avgDuration
             },
-            videosByLevel,
             tagUsage,
             recentVideos: videos.slice(0, 5).map(v => ({
                 id: v.id,
                 title: v.title,
-                level: v.level,
                 created_at: v.created_at
             }))
         };

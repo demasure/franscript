@@ -548,13 +548,80 @@
             transform: translateY(-2px);
             box-shadow: var(--box-shadow);
         }
+
+        /* ========================================
+           TOOLBAR ADMIN ET SÉLECTION
+           ======================================== */
+
+        .admin-toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: var(--color-bg-primary);
+            border-radius: 8px;
+            border: 1px solid var(--color-bg-hover);
+        }
+
+        .btn-toolbar {
+            padding: 10px 18px;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-toolbar:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .btn-toolbar:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-toolbar.btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-toolbar.btn-secondary:hover:not(:disabled) {
+            background: #5a6268;
+        }
+
+        .btn-toolbar.btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-toolbar.btn-danger:hover:not(:disabled) {
+            background: #c82333;
+        }
+
+        /* Sélection de lignes dans le tableau */
+        #content-explorer tr[data-node-id] {
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #content-explorer tr[data-node-id].selected {
+            background: rgba(102, 126, 234, 0.15) !important;
+            border-left: 4px solid var(--color-primary);
+        }
+
+        #content-explorer tr[data-node-id]:hover {
+            background: var(--color-bg-primary);
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
             <a href="/index.html" style="color: var(--color-primary); text-decoration: none; font-size: 14px; display: inline-block; margin-bottom: 10px;">← Retour à l'accueil</a>
-            <button class="logout-btn" onclick="logout()">Se déconnecter</button>
+            <button id="btn-logout" class="logout-btn">Se déconnecter</button>
             <h1>👑 Panel Admin FranScript</h1>
             <div style="display: flex; align-items: center; gap: 12px;">
                 <span class="admin-badge">Admin</span>
@@ -571,10 +638,10 @@
         <div id="message" class="message"></div>
 
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('content')">📁 Contenu</button>
-            <button class="tab" onclick="switchTab('tags')">Tags</button>
-            <button class="tab" onclick="switchTab('reports')">⚠️ Signalements</button>
-            <button class="tab" onclick="switchTab('stats')">📊 Statistiques</button>
+            <button class="tab active" data-tab="content">📁 Contenu</button>
+            <button class="tab" data-tab="tags">🏷️ Tags</button>
+            <button class="tab" data-tab="reports">⚠️ Signalements</button>
+            <button class="tab" data-tab="stats">📊 Statistiques</button>
         </div>
 
         <!-- TAB CONTENU -->
@@ -582,13 +649,17 @@
             <div class="panel">
                 <h2>📁 Vue Globale du Contenu</h2>
                 <p style="color: var(--color-text-secondary); margin-bottom: 20px;">
-                    Arborescence complète de tous les dossiers et vidéos avec leurs tags.
+                    Arborescence complète de tous les dossiers et vidéos. <strong>Cliquez sur une ligne pour la sélectionner.</strong>
                 </p>
 
                 <!-- Actions toolbar -->
-                <div style="display: flex; gap: 10px; margin-bottom: 20px;">
-                    <button onclick="showCreateNodeModal('folder')">📁 Ajouter Dossier</button>
-                    <button onclick="showCreateNodeModal('video')">🎬 Ajouter Vidéo</button>
+                <div class="admin-toolbar">
+                    <button id="btn-new-folder" class="btn-toolbar">📁 Nouveau Dossier</button>
+                    <button id="btn-new-video" class="btn-toolbar">🎬 Nouvelle Vidéo</button>
+                    <div style="flex: 1;"></div>
+                    <button id="btn-add-video-to-folder" class="btn-toolbar" disabled style="display: none;">➕ Ajouter Vidéo dans ce Dossier</button>
+                    <button id="btn-edit" class="btn-toolbar btn-secondary" disabled>✏️ Modifier</button>
+                    <button id="btn-delete" class="btn-toolbar btn-danger" disabled>🗑️ Supprimer</button>
                 </div>
 
                 <!-- Content list (file explorer style) -->
@@ -652,7 +723,7 @@
 
                         <div style="display: flex; gap: 10px; margin-top: 20px;">
                             <button type="submit" id="node-submit-btn">Créer</button>
-                            <button type="button" class="secondary" onclick="closeNodeModal()">Annuler</button>
+                            <button type="button" id="btn-cancel-node-modal" class="secondary">Annuler</button>
                         </div>
                     </form>
                 </div>
@@ -674,7 +745,7 @@
                         <input type="color" id="tag-color" value="#3498db" required>
                     </div>
                     <button type="submit" id="tag-submit-btn">Créer le tag</button>
-                    <button type="button" class="secondary" onclick="resetTagForm()" style="margin-left: 10px;">Annuler</button>
+                    <button type="button" id="btn-cancel-tag-form" class="secondary" style="margin-left: 10px;">Annuler</button>
                 </form>
             </div>
 
@@ -702,10 +773,10 @@
                 <div class="form-group">
                     <label>Filtrer par statut</label>
                     <div class="report-filters" style="display: flex; gap: 10px; margin-bottom: 20px;">
-                        <button class="filter-btn active" onclick="filterReports('all')">Tous</button>
-                        <button class="filter-btn" onclick="filterReports('nouveau')">Nouveaux</button>
-                        <button class="filter-btn" onclick="filterReports('traité')">Traités</button>
-                        <button class="filter-btn" onclick="filterReports('ignoré')">Ignorés</button>
+                        <button class="filter-btn active" data-filter="all">Tous</button>
+                        <button class="filter-btn" data-filter="nouveau">Nouveaux</button>
+                        <button class="filter-btn" data-filter="traité">Traités</button>
+                        <button class="filter-btn" data-filter="ignoré">Ignorés</button>
                     </div>
                 </div>
 
@@ -1057,11 +1128,19 @@
                         </span>
                     </td>
                     <td class="actions">
-                        <button class="secondary" onclick="editTag(${t.id})">Modifier</button>
-                        <button class="danger" onclick="deleteTag(${t.id})">Supprimer</button>
+                        <button class="secondary btn-edit-tag" data-tag-id="${t.id}">Modifier</button>
+                        <button class="danger btn-delete-tag" data-tag-id="${t.id}">Supprimer</button>
                     </td>
                 </tr>
             `).join('');
+
+            // Ajouter les event listeners
+            tbody.querySelectorAll('.btn-edit-tag').forEach(btn => {
+                btn.addEventListener('click', () => editTag(parseInt(btn.dataset.tagId)));
+            });
+            tbody.querySelectorAll('.btn-delete-tag').forEach(btn => {
+                btn.addEventListener('click', () => deleteTag(parseInt(btn.dataset.tagId)));
+            });
         }
 
         /**
@@ -1484,10 +1563,9 @@
                     <thead>
                         <tr style="background: var(--color-bg-primary); border-bottom: 2px solid var(--color-bg-hover);">
                             <th style="padding: 12px; text-align: left; color: var(--color-text-secondary); font-weight: 600;">Nom</th>
-                            <th style="padding: 12px; text-align: left; color: var(--color-text-secondary); font-weight: 600; width: 200px;">Tags</th>
+                            <th style="padding: 12px; text-align: left; color: var(--color-text-secondary); font-weight: 600; width: 250px;">Tags</th>
                             <th style="padding: 12px; text-align: left; color: var(--color-text-secondary); font-weight: 600; width: 100px;">Type</th>
-                            <th style="padding: 12px; text-align: left; color: var(--color-text-secondary); font-weight: 600; width: 100px;">Statut</th>
-                            <th style="padding: 12px; text-align: left; color: var(--color-text-secondary); font-weight: 600; width: 200px;">Actions</th>
+                            <th style="padding: 12px; text-align: left; color: var(--color-text-secondary); font-weight: 600; width: 120px;">Statut</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1495,6 +1573,9 @@
                     </tbody>
                 </table>
             `;
+
+            // Ajouter event listeners après le rendu
+            attachRowListeners();
         }
 
         /**
@@ -1529,11 +1610,9 @@
                 : '<span style="color: var(--color-text-secondary); font-size: 12px;">-</span>';
 
             let rows = `
-                <tr data-node-id="${node.id}" style="border-bottom: 1px solid var(--color-bg-hover); transition: background 0.2s;"
-                    onmouseover="this.style.background='var(--color-bg-primary)'"
-                    onmouseout="this.style.background='transparent'">
+                <tr data-node-id="${node.id}" data-node-type="${node.type}" data-node-path="${escapeHtml(fullPath)}" style="border-bottom: 1px solid var(--color-bg-hover);">
                     <td style="padding: 12px;">
-                        ${indent}${hasChildren ? `<span onclick="toggleFolder(${node.id})">${chevron}</span>` : chevron}<span style="font-size: 1.2rem; margin-right: 8px;">${icon}</span>
+                        ${indent}${hasChildren ? `<span class="folder-chevron" data-fold-id="${node.id}" style="cursor: pointer; user-select: none; margin-right: 4px; display: inline-block; width: 16px; transition: transform 0.2s;">▼</span>` : '<span style="display: inline-block; width: 16px;"></span>'}<span style="font-size: 1.2rem; margin-right: 8px;">${icon}</span>
                         <strong style="color: var(--color-text-primary);">${escapeHtml(node.title)}</strong>
                         ${node.description ? `<br>${indent}<small style="color: var(--color-text-secondary); margin-left: 50px;">${escapeHtml(node.description)}</small>` : ''}
                     </td>
@@ -1545,13 +1624,6 @@
                     </td>
                     <td style="padding: 12px;">
                         ${statusBadge}
-                    </td>
-                    <td style="padding: 12px;">
-                        <div class="actions" style="display: flex; gap: 8px; justify-content: flex-end;">
-                            ${isFolder ? `<button onclick="showCreateNodeModal('video', ${node.id}, '${escapeHtml(fullPath).replace(/'/g, "\\'")}' )" style="font-size: 12px; padding: 6px 12px; background: var(--color-primary); color: white; border: none; cursor: pointer; border-radius: 6px;">+ Vidéo</button>` : ''}
-                            <button class="secondary" onclick="editNode(${node.id})" style="font-size: 12px; padding: 6px 12px;">Modifier</button>
-                            <button class="danger" onclick="deleteNode(${node.id})" style="font-size: 12px; padding: 6px 12px;">Supprimer</button>
-                        </div>
                     </td>
                 </tr>
             `;
@@ -1595,6 +1667,126 @@
                         subChildren.forEach(sub => sub.style.display = 'none');
                     }
                 });
+            }
+        }
+
+        // ========================================
+        // SÉLECTION DE LIGNES ET BOUTONS
+        // ========================================
+
+        let selectedNodeId = null;
+        let selectedNodeType = null;
+        let selectedNodePath = null;
+
+        /**
+         * Attache les event listeners aux lignes du tableau
+         */
+        function attachRowListeners() {
+            // Event listener pour sélection de lignes
+            document.querySelectorAll('#content-explorer tr[data-node-id]').forEach(row => {
+                row.addEventListener('click', (e) => {
+                    // Ne pas sélectionner si click sur chevron
+                    if (e.target.classList.contains('folder-chevron')) {
+                        return;
+                    }
+                    selectRow(row.dataset.nodeId, row.dataset.nodeType, row.dataset.nodePath);
+                });
+            });
+
+            // Event listeners pour chevrons (toggle folder)
+            document.querySelectorAll('.folder-chevron').forEach(chevron => {
+                chevron.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Empêcher la sélection
+                    toggleFolder(parseInt(chevron.dataset.foldId));
+                });
+            });
+        }
+
+        /**
+         * Sélectionne une ligne
+         */
+        function selectRow(nodeId, nodeType, nodePath) {
+            // Retirer la sélection précédente
+            document.querySelectorAll('#content-explorer tr.selected').forEach(row => {
+                row.classList.remove('selected');
+            });
+
+            // Ajouter la sélection
+            const row = document.querySelector(`tr[data-node-id="${nodeId}"]`);
+            if (row) {
+                row.classList.add('selected');
+                selectedNodeId = parseInt(nodeId);
+                selectedNodeType = nodeType;
+                selectedNodePath = nodePath;
+
+                // Activer les boutons contextuels
+                updateToolbarButtons();
+            }
+        }
+
+        /**
+         * Met à jour l'état des boutons selon la sélection
+         */
+        function updateToolbarButtons() {
+            const btnEdit = document.getElementById('btn-edit');
+            const btnDelete = document.getElementById('btn-delete');
+            const btnAddVideo = document.getElementById('btn-add-video-to-folder');
+
+            if (selectedNodeId) {
+                btnEdit.disabled = false;
+                btnDelete.disabled = false;
+
+                // Bouton "Ajouter vidéo" visible seulement si dossier sélectionné
+                if (selectedNodeType === 'folder') {
+                    btnAddVideo.style.display = 'inline-block';
+                    btnAddVideo.disabled = false;
+                } else {
+                    btnAddVideo.style.display = 'none';
+                }
+            } else {
+                btnEdit.disabled = true;
+                btnDelete.disabled = true;
+                btnAddVideo.style.display = 'none';
+            }
+        }
+
+        /**
+         * Désélectionne tout
+         */
+        function deselectAll() {
+            document.querySelectorAll('#content-explorer tr.selected').forEach(row => {
+                row.classList.remove('selected');
+            });
+            selectedNodeId = null;
+            selectedNodeType = null;
+            selectedNodePath = null;
+            updateToolbarButtons();
+        }
+
+        /**
+         * Édite le node sélectionné
+         */
+        function editSelectedNode() {
+            if (selectedNodeId) {
+                editNode(selectedNodeId);
+            }
+        }
+
+        /**
+         * Supprime le node sélectionné
+         */
+        function deleteSelectedNode() {
+            if (selectedNodeId) {
+                deleteNode(selectedNodeId);
+            }
+        }
+
+        /**
+         * Ajoute une vidéo dans le dossier sélectionné
+         */
+        function addVideoToSelectedFolder() {
+            if (selectedNodeId && selectedNodeType === 'folder') {
+                showCreateNodeModal('video', selectedNodeId, selectedNodePath);
             }
         }
 
@@ -1645,11 +1837,19 @@
             } else {
                 trailElement.innerHTML = currentPath.map((item, index) => {
                     const isLast = index === currentPath.length - 1;
-                    const clickHandler = isLast ? '' : `onclick="navigateToBreadcrumb(${index})"`;
+                    const dataAttr = isLast ? '' : `data-breadcrumb-index="${index}"`;
+                    const className = isLast ? '' : 'breadcrumb-link';
                     const style = isLast ? 'color: var(--color-text-primary);' : 'cursor: pointer; color: var(--color-primary);';
 
-                    return ` &gt; <span ${clickHandler} style="${style}">${escapeHtml(item.title)}</span>`;
+                    return ` &gt; <span ${dataAttr} class="${className}" style="${style}">${escapeHtml(item.title)}</span>`;
                 }).join('');
+
+                // Ajouter les event listeners
+                trailElement.querySelectorAll('.breadcrumb-link').forEach(link => {
+                    link.addEventListener('click', () => {
+                        navigateToBreadcrumb(parseInt(link.dataset.breadcrumbIndex));
+                    });
+                });
             }
         }
 
@@ -1724,11 +1924,17 @@
                 <button type="button"
                         class="tag-button"
                         data-tag-id="${t.id}"
-                        style="background-color: rgba(${hexToRgb(t.color)}, 0.2); color: ${t.color}; border: 2px solid ${t.color};"
-                        onclick="toggleTag(this, ${t.id})">
+                        style="background-color: rgba(${hexToRgb(t.color)}, 0.2); color: ${t.color}; border: 2px solid ${t.color};">
                     ${t.name}
                 </button>
             `).join('');
+
+            // Ajouter les event listeners
+            selector.querySelectorAll('.tag-button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    toggleTag(btn, parseInt(btn.dataset.tagId));
+                });
+            });
         }
 
         /**
@@ -1825,6 +2031,46 @@
         }
 
         /**
+         * Event listeners pour les boutons de la toolbar
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+            // Bouton de déconnexion
+            document.getElementById('btn-logout')?.addEventListener('click', logout);
+
+            // Boutons de tabs
+            document.querySelectorAll('.tab[data-tab]').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    switchTab(tab.dataset.tab);
+                });
+            });
+
+            // Boutons de création
+            document.getElementById('btn-new-folder')?.addEventListener('click', () => {
+                showCreateNodeModal('folder');
+            });
+
+            document.getElementById('btn-new-video')?.addEventListener('click', () => {
+                showCreateNodeModal('video');
+            });
+
+            // Boutons contextuels (nécessitent une sélection)
+            document.getElementById('btn-edit')?.addEventListener('click', editSelectedNode);
+            document.getElementById('btn-delete')?.addEventListener('click', deleteSelectedNode);
+            document.getElementById('btn-add-video-to-folder')?.addEventListener('click', addVideoToSelectedFolder);
+
+            // Boutons d'annulation dans les modaux
+            document.getElementById('btn-cancel-node-modal')?.addEventListener('click', closeNodeModal);
+            document.getElementById('btn-cancel-tag-form')?.addEventListener('click', resetTagForm);
+
+            // Boutons de filtrage des signalements
+            document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filterReports(btn.dataset.filter);
+                });
+            });
+        });
+
+        /**
          * Gère la soumission du formulaire de nœud
          */
         document.addEventListener('DOMContentLoaded', () => {
@@ -1872,6 +2118,7 @@
                     if (response.ok) {
                         showMessage(data.message || 'Nœud enregistré avec succès', 'success');
                         closeNodeModal();
+                        deselectAll(); // Désélectionner
                         loadContentNodes(); // Recharger tout l'arbre
                     } else {
                         showMessage(data.error || 'Erreur lors de l\'enregistrement', 'error');

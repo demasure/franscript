@@ -27,10 +27,10 @@ async function detectVideoDuration(videoPath) {
 
 /**
  * Extrait une image d'affiche d'une vidéo
- * SOURCE UNIQUE: génère cover_image pour TOUS les contenus
+ * SOURCE UNIQUE: génère cover_url pour TOUS les contenus
  * @param {string} videoPath - Chemin relatif de la vidéo (ex: "videos/ma_video.mp4")
  * @param {number} videoId - ID de la vidéo/contenu pour nommer l'image
- * @returns {Promise<string|null>} Le chemin relatif de l'image (cover_image) ou null si erreur
+ * @returns {Promise<string|null>} Le chemin relatif de l'image (cover_url) ou null si erreur
  */
 async function extractThumbnail(videoPath, videoId) {
     return new Promise(async (resolve) => {

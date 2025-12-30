@@ -229,7 +229,7 @@ function createVideoCard(video) {
     const durationHTML = durationFormatted ? `<span class="video-duration">${durationFormatted}</span>` : '';
 
     // Image d'affiche - SOURCE UNIQUE
-    const thumbnailSrc = video.cover_image || '';
+    const thumbnailSrc = video.cover_url || '';
     const noImageClass = !thumbnailSrc ? ' no-image' : '';
     const thumbnailHTML = thumbnailSrc ? `<img src="${thumbnailSrc}" alt="${video.title}">` : '';
 
@@ -285,7 +285,7 @@ function createSagaCard(saga) {
         : '';
 
     // Image d'affiche - SOURCE UNIQUE
-    const thumbnailSrc = saga.cover_image || '';
+    const thumbnailSrc = saga.cover_url || '';
     const noImageClass = !thumbnailSrc ? ' no-image' : '';
     const thumbnailHTML = thumbnailSrc ? `<img src="${thumbnailSrc}" alt="${saga.title}">` : '';
 
@@ -397,7 +397,7 @@ function createNodeCard(node) {
         : '';
 
     // Image d'affiche - SOURCE UNIQUE pour TOUS les types
-    const thumbnailSrc = node.cover_image || '';
+    const thumbnailSrc = node.cover_url || '';
     const noImageClass = !thumbnailSrc ? ' no-image' : '';
     const thumbnailHTML = thumbnailSrc ? `<img src="${thumbnailSrc}" alt="${node.title}">` : '';
 

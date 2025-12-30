@@ -191,7 +191,7 @@
                 : '';
 
             // Image d'affiche - SOURCE UNIQUE pour TOUS les types
-            const thumbnailSrc = node.cover_image || '';
+            const thumbnailSrc = node.cover_url || '';
 
             // Badge premium
             const shouldShowLock = node.is_premium === 1 && !currentUser.isPremium && !currentUser.isAdmin;

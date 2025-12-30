@@ -1168,8 +1168,8 @@ async function loadSuggestedVideos() {
                 window.location.href = `player.html?id=${video.id}&video=${encodeURIComponent(video.video_url)}&subtitle=${encodeURIComponent(video.subtitle_url || '')}&title=${encodeURIComponent(video.title)}&level=${video.level}`;
             };
 
-            // SOURCE UNIQUE: cover_image pour TOUTES les images
-            const thumbnailSrc = video.cover_image || '';
+            // SOURCE UNIQUE: cover_url pour TOUTES les images
+            const thumbnailSrc = video.cover_url || '';
 
             card.innerHTML = `
                 <img src="${thumbnailSrc}" alt="${video.title}">

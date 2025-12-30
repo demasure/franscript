@@ -3,7 +3,7 @@ const { extractThumbnail } = require('./videoUtils');
 
 /**
  * Régénère toutes les images d'affiche pour les vidéos
- * SOURCE UNIQUE: utilise cover_image pour TOUS les contenus
+ * SOURCE UNIQUE: utilise cover_url pour TOUS les contenus
  */
 async function regenerateAllThumbnails() {
     console.log('🎬 Début de la régénération des images d\'affiche...\n');
@@ -33,10 +33,10 @@ async function regenerateAllThumbnails() {
                     WHERE node_id = ?
                 `).all(video.id);
 
-                // Mettre à jour la base de données - SOURCE UNIQUE: cover_image
+                // Mettre à jour la base de données - SOURCE UNIQUE: cover_url
                 updateNode(video.id, {
                     ...video,
-                    cover_image: coverImagePath,
+                    cover_url: coverImagePath,
                     tagIds: existingTags.map(t => t.tag_id)
                 });
 

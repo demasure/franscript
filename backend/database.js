@@ -268,30 +268,30 @@ function initDatabase() {
     db.exec(createContentNodesTable);
     db.exec(createContentNodeTagsTable);
 
-    // Migration : ajouter la colonne cover_image si elle n'existe pas
+    // Migration : ajouter la colonne cover_url si elle n'existe pas
     try {
-        db.exec(`ALTER TABLE content_nodes ADD COLUMN cover_image TEXT`);
-        console.log('✅ Colonne "cover_image" ajoutée à la table content_nodes');
+        db.exec(`ALTER TABLE content_nodes ADD COLUMN cover_url TEXT`);
+        console.log('✅ Colonne "cover_url" ajoutée à la table content_nodes');
     } catch (error) {
         // La colonne existe déjà, ignorer l'erreur
     }
 
     // ========================================
-    // MIGRATION : Unification sur cover_image
+    // MIGRATION : Unification sur cover_url
     // ========================================
-    // Copier thumbnail_url vers cover_image si cover_image est vide
+    // Copier thumbnail_url vers cover_url si cover_url est vide
     try {
         const updateResult = db.prepare(`
             UPDATE content_nodes
-            SET cover_image = thumbnail_url
-            WHERE cover_image IS NULL AND thumbnail_url IS NOT NULL
+            SET cover_url = thumbnail_url
+            WHERE cover_url IS NULL AND thumbnail_url IS NOT NULL
         `).run();
 
         if (updateResult.changes > 0) {
-            console.log(`✅ Migration: ${updateResult.changes} thumbnail_url copiés vers cover_image`);
+            console.log(`✅ Migration: ${updateResult.changes} thumbnail_url copiés vers cover_url`);
         }
     } catch (error) {
-        console.error('❌ Erreur migration thumbnail_url → cover_image:', error.message);
+        console.error('❌ Erreur migration thumbnail_url → cover_url:', error.message);
     }
 
     // Supprimer la colonne thumbnail_url (reconstruction de table nécessaire pour SQLite)
@@ -313,7 +313,7 @@ function initDatabase() {
                     type TEXT NOT NULL CHECK(type IN ('folder', 'video')),
                     video_url TEXT,
                     subtitle_url TEXT,
-                    cover_image TEXT,
+                    cover_url TEXT,
                     duration INTEGER,
                     is_premium INTEGER DEFAULT 0,
                     order_index INTEGER DEFAULT 0,
@@ -326,10 +326,10 @@ function initDatabase() {
             db.exec(`
                 INSERT INTO content_nodes_new
                     (id, parent_id, title, description, type, video_url, subtitle_url,
-                     cover_image, duration, is_premium, order_index, created_at)
+                     cover_url, duration, is_premium, order_index, created_at)
                 SELECT
                     id, parent_id, title, description, type, video_url, subtitle_url,
-                    cover_image, duration, is_premium, order_index, created_at
+                    cover_url, duration, is_premium, order_index, created_at
                 FROM content_nodes
             `);
 
@@ -337,7 +337,7 @@ function initDatabase() {
             db.exec('DROP TABLE content_nodes');
             db.exec('ALTER TABLE content_nodes_new RENAME TO content_nodes');
 
-            console.log('✅ Colonne thumbnail_url supprimée - cover_image est maintenant la source unique');
+            console.log('✅ Colonne thumbnail_url supprimée - cover_url est maintenant la source unique');
         }
     } catch (error) {
         console.error('❌ Erreur suppression thumbnail_url:', error.message);
@@ -1215,8 +1215,8 @@ function getNodeWithInheritedTags(id) {
 
 /**
  * Crée un nouveau nœud (dossier ou vidéo)
- * SOURCE UNIQUE POUR LES IMAGES: cover_image pour TOUS les types (vidéo ET dossier)
- * @param {object} nodeData - { parent_id, title, description, type, video_url, subtitle_url, cover_image, is_premium, tagIds }
+ * SOURCE UNIQUE POUR LES IMAGES: cover_url pour TOUS les types (vidéo ET dossier)
+ * @param {object} nodeData - { parent_id, title, description, type, video_url, subtitle_url, cover_url, is_premium, tagIds }
  * @returns {object} Le nœud créé
  */
 function createNode(nodeData) {
@@ -1227,7 +1227,7 @@ function createNode(nodeData) {
         type,
         video_url,
         subtitle_url,
-        cover_image,
+        cover_url,
         duration,
         is_premium,
         order_index,
@@ -1237,7 +1237,7 @@ function createNode(nodeData) {
     const stmt = db.prepare(`
         INSERT INTO content_nodes (
             parent_id, title, description, type, video_url, subtitle_url,
-            cover_image, duration, is_premium, order_index
+            cover_url, duration, is_premium, order_index
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
@@ -1249,7 +1249,7 @@ function createNode(nodeData) {
         type,
         type === 'video' ? video_url : null,
         type === 'video' ? (subtitle_url || null) : null,
-        cover_image || null,  // Source unique pour TOUS les types
+        cover_url || null,  // Source unique pour TOUS les types
         duration || null,
         is_premium ? 1 : 0,
         order_index || 0
@@ -1268,7 +1268,7 @@ function createNode(nodeData) {
 
 /**
  * Met à jour un nœud
- * SOURCE UNIQUE POUR LES IMAGES: cover_image pour TOUS les types (vidéo ET dossier)
+ * SOURCE UNIQUE POUR LES IMAGES: cover_url pour TOUS les types (vidéo ET dossier)
  * @param {number} id - ID du nœud
  * @param {object} nodeData - Nouvelles données
  * @returns {object} Le nœud mis à jour
@@ -1279,7 +1279,7 @@ function updateNode(id, nodeData) {
         description,
         video_url,
         subtitle_url,
-        cover_image,
+        cover_url,
         duration,
         is_premium,
         order_index,
@@ -1292,12 +1292,12 @@ function updateNode(id, nodeData) {
     const stmt = db.prepare(`
         UPDATE content_nodes
         SET title = ?, description = ?, video_url = ?, subtitle_url = ?,
-            cover_image = ?, duration = ?, is_premium = ?, order_index = ?
+            cover_url = ?, duration = ?, is_premium = ?, order_index = ?
         WHERE id = ?
     `);
 
     // Préserver la valeur existante si non définie
-    const finalCoverImage = cover_image !== undefined ? cover_image : node.cover_image;
+    const finalCoverImage = cover_url !== undefined ? cover_url : node.cover_url;
 
     stmt.run(
         title,

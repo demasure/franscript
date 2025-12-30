@@ -657,6 +657,7 @@
                     <button id="btn-new-folder" class="btn-toolbar">📁 Nouveau Dossier</button>
                     <button id="btn-new-video" class="btn-toolbar">🎬 Nouvelle Vidéo</button>
                     <div style="flex: 1;"></div>
+                    <button id="btn-add-subfolder" class="btn-toolbar" disabled style="display: none;">📁 Créer Sous-Dossier</button>
                     <button id="btn-add-video-to-folder" class="btn-toolbar" disabled style="display: none;">➕ Ajouter Vidéo dans ce Dossier</button>
                     <button id="btn-edit" class="btn-toolbar btn-secondary" disabled>✏️ Modifier</button>
                     <button id="btn-delete" class="btn-toolbar btn-danger" disabled>🗑️ Supprimer</button>
@@ -707,10 +708,10 @@
 
                         <!-- Image field - SOURCE UNIQUE pour TOUS les types (vidéo ET dossier) -->
                         <div class="form-group">
-                            <label for="node-cover-image">Image d'affiche</label>
-                            <input type="text" id="node-cover-image" placeholder="images/mon_affiche.jpg">
+                            <label for="node-cover-url">URL de l'image d'affiche</label>
+                            <input type="text" id="node-cover-url" placeholder="https://example.com/images/affiche.jpg">
                             <small style="color: var(--color-text-secondary); display: block; margin-top: 5px;">
-                                💡 Pour vidéos et dossiers. Le fichier image doit exister sur le serveur.
+                                💡 URL complète de l'image pour vidéos et dossiers.
                             </small>
                         </div>
 
@@ -1736,21 +1737,26 @@
             const btnEdit = document.getElementById('btn-edit');
             const btnDelete = document.getElementById('btn-delete');
             const btnAddVideo = document.getElementById('btn-add-video-to-folder');
+            const btnAddSubfolder = document.getElementById('btn-add-subfolder');
 
             if (selectedNodeId) {
                 btnEdit.disabled = false;
                 btnDelete.disabled = false;
 
-                // Bouton "Ajouter vidéo" visible seulement si dossier sélectionné
+                // Boutons visibles seulement si dossier sélectionné
                 if (selectedNodeType === 'folder') {
+                    btnAddSubfolder.style.display = 'inline-block';
+                    btnAddSubfolder.disabled = false;
                     btnAddVideo.style.display = 'inline-block';
                     btnAddVideo.disabled = false;
                 } else {
+                    btnAddSubfolder.style.display = 'none';
                     btnAddVideo.style.display = 'none';
                 }
             } else {
                 btnEdit.disabled = true;
                 btnDelete.disabled = true;
+                btnAddSubfolder.style.display = 'none';
                 btnAddVideo.style.display = 'none';
             }
         }
@@ -1792,6 +1798,15 @@
         function addVideoToSelectedFolder() {
             if (selectedNodeId && selectedNodeType === 'folder') {
                 showCreateNodeModal('video', selectedNodeId, selectedNodePath);
+            }
+        }
+
+        /**
+         * Ajoute un sous-dossier dans le dossier sélectionné
+         */
+        function addSubfolderToSelectedFolder() {
+            if (selectedNodeId && selectedNodeType === 'folder') {
+                showCreateNodeModal('folder', selectedNodeId, selectedNodePath);
             }
         }
 
@@ -1978,7 +1993,7 @@
                 }
 
                 // Image - SOURCE UNIQUE pour TOUS les types
-                document.getElementById('node-cover-image').value = node.cover_image || '';
+                document.getElementById('node-cover-url').value = node.cover_url || '';
 
                 // Tags
                 renderNodeTagSelector();
@@ -2061,6 +2076,7 @@
             // Boutons contextuels (nécessitent une sélection)
             document.getElementById('btn-edit')?.addEventListener('click', editSelectedNode);
             document.getElementById('btn-delete')?.addEventListener('click', deleteSelectedNode);
+            document.getElementById('btn-add-subfolder')?.addEventListener('click', addSubfolderToSelectedFolder);
             document.getElementById('btn-add-video-to-folder')?.addEventListener('click', addVideoToSelectedFolder);
 
             // Boutons d'annulation dans les modaux
@@ -2103,7 +2119,7 @@
                 }
 
                 // Image - SOURCE UNIQUE pour TOUS les types (vidéo ET dossier)
-                nodeData.cover_image = document.getElementById('node-cover-image').value;
+                nodeData.cover_url = document.getElementById('node-cover-url').value;
 
                 try {
                     const url = nodeId

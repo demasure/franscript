@@ -67,8 +67,7 @@ function initDatabase() {
             video_id INTEGER NOT NULL,
             text TEXT NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (video_id) REFERENCES videos(id) ON DELETE CASCADE
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
     `;
 
@@ -93,8 +92,7 @@ function initDatabase() {
             start_time REAL NOT NULL,
             text TEXT NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (video_id) REFERENCES videos(id) ON DELETE CASCADE
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
     `;
 
@@ -211,8 +209,7 @@ function initDatabase() {
             message TEXT NOT NULL,
             status TEXT DEFAULT 'nouveau',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-            FOREIGN KEY (video_id) REFERENCES videos(id) ON DELETE CASCADE
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         )
     `;
 

@@ -571,10 +571,10 @@
         <div id="message" class="message"></div>
 
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('videos')">Vidéos</button>
-            <button class="tab" onclick="switchTab('tags')">Tags</button>
-            <button class="tab" onclick="switchTab('reports')">⚠️ Signalements</button>
-            <button class="tab" onclick="switchTab('stats')">📊 Statistiques</button>
+            <button class="tab active" onclick="switchTab(event, 'videos')">Vidéos</button>
+            <button class="tab" onclick="switchTab(event, 'tags')">Tags</button>
+            <button class="tab" onclick="switchTab(event, 'reports')">⚠️ Signalements</button>
+            <button class="tab" onclick="switchTab(event, 'stats')">📊 Statistiques</button>
         </div>
 
         <!-- TAB VIDÉOS -->
@@ -598,6 +598,20 @@
                     <div class="form-group">
                         <label for="subtitle-url">URL des sous-titres</label>
                         <input type="text" id="subtitle-url" placeholder="videos/ma_video.vtt">
+                    </div>
+                    <div class="form-group">
+                        <label for="video-thumbnail-url">URL de la vignette (thumbnail)</label>
+                        <input type="text" id="video-thumbnail-url" placeholder="/uploads/thumbnails/image.jpg">
+                        <small style="color: var(--color-text-secondary); display: block; margin-top: 5px;">
+                            Laissez vide pour extraction automatique depuis la vidéo
+                        </small>
+                    </div>
+                    <div class="form-group">
+                        <label for="video-thumbnail-file">Uploader une vignette</label>
+                        <input type="file" id="video-thumbnail-file" accept="image/*" style="margin-bottom: 10px;">
+                        <div id="video-thumbnail-preview" style="display: none; margin-top: 10px;">
+                            <img id="video-thumbnail-preview-img" src="" alt="Preview" style="max-width: 300px; max-height: 200px; border-radius: 8px; border: 2px solid var(--color-bg-hover); object-fit: cover;">
+                        </div>
                     </div>
                     <div class="form-group">
                         <label>Tags</label>
@@ -627,6 +641,7 @@
                 <table id="videos-table">
                     <thead>
                         <tr>
+                            <th>Vignette</th>
                             <th>Titre</th>
                             <th>Tags</th>
                             <th>Statut</th>
@@ -681,10 +696,10 @@
                 <div class="form-group">
                     <label>Filtrer par statut</label>
                     <div class="report-filters" style="display: flex; gap: 10px; margin-bottom: 20px;">
-                        <button class="filter-btn active" onclick="filterReports('all')">Tous</button>
-                        <button class="filter-btn" onclick="filterReports('nouveau')">Nouveaux</button>
-                        <button class="filter-btn" onclick="filterReports('traité')">Traités</button>
-                        <button class="filter-btn" onclick="filterReports('ignoré')">Ignorés</button>
+                        <button class="filter-btn active" onclick="filterReports(event, 'all')">Tous</button>
+                        <button class="filter-btn" onclick="filterReports(event, 'nouveau')">Nouveaux</button>
+                        <button class="filter-btn" onclick="filterReports(event, 'traité')">Traités</button>
+                        <button class="filter-btn" onclick="filterReports(event, 'ignoré')">Ignorés</button>
                     </div>
                 </div>
 
@@ -803,6 +818,9 @@
 
             document.getElementById('video-form').addEventListener('submit', handleVideoSubmit);
             document.getElementById('tag-form').addEventListener('submit', handleTagSubmit);
+
+            // Gestionnaire d'upload de thumbnail
+            document.getElementById('video-thumbnail-file').addEventListener('change', handleThumbnailUpload);
         });
 
         // ============================================
@@ -822,12 +840,16 @@
 
         /**
          * Bascule entre les onglets Vidéos et Tags
+         * @param {Event} e - L'événement click
+         * @param {string} tab - Le nom de l'onglet (videos, tags, reports, stats)
          */
-        function switchTab(tab) {
+        function switchTab(e, tab) {
+            e.preventDefault();
+
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
 
-            event.target.classList.add('active');
+            e.target.classList.add('active');
             document.getElementById(`tab-${tab}`).classList.add('active');
 
             // Charger les données spécifiques à chaque onglet
@@ -846,6 +868,61 @@
             msg.textContent = text;
             msg.className = `message ${type} show`;
             setTimeout(() => msg.classList.remove('show'), 5000);
+        }
+
+        /**
+         * Gère l'upload d'une vignette (thumbnail)
+         */
+        async function handleThumbnailUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Vérifier type de fichier
+            if (!file.type.startsWith('image/')) {
+                showMessage('Veuillez sélectionner une image', 'error');
+                return;
+            }
+
+            // Vérifier taille (5MB max)
+            if (file.size > 5 * 1024 * 1024) {
+                showMessage('L\'image ne doit pas dépasser 5MB', 'error');
+                return;
+            }
+
+            try {
+                // Afficher preview immédiat
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const previewImg = document.getElementById('video-thumbnail-preview-img');
+                    const previewDiv = document.getElementById('video-thumbnail-preview');
+                    previewImg.src = event.target.result;
+                    previewDiv.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+
+                // Upload vers le serveur
+                const formData = new FormData();
+                formData.append('thumbnail', file);
+
+                const response = await fetch(`${API_URL}/admin/upload-thumbnail`, {
+                    method: 'POST',
+                    credentials: 'include',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Mettre à jour le champ URL
+                    document.getElementById('video-thumbnail-url').value = data.url;
+                    showMessage('Vignette uploadée avec succès', 'success');
+                } else {
+                    showMessage(data.error || 'Erreur lors de l\'upload', 'error');
+                }
+            } catch (error) {
+                console.error('Erreur upload thumbnail:', error);
+                showMessage('Erreur lors de l\'upload de la vignette', 'error');
+            }
         }
 
         // ============================================
@@ -933,20 +1010,78 @@
 
         /**
          * Affiche la liste des vidéos dans le tableau avec tags semi-transparents
+         * SÉCURISÉ contre XSS via createElement + textContent
          */
         function displayVideos(videos) {
             const tbody = document.querySelector('#videos-table tbody');
-            tbody.innerHTML = videos.map(v => `
-                <tr>
-                    <td>${v.title}</td>
-                    <td>${(v.tags || []).map(t => `<span class="tag-badge" style="background-color: rgba(${hexToRgb(t.color)}, 0.2); color: ${t.color}; border: 2px solid ${t.color}; padding: 4px 10px; border-radius: 12px; display: inline-block; font-weight: 600; font-size: 11px; margin-right: 4px;">${t.name}</span>`).join('')}</td>
-                    <td>${v.is_paid ? '<span class="paid-badge">Payante</span>' : '<span class="free-badge">Gratuite</span>'}</td>
-                    <td class="actions">
-                        <button class="secondary" onclick="editVideo(${v.id})">Modifier</button>
-                        <button class="danger" onclick="deleteVideo(${v.id})">Supprimer</button>
-                    </td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = ''; // Vider d'abord
+
+            videos.forEach(v => {
+                const tr = document.createElement('tr');
+
+                // Colonne thumbnail
+                const tdThumbnail = document.createElement('td');
+                if (v.thumbnail_url) {
+                    const img = document.createElement('img');
+                    img.src = v.thumbnail_url;
+                    img.alt = 'Vignette';
+                    img.style.width = '80px';
+                    img.style.height = '45px';
+                    img.style.objectFit = 'cover';
+                    img.style.borderRadius = '4px';
+                    img.onerror = function() {
+                        this.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="45"><rect width="80" height="45" fill="%23ddd"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%23999" font-size="10">Aucune</text></svg>';
+                    };
+                    tdThumbnail.appendChild(img);
+                } else {
+                    tdThumbnail.textContent = '—';
+                }
+                tr.appendChild(tdThumbnail);
+
+                // Colonne titre (sécurisé via textContent)
+                const tdTitle = document.createElement('td');
+                tdTitle.textContent = v.title;
+                tr.appendChild(tdTitle);
+
+                // Colonne tags (sécurisé via createElement)
+                const tdTags = document.createElement('td');
+                (v.tags || []).forEach(t => {
+                    const span = document.createElement('span');
+                    span.className = 'tag-badge';
+                    span.style.cssText = `background-color: rgba(${hexToRgb(t.color)}, 0.2); color: ${t.color}; border: 2px solid ${t.color}; padding: 4px 10px; border-radius: 12px; display: inline-block; font-weight: 600; font-size: 11px; margin-right: 4px;`;
+                    span.textContent = t.name; // Sécurisé
+                    tdTags.appendChild(span);
+                });
+                tr.appendChild(tdTags);
+
+                // Colonne statut
+                const tdStatus = document.createElement('td');
+                const statusSpan = document.createElement('span');
+                statusSpan.className = v.is_paid ? 'paid-badge' : 'free-badge';
+                statusSpan.textContent = v.is_paid ? 'Payante' : 'Gratuite';
+                tdStatus.appendChild(statusSpan);
+                tr.appendChild(tdStatus);
+
+                // Colonne actions
+                const tdActions = document.createElement('td');
+                tdActions.className = 'actions';
+
+                const btnEdit = document.createElement('button');
+                btnEdit.className = 'secondary';
+                btnEdit.textContent = 'Modifier';
+                btnEdit.onclick = () => editVideo(v.id);
+
+                const btnDelete = document.createElement('button');
+                btnDelete.className = 'danger';
+                btnDelete.textContent = 'Supprimer';
+                btnDelete.onclick = () => deleteVideo(v.id);
+
+                tdActions.appendChild(btnEdit);
+                tdActions.appendChild(btnDelete);
+                tr.appendChild(tdActions);
+
+                tbody.appendChild(tr);
+            });
         }
 
         /**
@@ -957,11 +1092,14 @@
 
             const id = document.getElementById('video-id').value;
             const selectedLevel = document.querySelector('.level-btn.active');
+            const thumbnailUrl = document.getElementById('video-thumbnail-url').value.trim();
+
             const videoData = {
                 title: document.getElementById('video-title').value,
                 description: document.getElementById('video-description').value,
                 video_url: document.getElementById('video-url').value,
                 subtitle_url: document.getElementById('subtitle-url').value,
+                thumbnail_url: thumbnailUrl || undefined, // Envoyer seulement si fourni
                 level: selectedLevel ? selectedLevel.getAttribute('data-level') : 'B2',
                 // La durée est maintenant détectée automatiquement par le backend
                 is_paid: document.getElementById('is-paid').checked,
@@ -1010,8 +1148,18 @@
                 document.getElementById('video-description').value = video.description || '';
                 document.getElementById('video-url').value = video.video_url;
                 document.getElementById('subtitle-url').value = video.subtitle_url || '';
-                // La durée est détectée automatiquement, pas besoin de la remplir
+                document.getElementById('video-thumbnail-url').value = video.thumbnail_url || '';
                 document.getElementById('is-paid').checked = video.is_paid === 1;
+
+                // Afficher preview du thumbnail si existant
+                const previewImg = document.getElementById('video-thumbnail-preview-img');
+                const previewDiv = document.getElementById('video-thumbnail-preview');
+                if (video.thumbnail_url) {
+                    previewImg.src = video.thumbnail_url;
+                    previewDiv.style.display = 'block';
+                } else {
+                    previewDiv.style.display = 'none';
+                }
 
                 // Sélectionner le niveau
                 const videoLevel = video.level || 'B2';
@@ -1074,6 +1222,11 @@
             document.getElementById('submit-btn').textContent = 'Créer la vidéo';
             document.querySelectorAll('#tag-selector .tag-button').forEach(btn => btn.classList.remove('selected'));
 
+            // Réinitialiser thumbnail
+            document.getElementById('video-thumbnail-url').value = '';
+            document.getElementById('video-thumbnail-file').value = '';
+            document.getElementById('video-thumbnail-preview').style.display = 'none';
+
             // Réinitialiser le niveau à B2
             document.querySelectorAll('.level-btn').forEach(btn => {
                 if (btn.getAttribute('data-level') === 'B2') {
@@ -1107,22 +1260,44 @@
 
         /**
          * Affiche la liste des tags dans le tableau avec effet semi-transparent
+         * SÉCURISÉ contre XSS via createElement + textContent
          */
         function displayTags(tags) {
             const tbody = document.querySelector('#tags-table tbody');
-            tbody.innerHTML = tags.map(t => `
-                <tr>
-                    <td>
-                        <span class="tag-button" style="background-color: rgba(${hexToRgb(t.color)}, 0.2); color: ${t.color}; border: 2px solid ${t.color}; padding: 6px 16px; border-radius: 20px; display: inline-block; font-weight: 600; font-size: 12px;">
-                            ${t.name}
-                        </span>
-                    </td>
-                    <td class="actions">
-                        <button class="secondary" onclick="editTag(${t.id})">Modifier</button>
-                        <button class="danger" onclick="deleteTag(${t.id})">Supprimer</button>
-                    </td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = ''; // Vider d'abord
+
+            tags.forEach(t => {
+                const tr = document.createElement('tr');
+
+                // Colonne nom du tag
+                const tdName = document.createElement('td');
+                const span = document.createElement('span');
+                span.className = 'tag-button';
+                span.style.cssText = `background-color: rgba(${hexToRgb(t.color)}, 0.2); color: ${t.color}; border: 2px solid ${t.color}; padding: 6px 16px; border-radius: 20px; display: inline-block; font-weight: 600; font-size: 12px;`;
+                span.textContent = t.name; // Sécurisé
+                tdName.appendChild(span);
+                tr.appendChild(tdName);
+
+                // Colonne actions
+                const tdActions = document.createElement('td');
+                tdActions.className = 'actions';
+
+                const btnEdit = document.createElement('button');
+                btnEdit.className = 'secondary';
+                btnEdit.textContent = 'Modifier';
+                btnEdit.onclick = () => editTag(t.id);
+
+                const btnDelete = document.createElement('button');
+                btnDelete.className = 'danger';
+                btnDelete.textContent = 'Supprimer';
+                btnDelete.onclick = () => deleteTag(t.id);
+
+                tdActions.appendChild(btnEdit);
+                tdActions.appendChild(btnDelete);
+                tr.appendChild(tdActions);
+
+                tbody.appendChild(tr);
+            });
         }
 
         /**
@@ -1475,14 +1650,15 @@
             }).join('');
         }
 
-        function filterReports(status) {
+        function filterReports(e, status) {
+            e.preventDefault();
             currentReportFilter = status;
 
             // Mettre à jour les boutons actifs
             document.querySelectorAll('.report-filters .filter-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            event.target.classList.add('active');
+            e.target.classList.add('active');
 
             displayReports();
         }

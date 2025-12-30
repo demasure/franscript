@@ -1084,7 +1084,7 @@ function getRootNodes() {
     const nodes = db.prepare(`
         SELECT * FROM content_nodes
         WHERE parent_id IS NULL
-        ORDER BY order_index ASC, created_at DESC
+        ORDER BY title COLLATE NOCASE ASC
     `).all();
 
     nodes.forEach(node => {
@@ -1144,7 +1144,7 @@ function getChildNodes(parentId) {
     return db.prepare(`
         SELECT * FROM content_nodes
         WHERE parent_id = ?
-        ORDER BY order_index ASC, created_at DESC
+        ORDER BY title COLLATE NOCASE ASC
     `).all(parentId);
 }
 

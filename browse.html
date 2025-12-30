@@ -22,6 +22,9 @@
                     <span class="logo-text">FranScript</span>
                 </a>
 
+                <!-- Titre du dossier dans le header -->
+                <h1 id="folder-header-title" class="video-header-title" style="display: none;"></h1>
+
                 <!-- Navigation -->
                 <nav class="nav">
                     <ul class="nav-list">
@@ -111,6 +114,11 @@
                 // Afficher les infos du dossier
                 document.getElementById('folder-title').textContent = currentFolder.title;
                 document.getElementById('folder-description').textContent = currentFolder.description || '';
+
+                // Afficher le titre du dossier dans le header
+                const headerTitle = document.getElementById('folder-header-title');
+                headerTitle.textContent = currentFolder.title;
+                headerTitle.style.display = 'block';
 
                 // Afficher le breadcrumb
                 displayBreadcrumb();

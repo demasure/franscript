@@ -903,7 +903,12 @@ function initializeReportForm() {
 // ========================================
 
 function downloadSubtitles() {
-    const subtitleSrc = new URLSearchParams(window.location.search).get('subtitle') || 'videos/ma_video.vtt';
+    const subtitleSrc = new URLSearchParams(window.location.search).get('subtitle');
+
+    if (!subtitleSrc) {
+        showNotification('Aucun sous-titre disponible pour cette vidéo.', 'warning');
+        return;
+    }
 
     // Créer un lien de téléchargement
     const link = document.createElement('a');

@@ -64,10 +64,11 @@ function initDatabase() {
         CREATE TABLE IF NOT EXISTS comments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
-            video_id INTEGER NOT NULL,
+            node_id INTEGER NOT NULL,
             text TEXT NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (node_id) REFERENCES content_nodes(id) ON DELETE CASCADE
         )
     `;
 
@@ -88,11 +89,12 @@ function initDatabase() {
         CREATE TABLE IF NOT EXISTS subtitle_notes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
-            video_id INTEGER NOT NULL,
+            node_id INTEGER NOT NULL,
             start_time REAL NOT NULL,
             text TEXT NOT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (node_id) REFERENCES content_nodes(id) ON DELETE CASCADE
         )
     `;
 
@@ -205,11 +207,12 @@ function initDatabase() {
         CREATE TABLE IF NOT EXISTS reports (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
-            video_id INTEGER NOT NULL,
+            node_id INTEGER NOT NULL,
             message TEXT NOT NULL,
             status TEXT DEFAULT 'nouveau',
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            FOREIGN KEY (node_id) REFERENCES content_nodes(id) ON DELETE CASCADE
         )
     `;
 
@@ -805,18 +808,18 @@ function deleteTag(id) {
 // ============================================
 
 /**
- * Récupère tous les commentaires d'une vidéo avec les infos utilisateur
- * @param {number} videoId - ID de la vidéo
+ * Récupère tous les commentaires d'un content node avec les infos utilisateur
+ * @param {number} nodeId - ID du content_node (vidéo, dossier, etc.)
  * @returns {Array} Liste des commentaires
  */
-function getCommentsByVideo(videoId) {
+function getCommentsByVideo(nodeId) {
     const comments = db.prepare(`
         SELECT c.*, u.username, u.profile_picture, u.email
         FROM comments c
         JOIN users u ON c.user_id = u.id
-        WHERE c.video_id = ?
+        WHERE c.node_id = ?
         ORDER BY c.created_at DESC
-    `).all(videoId);
+    `).all(nodeId);
 
     // Ajouter le nombre de likes pour chaque commentaire
     comments.forEach(comment => {
@@ -831,21 +834,21 @@ function getCommentsByVideo(videoId) {
 /**
  * Crée un nouveau commentaire
  * @param {number} userId - ID de l'utilisateur
- * @param {number} videoId - ID de la vidéo
+ * @param {number} nodeId - ID du content_node (vidéo, dossier, etc.)
  * @param {string} text - Texte du commentaire
  * @returns {object} Le commentaire créé
  */
-function createComment(userId, videoId, text) {
+function createComment(userId, nodeId, text) {
     const stmt = db.prepare(`
-        INSERT INTO comments (user_id, video_id, text)
+        INSERT INTO comments (user_id, node_id, text)
         VALUES (?, ?, ?)
     `);
 
-    const result = stmt.run(userId, videoId, text);
+    const result = stmt.run(userId, nodeId, text);
     return {
         id: result.lastInsertRowid,
         user_id: userId,
-        video_id: videoId,
+        node_id: nodeId,
         text,
         created_at: new Date().toISOString()
     };

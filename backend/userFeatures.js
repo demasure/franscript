@@ -54,18 +54,21 @@ router.post('/comments', (req, res) => {
     }
 
     try {
-        const { video_id, text } = req.body;
+        const { video_id, node_id, text } = req.body;
         const userId = req.session.userId;
+
+        // Accepter video_id OU node_id (rétrocompatibilité frontend)
+        const contentNodeId = node_id || video_id;
 
         console.log('📝 POST /comments - Tentative création commentaire');
         console.log('   userId:', userId, '(type:', typeof userId, ')');
-        console.log('   video_id:', video_id, '(type:', typeof video_id, ')');
+        console.log('   node_id:', contentNodeId, '(type:', typeof contentNodeId, ')');
         console.log('   text length:', text?.length || 0);
 
         // Validation
-        if (!video_id || !text || text.trim().length === 0) {
-            console.error('❌ Validation échouée: video_id ou text manquant');
-            return res.status(400).json({ error: 'Video ID et texte requis' });
+        if (!contentNodeId || !text || text.trim().length === 0) {
+            console.error('❌ Validation échouée: node_id ou text manquant');
+            return res.status(400).json({ error: 'Node ID et texte requis' });
         }
 
         if (text.length > 1000) {
@@ -89,19 +92,19 @@ router.post('/comments', (req, res) => {
 
         // VÉRIFICATION: le content_node existe-t-il ?
         const { getNodeById } = require('./database');
-        const node = getNodeById(video_id);
+        const node = getNodeById(contentNodeId);
 
         if (!node) {
-            console.error(`❌ Content node inexistant: video_id=${video_id} n'existe pas dans content_nodes`);
+            console.error(`❌ Content node inexistant: node_id=${contentNodeId} n'existe pas dans content_nodes`);
             return res.status(400).json({
-                error: 'Vidéo inexistante',
-                details: `La vidéo avec l'ID ${video_id} n'existe pas`
+                error: 'Contenu inexistant',
+                details: `Le contenu avec l'ID ${contentNodeId} n'existe pas`
             });
         }
 
-        console.log('✅ Content node trouvé:', node.title, '(id:', node.id, ')');
+        console.log('✅ Content node trouvé:', node.title, '(id:', node.id, ', type:', node.type, ')');
 
-        const comment = createComment(userId, video_id, text.trim());
+        const comment = createComment(userId, contentNodeId, text.trim());
 
         console.log('✅ Commentaire créé avec succès (id:', comment.id, ')');
 

@@ -1134,15 +1134,15 @@ async function saveSubtitles() {
         const result = await saveResponse.json();
         console.log('✅ Sauvegarde réussie:', result);
 
-        showNotification('✅ Sous-titres sauvegardés avec succès ! (backup créé)', 'success', 3000);
+        showNotification('✅ Sous-titres sauvegardés avec succès ! (backup créé)', 'success', 2000);
 
         // Réinitialiser
         editedSubtitles = {};
 
-        // Recharger la page après 3 secondes pour laisser voir le message
+        // Recharger uniquement les sous-titres sans perdre la position
         setTimeout(() => {
-            window.location.reload(true);
-        }, 3000);
+            reloadSubtitlesOnly();
+        }, 500);
 
     } catch (error) {
         console.error('Erreur sauvegarde:', error);
@@ -1151,6 +1151,89 @@ async function saveSubtitles() {
         saveBtn.disabled = false;
         saveBtn.textContent = '💾 Sauvegarder les modifications';
     }
+}
+
+/**
+ * Recharge uniquement les sous-titres sans recharger la page
+ * Conserve la position de lecture de la vidéo
+ */
+function reloadSubtitlesOnly() {
+    const video = document.getElementById('video-player');
+    const track = document.getElementById('subtitle-track');
+
+    if (!video || !track) {
+        console.error('❌ Impossible de trouver la vidéo ou le track');
+        return;
+    }
+
+    console.log('🔄 Rechargement des sous-titres uniquement...');
+
+    // Sauvegarder la position actuelle
+    const currentTime = video.currentTime;
+    const wasPlaying = !video.paused;
+    console.log('   Position sauvegardée:', currentTime, 's');
+
+    // Récupérer l'URL originale du track
+    const originalSrc = track.src.split('?')[0]; // Enlever les query params existants
+
+    // Forcer le rechargement du fichier .vtt avec cache busting
+    const newSrc = `${originalSrc}?t=${Date.now()}`;
+    console.log('   Nouvelle URL du track:', newSrc);
+
+    // Réinitialiser les sous-titres
+    allSubtitles = [];
+
+    // Fonction pour recharger les sous-titres depuis le track
+    function reloadFromTrack() {
+        const textTrack = video.textTracks[0];
+        if (!textTrack || !textTrack.cues || textTrack.cues.length === 0) {
+            console.log('⏳ Cues pas encore disponibles...');
+            return false;
+        }
+
+        // Extraire les sous-titres
+        allSubtitles = [];
+        for (let i = 0; i < textTrack.cues.length; i++) {
+            const cue = textTrack.cues[i];
+            allSubtitles.push({
+                start: cue.startTime,
+                end: cue.endTime,
+                text: cue.text
+            });
+        }
+
+        console.log(`✅ ${allSubtitles.length} sous-titres rechargés`);
+
+        // Restaurer la position
+        video.currentTime = currentTime;
+
+        // Reprendre la lecture si la vidéo jouait
+        if (wasPlaying) {
+            video.play();
+        }
+
+        console.log('✅ Position restaurée:', video.currentTime, 's');
+        return true;
+    }
+
+    // Changer la source pour forcer le rechargement
+    track.src = newSrc;
+
+    // Attendre que le track soit rechargé
+    let attempts = 0;
+    const checkInterval = setInterval(() => {
+        attempts++;
+
+        if (reloadFromTrack()) {
+            clearInterval(checkInterval);
+            console.log('✅ Rechargement des sous-titres terminé !');
+        }
+
+        if (attempts > 20) {
+            clearInterval(checkInterval);
+            console.error('❌ Échec du rechargement des sous-titres après 20 tentatives');
+        }
+    }, 100);
 }
 
 // ========================================

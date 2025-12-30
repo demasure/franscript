@@ -1028,6 +1028,16 @@ function initializeDeleteMode() {
 }
 
 /**
+ * Handler pour l'édition de sous-titre (stocké pour pouvoir remove l'event listener)
+ */
+function handleSubtitleInput(event) {
+    const index = parseInt(event.target.dataset.index);
+    const newText = event.target.textContent.trim();
+    editedSubtitles[index] = newText;
+    console.log(`✏️ Sous-titre ${index} modifié:`, newText);
+}
+
+/**
  * Met à jour l'éditabilité d'un sous-titre
  */
 function updateSubtitleEditability(subtitleElement) {
@@ -1039,17 +1049,17 @@ function updateSubtitleEditability(subtitleElement) {
         // Retirer l'event listener de clic pour l'IA
         subtitleElement.style.cursor = 'text';
 
-        // Sauvegarder les modifications quand on édite
-        subtitleElement.addEventListener('input', function() {
-            const index = parseInt(this.dataset.index);
-            editedSubtitles[index] = this.textContent.trim();
-            console.log(`✏️ Sous-titre ${index} modifié`);
-        });
+        // Retirer l'ancien event listener s'il existe et ajouter le nouveau
+        subtitleElement.removeEventListener('input', handleSubtitleInput);
+        subtitleElement.addEventListener('input', handleSubtitleInput);
     } else {
         subtitleElement.contentEditable = 'false';
         subtitleElement.classList.remove('editable');
         subtitleElement.classList.add('clickable');
         subtitleElement.style.cursor = 'pointer';
+
+        // Retirer l'event listener d'édition
+        subtitleElement.removeEventListener('input', handleSubtitleInput);
     }
 }
 
@@ -1062,6 +1072,11 @@ async function saveSubtitles() {
         return;
     }
 
+    console.log('💾 Tentative de sauvegarde des sous-titres');
+    console.log('   currentVideoId:', currentVideoId);
+    console.log('   editedSubtitles:', editedSubtitles);
+    console.log('   Nombre de modifications:', Object.keys(editedSubtitles).length);
+
     if (Object.keys(editedSubtitles).length === 0) {
         showNotification('Aucune modification à sauvegarder', 'info');
         return;
@@ -1073,6 +1088,7 @@ async function saveSubtitles() {
 
     try {
         // Récupérer les sous-titres complets depuis le backend
+        console.log('📥 Récupération des sous-titres depuis le backend...');
         const getResponse = await fetch(`${AI_BACKEND_URL}/admin/subtitles/${currentVideoId}`, {
             credentials: 'include'
         });
@@ -1082,15 +1098,24 @@ async function saveSubtitles() {
         }
 
         const { cues } = await getResponse.json();
+        console.log('✅ Sous-titres récupérés:', cues.length, 'cues');
 
         // Appliquer les modifications
+        console.log('🔧 Application des modifications...');
         Object.keys(editedSubtitles).forEach(index => {
-            if (cues[index]) {
-                cues[index].text = editedSubtitles[index];
+            const idx = parseInt(index);
+            if (cues[idx]) {
+                const oldText = cues[idx].text;
+                const newText = editedSubtitles[index];
+                cues[idx].text = newText;
+                console.log(`   [${idx}] "${oldText}" → "${newText}"`);
+            } else {
+                console.warn(`   ⚠️ Index ${idx} introuvable dans les cues`);
             }
         });
 
         // Sauvegarder
+        console.log('📤 Envoi des sous-titres modifiés au backend...');
         const saveResponse = await fetch(`${AI_BACKEND_URL}/admin/subtitles/${currentVideoId}`, {
             method: 'PUT',
             credentials: 'include',
@@ -1101,10 +1126,13 @@ async function saveSubtitles() {
         });
 
         if (!saveResponse.ok) {
+            const errorText = await saveResponse.text();
+            console.error('❌ Échec sauvegarde:', errorText);
             throw new Error('Échec de la sauvegarde');
         }
 
         const result = await saveResponse.json();
+        console.log('✅ Sauvegarde réussie:', result);
 
         showNotification('✅ Sous-titres sauvegardés avec succès ! (backup créé)', 'success', 3000);
 

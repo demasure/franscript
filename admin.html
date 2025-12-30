@@ -1618,7 +1618,7 @@
             let rows = `
                 <tr data-node-id="${node.id}" data-node-type="${node.type}" data-node-path="${escapeHtml(fullPath)}" style="border-bottom: 1px solid var(--color-bg-hover);">
                     <td style="padding: 12px;">
-                        ${indent}${hasChildren ? `<span class="folder-chevron" data-fold-id="${node.id}" style="cursor: pointer; user-select: none; margin-right: 4px; display: inline-block; width: 16px; transition: transform 0.2s;">▼</span>` : '<span style="display: inline-block; width: 16px;"></span>'}<span style="font-size: 1.2rem; margin-right: 8px;">${icon}</span>
+                        ${indent}${hasChildren ? `<span class="folder-chevron" data-fold-id="${node.id}" style="cursor: pointer; user-select: none; margin-right: 4px; display: inline-block; width: 16px; transition: transform 0.2s; transform: rotate(-90deg);">▼</span>` : '<span style="display: inline-block; width: 16px;"></span>'}<span style="font-size: 1.2rem; margin-right: 8px;">${icon}</span>
                         <strong style="color: var(--color-text-primary);">${escapeHtml(node.title)}</strong>
                         ${node.description ? `<br>${indent}<small style="color: var(--color-text-secondary); margin-left: 50px;">${escapeHtml(node.description)}</small>` : ''}
                     </td>
@@ -1634,12 +1634,12 @@
                 </tr>
             `;
 
-            // Si c'est un dossier et qu'il a des enfants, les afficher récursivement
+            // Si c'est un dossier et qu'il a des enfants, les afficher récursivement (fermés par défaut)
             if (hasChildren) {
                 rows += node.children.map(child => {
                     const childRow = renderNodeRow(child, level + 1, currentPath);
-                    // Ajouter une classe pour identifier les enfants de ce dossier
-                    return childRow.replace('<tr ', `<tr class="child-of-${node.id}" `);
+                    // Ajouter une classe pour identifier les enfants de ce dossier ET les masquer par défaut
+                    return childRow.replace('<tr ', `<tr class="child-of-${node.id}" style="display: none;" `);
                 }).join('');
             }
 

@@ -343,6 +343,139 @@ function initDatabase() {
         console.error('❌ Erreur suppression thumbnail_url:', error.message);
     }
 
+    // ========================================
+    // MIGRATION : video_id → node_id pour comments/subtitle_notes/reports
+    // ========================================
+    try {
+        const commentsColumns = db.prepare("PRAGMA table_info(comments)").all();
+        const hasVideoId = commentsColumns.some(col => col.name === 'video_id');
+
+        if (hasVideoId) {
+            console.log('🔄 Migration video_id → node_id dans comments, subtitle_notes, reports...');
+
+            // Sauvegarder les données existantes
+            const existingComments = db.prepare('SELECT * FROM comments').all();
+            const existingNotes = db.prepare('SELECT * FROM subtitle_notes').all();
+            const existingReports = db.prepare('SELECT * FROM reports').all();
+
+            // Recréer la table comments avec node_id
+            db.exec('DROP TABLE IF EXISTS comments');
+            db.exec(`
+                CREATE TABLE comments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    node_id INTEGER NOT NULL,
+                    text TEXT NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (node_id) REFERENCES content_nodes(id) ON DELETE CASCADE
+                )
+            `);
+
+            // Restaurer les données (video_id → node_id)
+            if (existingComments.length > 0) {
+                const stmt = db.prepare('INSERT INTO comments (id, user_id, node_id, text, created_at) VALUES (?, ?, ?, ?, ?)');
+                existingComments.forEach(c => {
+                    stmt.run(c.id, c.user_id, c.video_id, c.text, c.created_at);
+                });
+            }
+
+            // Recréer la table subtitle_notes avec node_id
+            db.exec('DROP TABLE IF EXISTS subtitle_notes');
+            db.exec(`
+                CREATE TABLE subtitle_notes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    node_id INTEGER NOT NULL,
+                    subtitle_index INTEGER NOT NULL,
+                    note TEXT NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (node_id) REFERENCES content_nodes(id) ON DELETE CASCADE
+                )
+            `);
+
+            // Restaurer les données (video_id → node_id)
+            if (existingNotes.length > 0) {
+                const stmt = db.prepare('INSERT INTO subtitle_notes (id, user_id, node_id, subtitle_index, note, created_at) VALUES (?, ?, ?, ?, ?, ?)');
+                existingNotes.forEach(n => {
+                    stmt.run(n.id, n.user_id, n.video_id, n.subtitle_index, n.note, n.created_at);
+                });
+            }
+
+            // Recréer la table reports avec node_id
+            db.exec('DROP TABLE IF EXISTS reports');
+            db.exec(`
+                CREATE TABLE reports (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    node_id INTEGER NOT NULL,
+                    issue_type TEXT NOT NULL,
+                    description TEXT,
+                    status TEXT DEFAULT 'pending',
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (node_id) REFERENCES content_nodes(id) ON DELETE CASCADE
+                )
+            `);
+
+            // Restaurer les données (video_id → node_id)
+            if (existingReports.length > 0) {
+                const stmt = db.prepare('INSERT INTO reports (id, user_id, node_id, issue_type, description, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)');
+                existingReports.forEach(r => {
+                    stmt.run(r.id, r.user_id, r.video_id, r.issue_type, r.description, r.status, r.created_at);
+                });
+            }
+
+            console.log(`✅ Migration terminée: ${existingComments.length} commentaires, ${existingNotes.length} notes, ${existingReports.length} signalements`);
+        }
+    } catch (error) {
+        console.error('❌ Erreur migration video_id → node_id:', error.message);
+    }
+
+    // ========================================
+    // MIGRATION : Synchroniser videos → content_nodes
+    // ========================================
+    try {
+        const tablesCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='videos'").get();
+
+        if (tablesCheck) {
+            const oldVideos = db.prepare('SELECT * FROM videos').all();
+
+            if (oldVideos.length > 0) {
+                const checkStmt = db.prepare('SELECT id FROM content_nodes WHERE id = ?');
+                const insertStmt = db.prepare(`
+                    INSERT INTO content_nodes (id, title, type, video_url, subtitle_url, cover_url, description, parent_id, is_premium, created_at)
+                    VALUES (?, ?, 'video', ?, ?, ?, ?, NULL, ?, ?)
+                `);
+
+                let migratedCount = 0;
+                for (const video of oldVideos) {
+                    const exists = checkStmt.get(video.id);
+                    if (!exists) {
+                        insertStmt.run(
+                            video.id,
+                            video.title,
+                            video.video_url,
+                            video.subtitle_url,
+                            video.cover_image || video.cover_url || video.thumbnail_url,
+                            video.description || '',
+                            video.is_premium || video.is_paid || 0,
+                            video.created_at || new Date().toISOString()
+                        );
+                        migratedCount++;
+                    }
+                }
+
+                if (migratedCount > 0) {
+                    console.log(`✅ Migration: ${migratedCount} vidéo(s) copiée(s) de "videos" vers "content_nodes"`);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('❌ Erreur migration videos → content_nodes:', error.message);
+    }
+
     console.log('✅ Base de données initialisée');
 }
 
@@ -692,7 +825,7 @@ function createVideo(videoData) {
 
     // Convertir les anciens paramètres vers la nouvelle structure
     const nodeData = {
-        parent_id: null,  // Les vidéos legacy sont à la racine
+        parent_id: null,  // Les vidéos sont à la racine par défaut
         title,
         description,
         type: 'video',
@@ -704,37 +837,8 @@ function createVideo(videoData) {
         tagIds
     };
 
-    // Utiliser la fonction moderne qui insère dans content_nodes
-    const node = createNode(nodeData);
-
-    // Pour rétrocompatibilité, insérer aussi dans l'ancienne table videos si elle existe
-    try {
-        const checkTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='videos'").get();
-        if (checkTable) {
-            const stmt = db.prepare(`
-                INSERT INTO videos (id, title, description, video_url, subtitle_url, thumbnail_url, level, duration, is_paid, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `);
-            stmt.run(
-                node.id,
-                title,
-                description,
-                video_url,
-                subtitle_url || null,
-                thumbnail_url || null,
-                level || 'B2',
-                duration || null,
-                is_paid ? 1 : 0,
-                node.created_at,
-                node.updated_at
-            );
-        }
-    } catch (error) {
-        // Erreur non-bloquante (la vidéo existe déjà dans content_nodes)
-        console.log('⚠️  Info: vidéo non dupliquée dans table legacy "videos"');
-    }
-
-    return node;
+    // La table videos est legacy - on insère uniquement dans content_nodes
+    return createNode(nodeData);
 }
 
 /**

@@ -17,21 +17,12 @@ const adminRoutes = require('./admin');
 const subtitlesRoutes = require('./subtitles');
 const { requireAuth, requireAdmin } = require('./middleware');
 const { canUserAccessNode, getNodeWithContext } = require('./services/contentService');
-const { syncDatabase } = require('./auto-sync-database');
 
 const app = express();
 const PORT = 3000;
 
-// Initialiser la base de données
+// Initialiser la base de données (avec migrations automatiques)
 initDatabase();
-
-// Auto-synchronisation des données legacy (videos → content_nodes)
-try {
-    const dbPath = path.join(__dirname, 'franscript.db');
-    syncDatabase(dbPath);
-} catch (error) {
-    console.error('⚠️  Erreur auto-sync (non-bloquante):', error.message);
-}
 
 // Créer la vidéo de démonstration si elle n'existe pas
 const demoVideo = getVideoById(1);

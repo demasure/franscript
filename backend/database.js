@@ -434,7 +434,7 @@ function initDatabase() {
     }
 
     // ========================================
-    // MIGRATION : Synchroniser videos → content_nodes
+    // MIGRATION : Synchroniser videos → content_nodes (une seule fois)
     // ========================================
     try {
         const tablesCheck = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='videos'").get();
@@ -471,6 +471,11 @@ function initDatabase() {
                     console.log(`✅ Migration: ${migratedCount} vidéo(s) copiée(s) de "videos" vers "content_nodes"`);
                 }
             }
+
+            // Renommer la table videos pour qu'elle ne soit plus utilisée
+            // Cela empêche la re-migration des vidéos supprimées à chaque redémarrage
+            db.exec('ALTER TABLE videos RENAME TO videos_legacy_archived');
+            console.log('✅ Table "videos" archivée (renommée en "videos_legacy_archived")');
         }
     } catch (error) {
         console.error('❌ Erreur migration videos → content_nodes:', error.message);

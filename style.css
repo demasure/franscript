@@ -1126,37 +1126,8 @@ img {
 }
 
 /* ========================================
-   DESCRIPTION
+   BOUTON SIGNALER
    ======================================== */
-.video-description-panel {
-    background-color: var(--color-bg-card);
-    border-radius: var(--border-radius);
-    padding: 1.5rem;         /* 24px - Espacement harmonisé */
-    margin-bottom: 1.5rem;   /* 24px - Espacement harmonisé */
-    box-shadow: var(--box-shadow);
-}
-
-.description-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
-}
-
-.description-header .panel-title {
-    margin-bottom: 0;
-}
-
-.video-meta-tags {
-    display: flex;
-    gap: var(--spacing-sm);
-    margin-bottom: var(--spacing-md);
-    flex-wrap: wrap;
-}
-
-/* Styles pour badges vidéo supprimés - utilisation de données dynamiques depuis la base de données */
-
 .btn-report {
     padding: 0.25rem 0.5rem;
     background-color: transparent;
@@ -1182,6 +1153,18 @@ img {
     border-radius: var(--border-radius);
     padding: var(--spacing-md);
     box-shadow: var(--box-shadow);
+}
+
+.comments-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
+}
+
+.comments-header .section-title {
+    margin-bottom: 0;
 }
 
 .comment-form {

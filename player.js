@@ -129,34 +129,8 @@ async function loadVideoFromURL() {
 
     console.log('📹 Sources - Video:', videoSrc, '| Subtitle:', subtitleSrc);
 
-    // Mettre à jour les informations de base
+    // Mettre à jour le titre dans le header
     document.getElementById('video-title').textContent = title;
-    document.querySelector('.video-level-badge').textContent = level;
-    document.querySelector('.video-level-badge').className = `video-level-badge level-${level.toLowerCase()}`;
-
-    // Afficher les métadonnées supplémentaires
-    if (videoData) {
-        // Description
-        if (videoData.description) {
-            document.getElementById('video-description').textContent = videoData.description;
-        }
-
-        // Tags
-        if (videoData.tags && videoData.tags.length > 0) {
-            const tagsHTML = videoData.tags.map(tag => {
-                const rgb = hexToRgb(tag.color);
-                return `<span class="video-tag" style="background-color: rgba(${rgb}, 0.2); color: ${tag.color}; border: 2px solid ${tag.color}; padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 500; margin-right: 8px;">${tag.name.toUpperCase()}</span>`;
-            }).join('');
-            document.querySelector('.video-meta-tags').innerHTML += tagsHTML;
-        }
-
-        // Durée
-        if (videoData.duration) {
-            const durationFormatted = formatDuration(videoData.duration);
-            const durationHTML = `<span class="video-duration-badge" style="padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: 500; background-color: rgba(255, 255, 255, 0.1); color: var(--color-text-secondary); border: 1px solid rgba(255, 255, 255, 0.2); margin-right: 8px;">⏱️ ${durationFormatted}</span>`;
-            document.querySelector('.video-meta-tags').innerHTML += durationHTML;
-        }
-    }
 
     // Charger la vidéo
     const videoElement = document.getElementById('video-player');

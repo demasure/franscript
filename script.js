@@ -972,6 +972,98 @@ function enableContentProtection() {
 }
 
 // ========================================
+// POPUP "J'AI UNE IDÉE"
+// ========================================
+
+/**
+ * Initialise le popup d'idées
+ */
+function initializeIdeaPopup() {
+    const ideaBtn = document.getElementById('idea-btn');
+    const popup = document.getElementById('idea-popup');
+    const closeBtn = document.getElementById('close-idea-popup');
+    const cancelBtn = document.getElementById('cancel-idea');
+    const form = document.getElementById('idea-form');
+    const descriptionTextarea = document.getElementById('idea-description');
+    const charCount = document.getElementById('idea-char-count');
+
+    if (!ideaBtn || !popup || !form) {
+        console.log('⚠️ Bouton idée ou popup introuvable');
+        return;
+    }
+
+    // Ouvrir le popup
+    ideaBtn.addEventListener('click', () => {
+        popup.style.display = 'flex';
+        document.getElementById('idea-title').value = '';
+        document.getElementById('idea-description').value = '';
+        charCount.textContent = '0';
+    });
+
+    // Fermer le popup
+    function closePopup() {
+        popup.style.display = 'none';
+    }
+
+    closeBtn.addEventListener('click', closePopup);
+    cancelBtn.addEventListener('click', closePopup);
+
+    // Fermer en cliquant sur l'overlay
+    popup.addEventListener('click', (e) => {
+        if (e.target === popup) {
+            closePopup();
+        }
+    });
+
+    // Compteur de caractères
+    descriptionTextarea.addEventListener('input', () => {
+        charCount.textContent = descriptionTextarea.value.length;
+    });
+
+    // Soumettre l'idée
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const title = document.getElementById('idea-title').value.trim();
+        const description = document.getElementById('idea-description').value.trim();
+
+        if (!title || !description) {
+            alert('Veuillez remplir tous les champs');
+            return;
+        }
+
+        try {
+            const response = await fetch('http://localhost:3000/ideas', {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    title,
+                    description
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Erreur lors de l\'envoi de l\'idée');
+            }
+
+            alert('✅ Merci pour votre idée ! Nous l\'étudierons avec attention.');
+            closePopup();
+        } catch (error) {
+            console.error('Erreur envoi idée:', error);
+            alert('❌ Erreur lors de l\'envoi de l\'idée. Veuillez réessayer.');
+        }
+    });
+}
+
+// Initialiser le popup au chargement
+document.addEventListener('DOMContentLoaded', () => {
+    initializeIdeaPopup();
+});
+
+// ========================================
 // EXPORT POUR UTILISATION EXTERNE (optionnel)
 // ========================================
 window.FranScript = {

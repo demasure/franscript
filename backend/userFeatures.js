@@ -10,7 +10,8 @@ const {
     createNote,
     updateNote,
     deleteNote,
-    findUserById
+    findUserById,
+    createReport
 } = require('./database');
 
 const router = express.Router();
@@ -305,6 +306,51 @@ router.delete('/notes/:noteId', (req, res) => {
         res.json({ message: 'Note supprimée' });
     } catch (error) {
         console.error('Erreur suppression note:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// ============================================
+// ROUTE IDÉES POUR LE SITE
+// ============================================
+
+/**
+ * POST /ideas
+ * Soumet une idée pour le site (enregistrée comme signalement type "idea")
+ * Body: { title, description }
+ */
+router.post('/ideas', (req, res) => {
+    // Vérifier que l'utilisateur est connecté
+    if (!req.session.userId) {
+        return res.status(401).json({ error: 'Non authentifié' });
+    }
+
+    try {
+        const { title, description } = req.body;
+
+        // Validation
+        if (!title || !description || title.trim().length === 0 || description.trim().length === 0) {
+            return res.status(400).json({ error: 'Titre et description requis' });
+        }
+
+        if (title.length > 100) {
+            return res.status(400).json({ error: 'Titre trop long (max 100 caractères)' });
+        }
+
+        if (description.length > 500) {
+            return res.status(400).json({ error: 'Description trop longue (max 500 caractères)' });
+        }
+
+        // Créer un signalement de type "idea" avec le titre en préfixe
+        const ideaMessage = `[IDÉE: ${title}] ${description}`;
+        const report = createReport(req.session.userId, 'idea', ideaMessage);
+
+        res.status(201).json({
+            message: 'Idée enregistrée',
+            report
+        });
+    } catch (error) {
+        console.error('Erreur enregistrement idée:', error);
         res.status(500).json({ error: 'Erreur serveur' });
     }
 });

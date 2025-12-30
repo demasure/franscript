@@ -27,27 +27,11 @@
 
                 <!-- Navigation -->
                 <nav class="nav">
-                    <ul class="nav-list">
-                        <li><a href="index.html" class="nav-link active">Accueil</a></li>
-                        <li><a href="#videos" class="nav-link">Vidéos</a></li>
-                        <li><a href="#about" class="nav-link">À propos</a></li>
-                        <!-- Espace réservé pour futur lien "Mon Compte" -->
-                        <li class="nav-account-placeholder" style="display: none;">
-                            <a href="#account" class="nav-link">Mon Compte</a>
-                        </li>
-                    </ul>
+                    <button id="idea-btn" class="btn-idea">💡 J'ai une idée pour le site</button>
                 </nav>
             </div>
         </div>
     </header>
-
-    <!-- HERO SECTION - Bannière d'accueil -->
-    <section class="hero">
-        <div class="container">
-            <h1 class="hero-title">Apprenez le français avec des vidéos interactives</h1>
-            <p class="hero-subtitle">Découvrez notre collection de vidéos avec sous-titres interactifs et annotations intelligentes</p>
-        </div>
-    </section>
 
     <!-- MAIN CONTENT -->
     <main class="main">
@@ -72,25 +56,6 @@
                 <!-- Les vidéos sont chargées dynamiquement depuis la base de données -->
             </section>
 
-            <!-- ABOUT SECTION -->
-            <section class="about" id="about">
-                <h2 class="section-title">À propos de FranScript</h2>
-                <div class="about-content">
-                    <p>FranScript est une plateforme dédiée à l'apprentissage du français à travers des vidéos authentiques avec sous-titres interactifs.</p>
-                    <p>Notre mission : rendre l'apprentissage du français accessible, engageant et efficace grâce à du contenu culturel de qualité.</p>
-
-                    <!-- Conteneur pour futures fonctionnalités premium -->
-                    <div class="premium-features" style="display: none;">
-                        <h3>Fonctionnalités Premium</h3>
-                        <ul>
-                            <li>Annotations intelligentes avec IA</li>
-                            <li>Exercices interactifs personnalisés</li>
-                            <li>Suivi de progression détaillé</li>
-                        </ul>
-                    </div>
-                </div>
-            </section>
-
         </div>
     </main>
 
@@ -107,6 +72,50 @@
             </div>
         </div>
     </footer>
+
+    <!-- POPUP IDÉE -->
+    <div id="idea-popup" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>💡 Partagez votre idée</h2>
+                <button class="modal-close" id="close-idea-popup">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">Vous avez une idée pour améliorer FranScript ? Partagez-la avec nous !</p>
+                <form id="idea-form">
+                    <div class="form-group">
+                        <label for="idea-title">Titre de l'idée</label>
+                        <input
+                            type="text"
+                            id="idea-title"
+                            class="form-input"
+                            placeholder="Ex: Ajouter des exercices de prononciation"
+                            maxlength="100"
+                            required
+                        >
+                    </div>
+                    <div class="form-group">
+                        <label for="idea-description">Description</label>
+                        <textarea
+                            id="idea-description"
+                            class="form-textarea"
+                            placeholder="Décrivez votre idée en détail..."
+                            maxlength="500"
+                            rows="6"
+                            required
+                        ></textarea>
+                        <div class="char-counter">
+                            <span id="idea-char-count">0</span> / 500 caractères
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn-secondary" id="cancel-idea">Annuler</button>
+                        <button type="submit" class="btn-primary">Envoyer l'idée</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <script src="navbar.js?v=2.0"></script>
     <script src="utils.js?v=2.0"></script>

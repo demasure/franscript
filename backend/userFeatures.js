@@ -49,30 +49,70 @@ router.get('/comments/:videoId', (req, res) => {
 router.post('/comments', (req, res) => {
     // Vérifier que l'utilisateur est connecté
     if (!req.session.userId) {
+        console.error('❌ POST /comments : session.userId manquant');
         return res.status(401).json({ error: 'Non authentifié' });
     }
 
     try {
         const { video_id, text } = req.body;
+        const userId = req.session.userId;
+
+        console.log('📝 POST /comments - Tentative création commentaire');
+        console.log('   userId:', userId, '(type:', typeof userId, ')');
+        console.log('   video_id:', video_id, '(type:', typeof video_id, ')');
+        console.log('   text length:', text?.length || 0);
 
         // Validation
         if (!video_id || !text || text.trim().length === 0) {
+            console.error('❌ Validation échouée: video_id ou text manquant');
             return res.status(400).json({ error: 'Video ID et texte requis' });
         }
 
         if (text.length > 1000) {
+            console.error('❌ Validation échouée: texte trop long');
             return res.status(400).json({ error: 'Commentaire trop long (max 1000 caractères)' });
         }
 
-        const comment = createComment(req.session.userId, video_id, text.trim());
+        // VÉRIFICATION CRITIQUE: l'utilisateur existe-t-il dans la table users ?
+        const { findUserById } = require('./database');
+        const user = findUserById(userId);
+
+        if (!user) {
+            console.error(`❌ FOREIGN KEY VIOLATION PRÉVENTÉE: user_id=${userId} n'existe pas dans la table users`);
+            return res.status(400).json({
+                error: 'Utilisateur inexistant',
+                details: `L'utilisateur avec l'ID ${userId} n'existe pas dans la base de données`
+            });
+        }
+
+        console.log('✅ Utilisateur trouvé:', user.username, '(id:', user.id, ')');
+
+        // VÉRIFICATION: le content_node existe-t-il ?
+        const { getNodeById } = require('./database');
+        const node = getNodeById(video_id);
+
+        if (!node) {
+            console.error(`❌ Content node inexistant: video_id=${video_id} n'existe pas dans content_nodes`);
+            return res.status(400).json({
+                error: 'Vidéo inexistante',
+                details: `La vidéo avec l'ID ${video_id} n'existe pas`
+            });
+        }
+
+        console.log('✅ Content node trouvé:', node.title, '(id:', node.id, ')');
+
+        const comment = createComment(userId, video_id, text.trim());
+
+        console.log('✅ Commentaire créé avec succès (id:', comment.id, ')');
 
         res.status(201).json({
             message: 'Commentaire créé',
             comment
         });
     } catch (error) {
-        console.error('Erreur création commentaire:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
+        console.error('❌ Erreur création commentaire:', error.message);
+        console.error('   Stack:', error.stack);
+        res.status(500).json({ error: 'Erreur serveur: ' + error.message });
     }
 });
 

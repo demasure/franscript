@@ -311,14 +311,8 @@ img {
     justify-content: center;
 }
 
-/* Style pour image manquante (pas de src ou src vide) */
-.video-thumbnail img[src=""],
-.video-thumbnail img:not([src]) {
-    display: none;
-}
-
-/* Placeholder dynamique quand pas d'image */
-.video-thumbnail:not(:has(img[src]:not([src=""])))::after {
+/* Placeholder dynamique quand pas d'image - version compatible tous navigateurs */
+.video-thumbnail.no-image::after {
     content: '🎬';
     position: absolute;
     top: 50%;
@@ -326,6 +320,7 @@ img {
     transform: translate(-50%, -50%);
     font-size: 4rem;
     opacity: 0.3;
+    z-index: 1;
 }
 
 .video-thumbnail img {

@@ -230,6 +230,8 @@ function createVideoCard(video) {
 
     // Image d'affiche - SOURCE UNIQUE
     const thumbnailSrc = video.cover_image || '';
+    const noImageClass = !thumbnailSrc ? ' no-image' : '';
+    const thumbnailHTML = thumbnailSrc ? `<img src="${thumbnailSrc}" alt="${video.title}">` : '';
 
     // Badge et overlay pour les vidéos payantes
     // N'afficher le cadenas QUE si l'utilisateur n'est PAS premium/admin ET que la vidéo est payante
@@ -238,8 +240,8 @@ function createVideoCard(video) {
     const lockOverlay = shouldShowLock ? '<div class="video-lock-overlay"><span class="lock-icon">🔒</span></div>' : '';
 
     article.innerHTML = `
-        <div class="video-thumbnail">
-            <img src="${thumbnailSrc}" alt="${video.title}">
+        <div class="video-thumbnail${noImageClass}">
+            ${thumbnailHTML}
             ${lockOverlay}
             <div class="video-overlay">
                 <button class="play-btn">▶ Lire</button>
@@ -284,6 +286,8 @@ function createSagaCard(saga) {
 
     // Image d'affiche - SOURCE UNIQUE
     const thumbnailSrc = saga.cover_image || '';
+    const noImageClass = !thumbnailSrc ? ' no-image' : '';
+    const thumbnailHTML = thumbnailSrc ? `<img src="${thumbnailSrc}" alt="${saga.title}">` : '';
 
     // Badge premium
     const shouldShowLock = saga.is_premium === 1 && !currentUser.isPremium && !currentUser.isAdmin;
@@ -294,8 +298,8 @@ function createSagaCard(saga) {
     const typeBadge = saga.type === 'serie' ? '📺 Série' : '🎬 Film';
 
     article.innerHTML = `
-        <div class="video-thumbnail">
-            <img src="${thumbnailSrc}" alt="${saga.title}">
+        <div class="video-thumbnail${noImageClass}">
+            ${thumbnailHTML}
             ${lockOverlay}
             <div class="video-overlay">
                 <button class="play-btn">▶ Explorer</button>
@@ -394,6 +398,8 @@ function createNodeCard(node) {
 
     // Image d'affiche - SOURCE UNIQUE pour TOUS les types
     const thumbnailSrc = node.cover_image || '';
+    const noImageClass = !thumbnailSrc ? ' no-image' : '';
+    const thumbnailHTML = thumbnailSrc ? `<img src="${thumbnailSrc}" alt="${node.title}">` : '';
 
     // Badge premium
     const shouldShowLock = node.is_premium === 1 && !currentUser.isPremium && !currentUser.isAdmin;
@@ -411,8 +417,8 @@ function createNodeCard(node) {
     const levelHTML = !isFolder ? `<span class="video-level level-badge level-${(node.level || 'B2').toLowerCase()}">${node.level || 'B2'}</span>` : '';
 
     article.innerHTML = `
-        <div class="video-thumbnail">
-            <img src="${thumbnailSrc}" alt="${node.title}">
+        <div class="video-thumbnail${noImageClass}">
+            ${thumbnailHTML}
             ${lockOverlay}
             <div class="video-overlay">
                 <button class="play-btn">${icon} ${buttonText}</button>

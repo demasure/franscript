@@ -1308,16 +1308,26 @@ function updateNode(id, nodeData) {
         id
     );
 
-    // Mettre à jour les tags
-    db.prepare('DELETE FROM content_node_tags WHERE node_id = ?').run(id);
-    if (tagIds && tagIds.length > 0) {
-        const insertTag = db.prepare('INSERT INTO content_node_tags (node_id, tag_id) VALUES (?, ?)');
-        tagIds.forEach(tagId => insertTag.run(id, tagId));
+    // Détecter si les tags ont changé (seulement si tagIds est fourni)
+    let tagsHaveChanged = false;
+    if (tagIds !== undefined) {
+        const oldTagIds = node.tags ? node.tags.map(t => t.id).sort() : [];
+        const newTagIds = tagIds ? [...tagIds].sort() : [];
+        tagsHaveChanged = JSON.stringify(oldTagIds) !== JSON.stringify(newTagIds);
     }
 
-    // Si c'est un dossier, propager les tags aux enfants récursivement
-    if (node.type === 'folder' && tagIds && tagIds.length > 0) {
-        propagateTagsToChildren(id, tagIds);
+    // Mettre à jour les tags seulement si tagIds est fourni
+    if (tagIds !== undefined) {
+        db.prepare('DELETE FROM content_node_tags WHERE node_id = ?').run(id);
+        if (tagIds.length > 0) {
+            const insertTag = db.prepare('INSERT INTO content_node_tags (node_id, tag_id) VALUES (?, ?)');
+            tagIds.forEach(tagId => insertTag.run(id, tagId));
+        }
+
+        // Si c'est un dossier ET que les tags ont RÉELLEMENT changé, propager aux enfants
+        if (node.type === 'folder' && tagsHaveChanged && tagIds.length > 0) {
+            propagateTagsToChildren(id, tagIds);
+        }
     }
 
     // Gestion de la propagation du statut premium (bidirectionnelle)

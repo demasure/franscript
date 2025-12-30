@@ -115,10 +115,17 @@ async function loadVideoFromURL() {
     }
 
     // Déterminer les sources à utiliser
-    const videoSrc = videoData?.video_url || params.get('video') || 'videos/ma_video.mp4';
-    const subtitleSrc = videoData?.subtitle_url || params.get('subtitle') || 'videos/ma_video.vtt';
-    const title = videoData?.title || params.get('title') || 'Ma Première Vidéo';
+    const videoSrc = videoData?.video_url || params.get('video');
+    const subtitleSrc = videoData?.subtitle_url || params.get('subtitle');
+    const title = videoData?.title || params.get('title') || 'Vidéo sans titre';
     const level = videoData?.level || params.get('level') || 'B2';
+
+    // Vérification critique: une vidéo DOIT avoir une URL
+    if (!videoSrc) {
+        console.error('❌ Aucune source vidéo disponible');
+        alert('Erreur: Cette vidéo n\'a pas de source vidéo définie. Veuillez contacter un administrateur.');
+        return;
+    }
 
     console.log('📹 Sources - Video:', videoSrc, '| Subtitle:', subtitleSrc);
 
@@ -1156,8 +1163,8 @@ async function loadSuggestedVideos() {
                 window.location.href = `player.html?id=${video.id}&video=${encodeURIComponent(video.video_url)}&subtitle=${encodeURIComponent(video.subtitle_url || '')}&title=${encodeURIComponent(video.title)}&level=${video.level}`;
             };
 
-            const thumbnailSrc = video.thumbnail_url ||
-                `https://via.placeholder.com/150x85/${getLevelColor(video.level)}/ffffff?text=${encodeURIComponent(video.title.substring(0, 20))}`;
+            // SOURCE UNIQUE: cover_image pour TOUTES les images
+            const thumbnailSrc = video.cover_image || '';
 
             card.innerHTML = `
                 <img src="${thumbnailSrc}" alt="${video.title}">

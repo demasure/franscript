@@ -305,7 +305,27 @@ img {
     width: 100%;
     padding-top: 150%; /* 2:3 portrait ratio (3/2 * 100) - Format affiche de film */
     overflow: hidden;
-    background-color: var(--color-bg-dark);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Style pour image manquante (pas de src ou src vide) */
+.video-thumbnail img[src=""],
+.video-thumbnail img:not([src]) {
+    display: none;
+}
+
+/* Placeholder dynamique quand pas d'image */
+.video-thumbnail:not(:has(img[src]:not([src=""])))::after {
+    content: '🎬';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 4rem;
+    opacity: 0.3;
 }
 
 .video-thumbnail img {
@@ -316,6 +336,21 @@ img {
     height: 100%;
     object-fit: cover;
     transition: transform var(--transition-speed);
+}
+
+/* Fallback pour navigateurs ne supportant pas :has() */
+.video-thumbnail.no-image {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.video-thumbnail.no-image::after {
+    content: '🎬';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 4rem;
+    opacity: 0.3;
 }
 
 .video-card:hover .video-thumbnail img {

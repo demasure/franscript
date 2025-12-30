@@ -221,18 +221,21 @@ router.post('/notes', (req, res) => {
     }
 
     try {
-        const { video_id, start_time, text } = req.body;
+        const { video_id, node_id, start_time, text } = req.body;
+
+        // Accepter video_id OU node_id (rétrocompatibilité frontend)
+        const contentNodeId = node_id || video_id;
 
         // Validation
-        if (!video_id || start_time === undefined || !text || text.trim().length === 0) {
-            return res.status(400).json({ error: 'Video ID, timecode et texte requis' });
+        if (!contentNodeId || start_time === undefined || !text || text.trim().length === 0) {
+            return res.status(400).json({ error: 'Node ID, timecode et texte requis' });
         }
 
         if (text.length > 500) {
             return res.status(400).json({ error: 'Note trop longue (max 500 caractères)' });
         }
 
-        const note = createNote(req.session.userId, video_id, start_time, text.trim());
+        const note = createNote(req.session.userId, contentNodeId, start_time, text.trim());
 
         res.status(201).json({
             message: 'Note créée',

@@ -694,6 +694,7 @@ router.post('/content', async (req, res) => {
             type,
             video_url,
             subtitle_url,
+            cover_url,
             is_premium,
             order_index,
             tagIds
@@ -720,20 +721,12 @@ router.post('/content', async (req, res) => {
             type,
             video_url,
             subtitle_url,
+            cover_url,
             duration,
             is_premium: is_premium || false,
             order_index: order_index || 0,
             tagIds: tagIds || []
         });
-
-        // Extraire thumbnail en arrière-plan si vidéo
-        if (type === 'video' && video_url) {
-            extractThumbnail(video_url, node.id, 'content').then(thumbnailPath => {
-                if (thumbnailPath) {
-                    updateNode(node.id, { ...node, thumbnail_url: thumbnailPath });
-                }
-            });
-        }
 
         res.status(201).json({ message: 'Nœud créé', node });
     } catch (error) {
@@ -760,6 +753,7 @@ router.put('/content/:id', async (req, res) => {
             description,
             video_url,
             subtitle_url,
+            cover_url,
             is_premium,
             order_index,
             tagIds
@@ -769,13 +763,6 @@ router.put('/content/:id', async (req, res) => {
         let duration = existingNode.duration;
         if (existingNode.type === 'video' && video_url && video_url !== existingNode.video_url) {
             duration = await detectVideoDuration(video_url);
-
-            // Extraire nouveau thumbnail
-            extractThumbnail(video_url, id, 'content').then(thumbnailPath => {
-                if (thumbnailPath) {
-                    updateNode(id, { ...existingNode, thumbnail_url: thumbnailPath });
-                }
-            });
         }
 
         const node = updateNode(id, {
@@ -783,6 +770,7 @@ router.put('/content/:id', async (req, res) => {
             description,
             video_url,
             subtitle_url,
+            cover_url,
             duration,
             is_premium,
             order_index,

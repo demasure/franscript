@@ -1247,9 +1247,9 @@ function createNode(nodeData) {
         title,
         description || null,
         type,
-        type === 'video' ? video_url : null,
-        type === 'video' ? (subtitle_url || null) : null,
-        cover_url || null,  // Source unique pour TOUS les types
+        video_url || null,
+        subtitle_url || null,
+        cover_url || null,
         duration || null,
         is_premium ? 1 : 0,
         order_index || 0
@@ -1296,15 +1296,12 @@ function updateNode(id, nodeData) {
         WHERE id = ?
     `);
 
-    // Préserver la valeur existante si non définie
-    const finalCoverImage = cover_url !== undefined ? cover_url : node.cover_url;
-
     stmt.run(
         title,
         description !== undefined ? (description || null) : node.description,
-        node.type === 'video' ? (video_url !== undefined ? video_url : node.video_url) : null,
-        node.type === 'video' ? (subtitle_url !== undefined ? (subtitle_url || null) : node.subtitle_url) : null,
-        finalCoverImage,  // Source unique pour TOUS les types
+        video_url !== undefined ? (video_url || null) : node.video_url,
+        subtitle_url !== undefined ? (subtitle_url || null) : node.subtitle_url,
+        cover_url !== undefined ? (cover_url || null) : node.cover_url,
         duration !== undefined ? (duration || null) : node.duration,
         is_premium !== undefined ? (is_premium ? 1 : 0) : node.is_premium,
         order_index !== undefined ? order_index : node.order_index,

@@ -728,6 +728,24 @@ router.post('/content', async (req, res) => {
             tagIds: tagIds || []
         });
 
+        // Génération automatique de thumbnail si pas de cover_url
+        if (type === 'video' && video_url && !cover_url) {
+            extractThumbnail(video_url, node.id).then(thumbnailPath => {
+                if (thumbnailPath) {
+                    // Récupérer les tags existants pour ne pas les écraser
+                    const existingTags = node.tags ? node.tags.map(t => t.id) : [];
+                    updateNode(node.id, {
+                        ...node,
+                        cover_url: thumbnailPath,
+                        tagIds: existingTags
+                    });
+                    console.log(`✅ Thumbnail auto-généré pour "${title}": ${thumbnailPath}`);
+                }
+            }).catch(err => {
+                console.error(`❌ Erreur génération thumbnail pour "${title}":`, err.message);
+            });
+        }
+
         res.status(201).json({ message: 'Nœud créé', node });
     } catch (error) {
         console.error('Erreur création nœud:', error);
@@ -776,6 +794,30 @@ router.put('/content/:id', async (req, res) => {
             order_index,
             tagIds
         });
+
+        // Génération automatique de thumbnail si :
+        // - c'est une vidéo
+        // - le video_url a changé OU il n'y avait pas de cover_url
+        // - pas de cover_url fourni dans la requête
+        const videoUrlChanged = video_url && video_url !== existingNode.video_url;
+        const noCoverUrl = !cover_url && !existingNode.cover_url;
+
+        if (existingNode.type === 'video' && video_url && (videoUrlChanged || noCoverUrl) && cover_url === undefined) {
+            extractThumbnail(video_url, id).then(thumbnailPath => {
+                if (thumbnailPath) {
+                    // Récupérer les tags existants pour ne pas les écraser
+                    const existingTags = node.tags ? node.tags.map(t => t.id) : [];
+                    updateNode(id, {
+                        ...node,
+                        cover_url: thumbnailPath,
+                        tagIds: existingTags
+                    });
+                    console.log(`✅ Thumbnail auto-généré pour "${node.title}": ${thumbnailPath}`);
+                }
+            }).catch(err => {
+                console.error(`❌ Erreur génération thumbnail pour "${node.title}":`, err.message);
+            });
+        }
 
         res.json({ message: 'Nœud mis à jour', node });
     } catch (error) {
